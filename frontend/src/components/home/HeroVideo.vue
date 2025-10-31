@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import gachaVideo from '../assets/gacha.mov';
+import gachaVideo from '../../assets/gacha.mov';
 </script>
 
 <template>

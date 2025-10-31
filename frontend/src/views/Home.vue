@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import WelcomePanel from '../components/WelcomePanel.vue';
-import HeroVideo from '../components/HeroVideo.vue';
-import Footer from '../components/Footer.vue';
+import WelcomePanel from '../components/home/WelcomePanel.vue';
+import HeroVideo from '../components/home/HeroVideo.vue';
+import Footer from '../components/home/Footer.vue';
 </script>
 
 <template>
