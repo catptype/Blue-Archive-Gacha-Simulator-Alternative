@@ -4,6 +4,25 @@ from typing import Optional
 
 # --- Base Schemas ---
 
+class UserBase(BaseModel):
+    username: str
+
+class UserCreate(UserBase):
+    password: str
+
+class UserSchema(UserBase):
+    model_config = ConfigDict(from_attributes=True)
+    user_id: int
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
+
+# ------------------------------------
+
 class VersionSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
