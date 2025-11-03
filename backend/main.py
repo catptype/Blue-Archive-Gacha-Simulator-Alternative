@@ -50,28 +50,17 @@ def get_students(request: Request, school_id: Optional[int] = None, db: Session 
     response_students = []
     for student in db_students:
         # Step 1: Validate the base student and its nested school object
-        student_base = schemas.StudentFromDB.model_validate(student)
+        student_response = schemas.StudentResponse.model_validate(student)
 
         # Step 2: Create the school response object, adding the URL
         school_response = schemas.SchoolResponse.model_validate(student.school)
-        school_response.school_id = student.school.school_id
         if student.school.school_image:
              school_response.image_url = str(request.url_for('serve_school_image', school_id=student.school.school_id))
 
-        # Step 3: Create the final student response, combining all data
-        student_response = schemas.StudentResponse(
-            student_id=student_base.student_id,
-            student_name=student_base.student_name,
-            student_rarity=student_base.student_rarity,
-            student_is_limited=student_base.student_is_limited,
-            version=student_base.version,
-            school=school_response, # Use the school object with the URL
-        )
-
-        if student.asset:
-            student_response.portrait_url = str(request.url_for('serve_student_image', student_id=student.student_id, image_type='portrait'))
-            student_response.artwork_url = str(request.url_for('serve_student_image', student_id=student.student_id, image_type='artwork'))
+        student_response.portrait_url = str(request.url_for('serve_student_image', student_id=student.student_id, image_type='portrait'))
+        student_response.artwork_url = str(request.url_for('serve_student_image', student_id=student.student_id, image_type='artwork'))
         
+
         response_students.append(student_response)
         
     return response_students
