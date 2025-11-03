@@ -16,9 +16,6 @@ from .models import (
 # Define the path to your data directory
 DATA_DIR = Path(__file__).parent / "data"
 
-print("============= RUN FROM create_db.py")
-print(DATA_DIR)
-
 def load_json_files_from_dir(directory: Path) -> List[Dict[str, Any]]:
     """Loads all JSON files from a specified directory."""
     data_list = []
@@ -191,25 +188,18 @@ def seed_banners(db):
 def main():
     """Main function to run all seeding operations."""
 
-    # ======================================================================
-    # CRITICAL FIX: CREATE TABLES FIRST
-    # ======================================================================
-    # This line connects to the database engine and tells SQLAlchemy to
-    # create all tables that inherit from our `Base` class in models.py.
-    # It must be called *before* any database sessions are opened.
+    # Create database tables
     print("Initializing database and creating tables...")
     Base.metadata.create_all(bind=engine)
     print("Tables created successfully.")
-    # ======================================================================
 
     # Use a session that is automatically closed
     with SessionLocal() as db:
-        # The order here is critical to respect foreign key constraints
         seed_versions(db)
         seed_schools(db)
-        seed_students(db) # Depends on Versions and Schools
+        seed_students(db)
         seed_presets(db)
-        seed_banners(db)  # Depends on Presets, Versions, and Students
+        seed_banners(db)
     print("\nDatabase seeding complete!")
 
 

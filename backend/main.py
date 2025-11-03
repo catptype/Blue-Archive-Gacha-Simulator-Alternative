@@ -5,23 +5,15 @@ from sqlalchemy.orm import Session, joinedload
 from typing import Optional
 
 from . import models, schemas
-from .database import SessionLocal, engine
+from .database import engine, get_db
 
-models.Base.metadata.create_all(bind=engine)
+# models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
 # --- CORS Middleware ---
 origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
-
-# --- Database Dependency ---
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 # --- API Endpoints ---
 
