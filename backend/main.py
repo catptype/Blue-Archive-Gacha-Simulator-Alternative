@@ -33,7 +33,12 @@ def get_schools(request: Request, db: Session = Depends(get_db)):
     return response_schools
 
 @app.get("/api/students/", response_model=list[schemas.StudentResponse])
-def get_students(request: Request, school_id: Optional[int] = None, db: Session = Depends(get_db)):
+def get_students(
+        request: Request, 
+        school_id: Optional[int] = None,
+        version_id: Optional[int] = None,
+        db: Session = Depends(get_db)
+    ):
     
     # Start with a base query
     students_query = (
@@ -44,6 +49,9 @@ def get_students(request: Request, school_id: Optional[int] = None, db: Session 
     # If a school_id was provided in the URL, apply the filter
     if school_id is not None:
         students_query = students_query.filter(models.Student.school_id_fk == school_id)
+
+    if version_id is not None:
+        students_query = students_query.filter(models.Student.version_id_fk == version_id)
 
     db_students = students_query.all()
     
@@ -60,7 +68,6 @@ def get_students(request: Request, school_id: Optional[int] = None, db: Session 
         student_response.portrait_url = str(request.url_for('serve_student_image', student_id=student.student_id, image_type='portrait'))
         student_response.artwork_url = str(request.url_for('serve_student_image', student_id=student.student_id, image_type='artwork'))
         
-
         response_students.append(student_response)
         
     return response_students

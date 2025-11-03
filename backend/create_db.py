@@ -27,26 +27,40 @@ def load_json_files_from_dir(directory: Path) -> List[Dict[str, Any]]:
 
 def seed_versions(db):
     """
-    Seeds the Version table by dynamically extracting unique versions
-    from all student JSON files.
+    Seeds the Version table, guaranteeing that "Original" has version_id=1.
     """
     print("Seeding Versions...")
+
+    # --- Phase 1: Handle the "Original" version special case ---
+    # Check if the "Original" version already exists.
+    original_in_db = db.query(Version).filter_by(version_name="Original").first()
     
-    # 1. Load all student data
+    # If it doesn't exist, add it. Since this is the first operation on a
+    # clean table, it will be assigned ID 1 by the database.
+    if not original_in_db:
+        print("  - Adding special case: Original (ensuring ID 1)")
+        original_version = Version(version_name="Original")
+        db.add(original_version)
+        # We commit here to finalize this transaction before proceeding.
+        db.commit()
+    
+    # --- Phase 2: Handle all other versions found in data files ---
+    # 1. Load all student data to find all unique versions.
     all_student_data = load_json_files_from_dir(DATA_DIR / "students")
+    unique_versions = {student_data['version'] for student_data in all_student_data}
+    
+    # 2. Get a list of other versions, explicitly excluding "Original".
+    other_versions = sorted([v for v in unique_versions if v != "Original"])
 
-    # 2. Extract unique version names
-    unique_versions = set()
-    for student_data in all_student_data:
-        unique_versions.add(student_data['version'])
-
-    # 3. Add versions that are not already in the database
-    for name in sorted(list(unique_versions)): # Sort for consistent order
+    # 3. Add the remaining versions if they don't already exist.
+    for name in other_versions:
         exists = db.query(Version).filter_by(version_name=name).first()
         if not exists:
             new_version = Version(version_name=name)
             db.add(new_version)
             print(f"  - Added Version: {name}")
+
+    # Commit the rest of the new versions.
     db.commit()
 
 

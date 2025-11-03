@@ -23,12 +23,10 @@ function logout() {
 </script>
 
 <template>
-  <!-- 
-    The root nav element. 
-    - Vue's @click is the equivalent of Alpine's @click.
-    - We will manage state inside the <script> section.
-  -->
+
   <nav class="fixed top-0 left-0 right-0 z-50 bg-slate-900/60 backdrop-blur-lg border-b border-slate-700/50">
+    
+    <!-- PC/Tablet Menu -->
     <div class="w-full max-w-6xl mx-auto px-4">
       <div class="flex items-center justify-between h-20">
         
