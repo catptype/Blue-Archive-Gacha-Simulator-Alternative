@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import HomeView from '../views/Home.vue';
 import StudentView from '../views/Student.vue';
+import GachaView from '../views/Gacha.vue';
 import LoginView from '../views/Login.vue';
 import RegisterView from '../views/Register.vue';
 
@@ -14,6 +15,11 @@ const routes = [
     path: '/student',
     name: 'Student',
     component: StudentView,
+  },
+  {
+    path: '/gacha',
+    name: 'Gacha',
+    component: GachaView,
   },
   {
     path: '/login',

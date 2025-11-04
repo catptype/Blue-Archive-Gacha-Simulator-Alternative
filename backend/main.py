@@ -1,17 +1,18 @@
 import base64
 import hashlib
 
+from datetime import timedelta
 from fastapi import FastAPI, Depends, HTTPException, Request, status
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from typing import Optional
 
 from .util import auth, models, schemas
 from .util.cache import get_cache, Cache
 from .util.database import engine, get_db
-from datetime import timedelta
+from .util.schemas import create_student_response
 # models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
@@ -140,7 +141,126 @@ def get_students(
         
     return response_students
 
+@app.get("/api/banners/{banner_id}/details/", response_model=schemas.BannerDetailResponse)
+def get_banner_details(banner_id: int, request: Request, db: Session = Depends(get_db)):
+    # 1. Fetch the banner and its direct relationships efficiently.
+    db_banner = db.query(models.GachaBanner).options(
+        joinedload(models.GachaBanner.preset),
+        selectinload(models.GachaBanner.pickup_students).options(
+            joinedload(models.Student.school), joinedload(models.Student.version), joinedload(models.Student.asset)
+        ),
+        selectinload(models.GachaBanner.included_versions),
+        selectinload(models.GachaBanner.excluded_students)
+    ).filter(models.GachaBanner.banner_id == banner_id).first()
+
+    if not db_banner:
+        raise HTTPException(status_code=404, detail="Banner not found")
+
+    # 2. Get the criteria for filtering the student pool.
+    pickup_ids = {s.student_id for s in db_banner.pickup_students}
+    excluded_ids = {s.student_id for s in db_banner.excluded_students}
+    included_version_ids = {v.version_id for v in db_banner.included_versions}
+
+    # 3. Build and execute ONE query for the entire non-pickup pool.
+    # This is much more efficient than multiple queries for each rarity.
+    base_pool_query = db.query(models.Student).options(
+        joinedload(models.Student.school),
+        joinedload(models.Student.version),
+        joinedload(models.Student.asset)
+    ).filter(
+        models.Student.version_id_fk.in_(included_version_ids),
+        models.Student.student_id.not_in(pickup_ids),
+        models.Student.student_id.not_in(excluded_ids)
+    )
+
+    if not db_banner.banner_include_limited:
+        base_pool_query = base_pool_query.filter(models.Student.student_is_limited == False)
+
+    all_pool_students_db = base_pool_query.all()
+
+    # 4. Partition the results in Python.
+    nonpickup_r3_students_db = []
+    r2_students_db = []
+    r1_students_db = []
+    for student in all_pool_students_db:
+        if student.student_rarity == 3:
+            nonpickup_r3_students_db.append(student)
+        elif student.student_rarity == 2:
+            r2_students_db.append(student)
+        else: # Rarity 1
+            r1_students_db.append(student)
+
+    # 5. Assemble the final response object.
+    
+    # Filter pickups to only include 3-stars, matching the schema name
+    pickup_r3_students_db = [s for s in db_banner.pickup_students if s.student_rarity == 3]
+
+    # Convert all partitioned lists to the response schema format
+    pickup_r3_response = [create_student_response(s, request) for s in pickup_r3_students_db]
+    nonpickup_r3_response = [create_student_response(s, request) for s in nonpickup_r3_students_db]
+    r2_response = [create_student_response(s, request) for s in r2_students_db]
+    r1_response = [create_student_response(s, request) for s in r1_students_db]
+    
+    banner_image_url = str(request.url_for('serve_banner_image', banner_id=db_banner.banner_id)) if db_banner.banner_image else None
+
+    # Construct the final response model
+    final_response = schemas.BannerDetailResponse(
+        banner_id=db_banner.banner_id,
+        banner_name=db_banner.banner_name,
+        image_url=banner_image_url,
+        preset=schemas.GachaPresetSchema.model_validate(db_banner.preset),
+        pickup_r3_students=pickup_r3_response,
+        nonpickup_r3_students=nonpickup_r3_response,
+        r2_students=r2_response,
+        r1_students=r1_response
+    )
+
+    return final_response
+
 # --- Image Serving Endpoints (No changes needed here) ---
+@app.get("/image/banner/{banner_id}", name="serve_banner_image")
+def serve_banner_image(banner_id: int, request: Request, db: Session = Depends(get_db), cache: Cache = Depends(get_cache)):
+
+    cache_key = f"image:banner:{banner_id}"
+
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        print(f"CACHE HIT for {cache_key}")
+        image_bytes = base64.b64decode(cached_data['image_b64'])
+        etag = cached_data['etag']
+    else:
+        # 3. If cache miss, query the database
+        print(f"CACHE MISS for {cache_key}")
+        banner = db.query(models.GachaBanner).filter(models.GachaBanner.banner_id == banner_id).first()
+        if not banner or not banner.banner_image:
+            raise HTTPException(status_code=404, detail="School image not found")
+
+        image_bytes = banner.banner_image
+
+        etag = hashlib.sha1(image_bytes).hexdigest()
+        image_b64_string = base64.b64encode(image_bytes).decode("utf-8")
+
+        data_to_cache = {
+            "etag": etag,
+            "image_b64": image_b64_string
+        }
+        # Store in the application cache for 1 hour (3600 seconds)
+        cache.set(cache_key, data_to_cache, expire=3600)
+    
+    # 5. Check the browser's cache using the ETag
+    # The browser sends this header if it has a cached version.
+    if request.headers.get("if-none-match") == etag:
+        print(f"CACHE HIT (Browser - 304) for {cache_key}")
+        # A 304 response tells the browser to use its local copy.
+        return Response(status_code=304)
+
+    # 6. If it's a new request or the ETag doesn't match, send the full response
+    # and include headers that tell the browser to cache the image.
+    headers = {
+        "Cache-Control": "public, max-age=86400",  # Cache for 1 day
+        "ETag": etag
+    }
+    return Response(content=image_bytes, media_type="image/png", headers=headers)
 
 @app.get("/image/school/{school_id}", name="serve_school_image")
 def serve_school_image(school_id: int, request: Request, db: Session = Depends(get_db), cache: Cache = Depends(get_cache)):
