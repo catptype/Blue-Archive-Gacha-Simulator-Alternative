@@ -10,9 +10,14 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
 
+class RoleSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    role_name: str
+
 class UserSchema(UserBase):
     model_config = ConfigDict(from_attributes=True)
     user_id: int
+    role: RoleSchema
 
 class Token(BaseModel):
     access_token: str

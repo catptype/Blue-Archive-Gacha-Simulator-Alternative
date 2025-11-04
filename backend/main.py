@@ -23,11 +23,23 @@ def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.username == user.username).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Username already registered")
-        
-    hashed_password = auth.get_password_hash(user.password)
-    print("========= BREAKPOINT ===========")
+    
+    # --- START OF CHANGES ---
+    # Fetch the default role object from the database.
+    member_role = db.query(models.Role).filter(models.Role.role_name == "member").first()
+    if not member_role:
+        # This is a critical server error, the 'member' role should always exist.
+        raise HTTPException(status_code=500, detail="Default user role not configured on server.")
 
-    new_user = models.User(username=user.username, hashed_password=hashed_password)
+    hashed_password = auth.get_password_hash(user.password)
+    
+    new_user = models.User(
+        username=user.username, 
+        hashed_password=hashed_password,
+        role_id_fk=member_role.role_id  # Assign the foreign key ID
+    )
+    # --- END OF CHANGES ---
+
     db.add(new_user)
     db.commit()
     db.refresh(new_user)

@@ -10,7 +10,7 @@ from typing import List, Dict, Any
 from backend.database import SessionLocal, engine
 from .database import Base, SessionLocal
 from .models import (
-    Version, School, ImageAsset, Student, GachaPreset, GachaBanner
+    Version, School, ImageAsset, Student, GachaPreset, GachaBanner, User, Role
 )
 
 # Define the path to your data directory
@@ -24,6 +24,20 @@ def load_json_files_from_dir(directory: Path) -> List[Dict[str, Any]]:
             data_list.append(json.load(f))
     return data_list
 
+def seed_roles(db):
+    """Seeds the Role table with predefined roles."""
+    print("Seeding Roles...")
+    
+    # Define your application's roles here
+    roles_to_seed = ["superuser", "member"]
+    
+    for name in roles_to_seed:
+        exists = db.query(Role).filter_by(role_name=name).first()
+        if not exists:
+            new_role = Role(role_name=name)
+            db.add(new_role)
+            print(f"  - Added Role: {name}")
+    db.commit()
 
 def seed_versions(db):
     """
@@ -209,6 +223,7 @@ def main():
 
     # Use a session that is automatically closed
     with SessionLocal() as db:
+        seed_roles(db)
         seed_versions(db)
         seed_schools(db)
         seed_students(db)

@@ -34,11 +34,19 @@ banner_exclude_association = Table('banner_exclude_association', Base.metadata,
 # You would typically implement authentication separately (e.g., with OAuth2/JWT).
 # This model serves as a placeholder for the foreign key relationships.
 
+# --- ADD THIS NEW MODEL ---
+class Role(Base):
+    __tablename__ = 'role_table'
+    role_id = Column(Integer, primary_key=True, index=True)
+    role_name = Column(String, unique=True, nullable=False)
+
 class User(Base):
     __tablename__ = 'user_table'
     user_id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
+    role_id_fk = Column(Integer, ForeignKey('role_table.role_id'), nullable=False)
+    role = relationship("Role")
 
 
 # ==============================================================================
