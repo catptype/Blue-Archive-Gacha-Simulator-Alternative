@@ -1,9 +1,9 @@
+import bcrypt
 import os
+
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from jose import JWTError, jwt
-
-import bcrypt
 
 # --- Configuration ---
 # You should use environment variables for these in a real application

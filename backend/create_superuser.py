@@ -1,6 +1,6 @@
-from .database import SessionLocal, engine
-from .models import User, Role # <-- Add Role
-from .auth import get_password_hash
+from .util.database import SessionLocal, engine
+from .util.models import User, Role # <-- Add Role
+from .util.auth import get_password_hash
 import argparse
 
 def main():
