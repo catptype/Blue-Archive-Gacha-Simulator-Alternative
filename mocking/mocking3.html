@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gacha Simulator - Dynamic Angle</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600&family=Roboto:wght@400&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Roboto', sans-serif; }
+        .font-poppins { font-family: 'Poppins', sans-serif; }
+        .hero-bg {
+            clip-path: polygon(0 0, 100% 0, 100% 85%, 0% 100%);
+        }
+        @media (min-width: 768px) {
+            .hero-bg {
+                clip-path: polygon(0 0, 80% 0, 60% 100%, 0% 100%);
+            }
+        }
+        .action-card {
+            background: rgba(10, 10, 20, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .pull-btn-primary {
+            background-color: #be185d; /* pink-700 */
+            box-shadow: 0 0 20px rgba(219, 39, 119, 0.5);
+        }
+    </style>
+</head>
+<body class="w-full h-screen overflow-hidden bg-gray-900 text-white">
+
+    <div class="w-full h-full relative">
+        <!-- Background Hero -->
+        <div class="absolute inset-0 w-full md:w-3/4 h-3/4 md:h-full hero-bg">
+            <img src="https://placehold.co/1920x1080/1e293b/ffffff?text=DYNAMIC+HERO+ART" class="w-full h-full object-cover" alt="Hero Art">
+            <div class="absolute inset-0 bg-black/10"></div>
+        </div>
+
+        <!-- UI Content -->
+        <div class="relative w-full h-full flex items-end">
+            <div class="w-full p-4 md:p-0 md:w-1/2 md:absolute md:top-1/2 md:right-8 md:-translate-y-1/2">
+                <div class="action-card rounded-xl p-6">
+                    <!-- Banner Title -->
+                    <h1 class="font-poppins text-4xl mb-2">Crimson Catalyst</h1>
+                    <p class="text-gray-300 mb-6">Unleash the power of the new limited-time hero!</p>
+                    
+                    <!-- Banner Navigation -->
+                    <div class="flex items-center gap-4 mb-6">
+                        <button class="p-2 bg-white/5 rounded-full hover:bg-white/10"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg></button>
+                        <div class="w-full h-24 bg-cover bg-center rounded-lg" style="background-image: url('https://placehold.co/600x300/be185d/ffffff?text=Active+Banner');"></div>
+                        <button class="p-2 bg-white/5 rounded-full hover:bg-white/10"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></svg></button>
+                    </div>
+                    
+                    <!-- Pull Buttons -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <button class="py-4 text-lg font-poppins rounded-lg bg-gray-600 hover:bg-gray-500 transition-colors">1 Pull</button>
+                        <button class="py-4 text-lg font-poppins rounded-lg pull-btn-primary hover:bg-pink-600 transition-colors">10 Pull</button>
+                    </div>
+                    <button class="w-full mt-4 text-center text-pink-300 hover:underline">View Drop Rates</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
