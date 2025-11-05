@@ -1,7 +1,7 @@
 <script setup lang="ts">
     import { ref } from 'vue';
     import { useRouter } from 'vue-router';
-    import axios from 'axios';
+    import apiClient from '../services/client'; 
 
     const username = ref('');
     const password = ref('');
@@ -9,8 +9,6 @@
     const error = ref('');
     const isLoading = ref(false);
     const router = useRouter();
-
-    const API_BASE_URL = 'http://127.0.0.1:8000'; // Or your FastAPI URL
 
     const handleRegister = async () => {
         // Clear previous errors on a new submission
@@ -32,16 +30,16 @@
 
         try {
             // The API request remains the same, sending only the final password
-            await axios.post(`${API_BASE_URL}/api/register/`, {
-                username: username.value,
-                password: password.value,
+            await apiClient.post('/register/', {
+              username: username.value,
+              password: password.value,
             });
 
             // On success, redirect the user to the login page to sign in.
             router.push('/login');
 
         } catch (err: any) {
-            if (axios.isAxiosError(err) && err.response) {
+            if (apiClient.isAxiosError(err) && err.response) {
                 error.value = err.response.data.detail || 'An unexpected error occurred.';
             } else {
                 error.value = 'Registration failed. Please try again later.';

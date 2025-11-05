@@ -1,17 +1,17 @@
 <script setup lang="ts">
     import { ref, computed, onMounted } from 'vue';
-    import axios from 'axios';
     import Background from '../components/Background.vue';
     import HeroPreview from '../components/gacha/HeroPreview.vue';
     import BannerCarousel from '../components/gacha/BannerCarousel.vue';
     import ActionPanel from '../components/gacha/ActionPanel.vue';
     import GachaResults from '../components/gacha/GachaResults.vue';
     import DetailsModal from '../components/gacha/DetailsModal.vue';
+    import apiClient from '../services/client'; 
 
     interface Banner { banner_id: number; banner_name: string; image_url: string; }
-    interface Student { student_id: number; student_rarity: number; /* ... other fields */ }
+    interface Student { student_id: number; student_rarity: number; }
 
-    const API_BASE_URL = 'http://127.0.0.1:8000/api';
+    // const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
     const banners = ref<Banner[]>([]);
     const activeIndex = ref(0);
@@ -22,7 +22,7 @@
     const activeBanner = computed(() => banners.value[activeIndex.value] || null);
 
     onMounted(async () => {
-        const response = await axios.get(`${API_BASE_URL}/banners/`);
+        const response = await apiClient.get('/banners/'); 
         banners.value = response.data;
     });
 
@@ -31,15 +31,13 @@
     
     const bannerId = activeBanner.value.banner_id;
     
-    // --- THIS IS THE ONLY CHANGE ---
-    // Determine which endpoint to call based on the amount.
     const pullType = amount === 10 ? 'pull_ten' : 'pull_single';
-    const apiUrl = `${API_BASE_URL}/gacha/${bannerId}/${pullType}`;
-    // --- END OF CHANGE ---
+    // const apiUrl = `${API_BASE_URL}/gacha/${bannerId}/${pullType}`;
 
     try {
       // The rest of the logic is the same.
-      const response = await axios.post(apiUrl);
+      // const response = await axios.post(apiUrl);
+      const response = await apiClient.post(`/gacha/${bannerId}/${pullType}`); 
       gachaResults.value = response.data.results;
       isResultsModalVisible.value = true;
     } catch (error) {

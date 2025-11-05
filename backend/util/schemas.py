@@ -44,6 +44,9 @@ class SchoolSchema(BaseModel):
     school_id: int
     school_name: str
 
+class SchoolResponse(SchoolSchema):
+    image_url: Optional[str] = None
+
 # This schema is used when reading a Student from the database
 class StudentSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -53,7 +56,7 @@ class StudentSchema(BaseModel):
     student_rarity: int
     student_is_limited: bool
     version: VersionSchema
-    school: SchoolSchema
+    school: SchoolResponse
 
 # --- Gacha Schemas ---
 
@@ -91,8 +94,7 @@ class AchievementSchema(BaseModel):
 # --- Response Schemas ---
 # These define the final JSON output, including dynamically generated fields.
 
-class SchoolResponse(SchoolSchema):
-    image_url: Optional[str] = None
+
 
 class StudentResponse(StudentSchema):
     portrait_url: Optional[str] = None

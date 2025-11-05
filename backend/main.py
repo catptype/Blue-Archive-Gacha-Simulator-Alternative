@@ -15,9 +15,10 @@ from .util.cache import get_cache, Cache
 from .util.database import engine, get_db
 from .util.schemas import create_student_response
 from .util.GachaEngine import GachaEngine
-# models.Base.metadata.create_all(bind=engine)
+from .util.admin import init_admin
 
 app = FastAPI()
+init_admin(app)
 
 # --- CORS Middleware ---
 origins = ["http://localhost:5173", "http://localhost:5173"]

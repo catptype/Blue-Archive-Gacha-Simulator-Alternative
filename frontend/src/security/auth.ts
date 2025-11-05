@@ -1,22 +1,11 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import axios from 'axios';
 import router from '../router';
-
-// The base URL for your API
-const API_BASE_URL = 'http://127.0.0.1:8000';
+import apiClient from '../services/client'; 
 
 export const useAuthStore = defineStore('auth', () => {
     const token = ref(localStorage.getItem('token') || null);
     const user = ref(JSON.parse(localStorage.getItem('user') || 'null'));
-
-    // Set up Axios to automatically send the token with every request
-    axios.interceptors.request.use(config => {
-        if (token.value) {
-            config.headers.Authorization = `Bearer ${token.value}`;
-        }
-        return config;
-    });
 
     function setToken(newToken: string) {
         token.value = newToken;
@@ -37,7 +26,12 @@ export const useAuthStore = defineStore('auth', () => {
 
     async function login(formData: URLSearchParams) {
         // FastAPI's OAuth2PasswordRequestForm expects form data, not JSON
-        const response = await axios.post(`${API_BASE_URL}/api/token`, formData);
+        const response = await apiClient.post('/token', formData, {
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        });
+
         setToken(response.data.access_token);
         // After login, you would typically fetch the user's details
         // For now, we'll just store the username from the form.
@@ -46,7 +40,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     function logout() {
         clearAuth();
-        router.push('/login'); // Redirect to login page
+        router.push('/'); // Redirect to home page
     }
 
     return { token, user, login, logout };

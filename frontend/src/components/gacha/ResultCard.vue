@@ -24,8 +24,12 @@
         };
     }
 
-    const props = defineProps<{ student: Student }>();
-    const isFlipped = ref(false);
+    // const props = defineProps<{ student: Student }>();
+    // const isFlipped = ref(false);
+    const props = defineProps<{ 
+      student: Student;
+      isFlipped: boolean; 
+    }>();
 
     // --- Computed Properties for Dynamic Styling ---
 
@@ -61,10 +65,10 @@
 
     // --- Animation Control ---
 
-    const reveal = () => { isFlipped.value = true; };
+    // const reveal = () => { isFlipped.value = true; };
 
     // Expose the reveal method so the parent component can call it
-    defineExpose({ reveal });
+    // defineExpose({ reveal });
 </script>
 
 <template>

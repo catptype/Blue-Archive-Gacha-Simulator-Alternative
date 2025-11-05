@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import axios from 'axios';
 import Background from '../components/Background.vue';
 import SchoolList from '../components/student/SchoolFilter.vue';
 import StudentCarousel from '../components/student/StudentCarousel.vue';
+import apiClient from '../services/client'; 
 
 interface School { school_id: number; school_name: string; image_url: string; }
 interface Student { student_id: number; student_name: string; portrait_url: string; }
@@ -16,13 +16,11 @@ const isLoadingSchools = ref(true);
 const isLoadingStudents = ref(true);
 const isSidebarExpanded = ref(false); // State for sidebar expansion
 
-const API_BASE_URL = 'http://127.0.0.1:8000/api'; // Or your FastAPI URL
-
 // --- Methods ---
 async function fetchSchools() {
   isLoadingSchools.value = true;
   try {
-    const response = await axios.get(`${API_BASE_URL}/schools/`);
+    const response = await apiClient.get('/schools/'); 
     schools.value = response.data;
     // Automatically select the first school on load
     if (schools.value.length > 0) {
@@ -38,7 +36,7 @@ async function handleSchoolSelect(school: School) {
   selectedSchoolId.value = school.school_id;
   isLoadingStudents.value = true;
   try {
-    const response = await axios.get(`${API_BASE_URL}/students/?school_id=${school.school_id}&version_id=1`);
+    const response = await apiClient.get(`/students/?school_id=${school.school_id}&version_id=1`);
     students.value = response.data;
   } catch (error) { console.error('Failed to fetch students:', error); }
   finally { isLoadingStudents.value = false; }

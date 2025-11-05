@@ -40,6 +40,9 @@ class Role(Base):
     role_id = Column(Integer, primary_key=True, index=True)
     role_name = Column(String, unique=True, nullable=False)
 
+    def __str__(self) -> str:
+        return self.role_name
+
 class User(Base):
     __tablename__ = 'user_table'
     user_id = Column(Integer, primary_key=True, index=True)
@@ -47,6 +50,9 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     role_id_fk = Column(Integer, ForeignKey('role_table.role_id'), nullable=False)
     role = relationship("Role")
+
+    def __str__(self) -> str:
+        return self.username
 
 
 # ==============================================================================
@@ -58,11 +64,17 @@ class Version(Base):
     version_id = Column(Integer, primary_key=True, index=True)
     version_name = Column(String, unique=True, nullable=False)
 
+    def __str__(self) -> str:
+        return self.version_name
+
 class School(Base):
     __tablename__ = 'student_school_table'
     school_id = Column(Integer, primary_key=True, index=True)
     school_name = Column(String, unique=True, nullable=False)
     school_image = Column(LargeBinary, nullable=True)
+
+    def __str__(self) -> str:
+        return self.school_name
 
 class ImageAsset(Base):
     __tablename__ = 'image_asset_table'
@@ -87,6 +99,10 @@ class Student(Base):
     
     __table_args__ = (UniqueConstraint('student_name', 'version_id_fk', name='_student_version_uc'),)
 
+    def __str__(self) -> str:
+        return f"{self.student_name} ({self.version})"
+
+
 class GachaPreset(Base):
     __tablename__ = 'gacha_preset_table'
     preset_id = Column(Integer, primary_key=True, index=True)
@@ -95,6 +111,9 @@ class GachaPreset(Base):
     preset_r3_rate = Column(Numeric(4, 1), nullable=False)
     preset_r2_rate = Column(Numeric(4, 1), nullable=False)
     preset_r1_rate = Column(Numeric(4, 1), nullable=False)
+
+    def __str__(self) -> str:
+        return f"{self.preset_name} ( {self.preset_pickup_rate} | ★★★ {self.preset_r3_rate} | ★★ {self.preset_r2_rate} | ★ {self.preset_r1_rate} )"
 
 class GachaBanner(Base):
     __tablename__ = 'gacha_banner_table'
