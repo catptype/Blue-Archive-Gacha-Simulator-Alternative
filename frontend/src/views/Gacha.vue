@@ -6,6 +6,7 @@
     import BannerCarousel from '../components/gacha/BannerCarousel.vue';
     import ActionPanel from '../components/gacha/ActionPanel.vue';
     import GachaResults from '../components/gacha/GachaResults.vue';
+    import DetailsModal from '../components/gacha/DetailsModal.vue';
 
     interface Banner { banner_id: number; banner_name: string; image_url: string; }
     interface Student { student_id: number; student_rarity: number; /* ... other fields */ }
@@ -66,6 +67,11 @@
       :results="gachaResults"
       @close="isResultsModalVisible = false"
     />
-    <!-- DetailsModal would be added here similarly -->
+    
+    <DetailsModal
+      v-if="isDetailsModalVisible && activeBanner"
+      :banner-id="activeBanner.banner_id"
+      @close="isDetailsModalVisible = false"
+    />
   </div>
 </template>

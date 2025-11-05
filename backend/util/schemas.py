@@ -112,4 +112,3 @@ def create_student_response(student: Student, request: Request) -> StudentRespon
         student_response.portrait_url = str(request.url_for('serve_student_image', student_id=student.student_id, image_type='portrait'))
         student_response.artwork_url = str(request.url_for('serve_student_image', student_id=student.student_id, image_type='artwork'))
     return student_response
-

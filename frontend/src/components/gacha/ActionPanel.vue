@@ -12,13 +12,13 @@
     </button>
     <div class="flex items-center gap-4">
       <div class="flex flex-col items-center gap-1">
-        <button @click="emit('pull', 1)" class="w-36 px-4 py-3 flex justify-center bg-slate-600 hover:bg-slate-500 rounded-lg text-xl font-bold transition-colors gap-2">
+        <button @click="emit('pull', 1)" class="w-40 px-4 py-3 flex justify-center bg-slate-600 hover:bg-slate-500 rounded-lg text-xl font-bold transition-colors gap-2">
           PULL x1
         </button>
         <span class="text-sm text-slate-400">120 Pyroxene</span>
       </div>
       <div class="flex flex-col items-center gap-1">
-        <button @click="emit('pull', 10)" class="w-36 px-4 py-3 flex justify-center bg-cyan-600 hover:bg-cyan-500 rounded-lg text-xl font-bold transition-colors gap-2">
+        <button @click="emit('pull', 10)" class="w-40 px-4 py-3 flex justify-center bg-cyan-600 hover:bg-cyan-500 rounded-lg text-xl font-bold transition-colors gap-2">
           PULL x10
         </button>
         <span class="text-sm text-slate-400">1200 Pyroxene</span>

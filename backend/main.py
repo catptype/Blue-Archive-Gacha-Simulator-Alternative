@@ -166,7 +166,7 @@ def get_students(
 
 @app.get("/api/banners/{banner_id}/details/", response_model=schemas.BannerDetailResponse)
 def get_banner_details(banner_id: int, request: Request, db: Session = Depends(get_db)):
-    # 1. Fetch the banner and its direct relationships efficiently.
+    # 1. Fetching logic is unchanged.
     db_banner = db.query(models.GachaBanner).options(
         joinedload(models.GachaBanner.preset),
         selectinload(models.GachaBanner.pickup_students).options(
@@ -179,21 +179,16 @@ def get_banner_details(banner_id: int, request: Request, db: Session = Depends(g
     if not db_banner:
         raise HTTPException(status_code=404, detail="Banner not found")
 
-    # 2. Get the criteria for filtering the student pool.
+    # 2. & 3. Querying and partitioning logic is also unchanged.
     pickup_ids = {s.student_id for s in db_banner.pickup_students}
     excluded_ids = {s.student_id for s in db_banner.excluded_students}
     included_version_ids = {v.version_id for v in db_banner.included_versions}
 
-    # 3. Build and execute ONE query for the entire non-pickup pool.
-    # This is much more efficient than multiple queries for each rarity.
     base_pool_query = db.query(models.Student).options(
-        joinedload(models.Student.school),
-        joinedload(models.Student.version),
-        joinedload(models.Student.asset)
+        joinedload(models.Student.school), joinedload(models.Student.version), joinedload(models.Student.asset)
     ).filter(
         models.Student.version_id_fk.in_(included_version_ids),
-        models.Student.student_id.not_in(pickup_ids),
-        models.Student.student_id.not_in(excluded_ids)
+        models.Student.student_id.not_in(pickup_ids | excluded_ids)
     )
 
     if not db_banner.banner_include_limited:
@@ -201,37 +196,32 @@ def get_banner_details(banner_id: int, request: Request, db: Session = Depends(g
 
     all_pool_students_db = base_pool_query.all()
 
-    # 4. Partition the results in Python.
-    nonpickup_r3_students_db = []
-    r2_students_db = []
-    r1_students_db = []
-    for student in all_pool_students_db:
-        if student.student_rarity == 3:
-            nonpickup_r3_students_db.append(student)
-        elif student.student_rarity == 2:
-            r2_students_db.append(student)
-        else: # Rarity 1
-            r1_students_db.append(student)
-
-    # 5. Assemble the final response object.
+    nonpickup_r3_students_db = [s for s in all_pool_students_db if s.student_rarity == 3]
+    r2_students_db = [s for s in all_pool_students_db if s.student_rarity == 2]
+    r1_students_db = [s for s in all_pool_students_db if s.student_rarity == 1]
     
-    # Filter pickups to only include 3-stars, matching the schema name
     pickup_r3_students_db = [s for s in db_banner.pickup_students if s.student_rarity == 3]
 
-    # Convert all partitioned lists to the response schema format
+    # --- 4. ASSEMBLE THE RESPONSE (The Updated Part) ---
+
+    # Step 4a: Create the base banner data using the BannerResponse schema
+    # This automatically handles banner_id, banner_name, and the nested preset.
+    base_banner_response = schemas.BannerResponse.model_validate(db_banner)
+    
+    # Step 4b: Manually add the computed image_url
+    base_banner_response.image_url = str(request.url_for('serve_banner_image', banner_id=db_banner.banner_id)) if db_banner.banner_image else None
+
+    # Step 4c: Convert all the partitioned student lists to the correct response schema
     pickup_r3_response = [create_student_response(s, request) for s in pickup_r3_students_db]
     nonpickup_r3_response = [create_student_response(s, request) for s in nonpickup_r3_students_db]
     r2_response = [create_student_response(s, request) for s in r2_students_db]
     r1_response = [create_student_response(s, request) for s in r1_students_db]
-    
-    banner_image_url = str(request.url_for('serve_banner_image', banner_id=db_banner.banner_id)) if db_banner.banner_image else None
 
-    # Construct the final response model
+    # Step 4d: Construct the final BannerDetailResponse
+    # We unpack the base response and add the student lists.
+    # Pydantic's `model_dump()` is the new way to get a dict from a model instance.
     final_response = schemas.BannerDetailResponse(
-        banner_id=db_banner.banner_id,
-        banner_name=db_banner.banner_name,
-        image_url=banner_image_url,
-        preset=schemas.GachaPresetSchema.model_validate(db_banner.preset),
+        **base_banner_response.model_dump(),
         pickup_r3_students=pickup_r3_response,
         nonpickup_r3_students=nonpickup_r3_response,
         r2_students=r2_response,
