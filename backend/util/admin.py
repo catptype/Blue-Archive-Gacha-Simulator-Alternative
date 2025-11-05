@@ -102,6 +102,12 @@ class GachaPresetAdmin(ModelView, model=models.GachaPreset):
     icon = "fa-solid fa-cogs"
     column_list = ["preset_id", "preset_name", "preset_pickup_rate", "preset_r3_rate", "preset_r2_rate", "preset_r1_rate"]
 
+class AchievementAdmin(ModelView, model=models.Achievement):
+    name = "Achievement"
+    name_plural = "Achievements"
+    icon = "fa-solid fa-trophy"
+    column_list = ["achievement_id", "achievement_category", "achievement_name", "achievement_description", "achievement_key"]
+
 # --- 3. Create the Initialization Function ---
 def init_admin(app: FastAPI):
     """Creates and mounts the SQLAdmin interface to the FastAPI app."""
@@ -120,3 +126,4 @@ def init_admin(app: FastAPI):
     admin.add_view(SchoolAdmin)
     admin.add_view(GachaPresetAdmin)
     admin.add_view(GachaBannerAdmin)
+    admin.add_view(AchievementAdmin)
