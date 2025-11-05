@@ -27,16 +27,26 @@
     });
 
     const handlePull = async (amount: 1 | 10) => {
-        if (!activeBanner.value) return;
-        const bannerId = activeBanner.value.banner_id;
-        try {
-            const response = await axios.post(`${API_BASE_URL}/gacha/${bannerId}/pull/${amount}`);
-            gachaResults.value = response.data.results;
-            isResultsModalVisible.value = true;
-        } catch (error) {
-            console.error("Gacha pull failed:", error);
-        }
-    };
+    if (!activeBanner.value) return;
+    
+    const bannerId = activeBanner.value.banner_id;
+    
+    // --- THIS IS THE ONLY CHANGE ---
+    // Determine which endpoint to call based on the amount.
+    const pullType = amount === 10 ? 'pull_ten' : 'pull_single';
+    const apiUrl = `${API_BASE_URL}/gacha/${bannerId}/${pullType}`;
+    // --- END OF CHANGE ---
+
+    try {
+      // The rest of the logic is the same.
+      const response = await axios.post(apiUrl);
+      gachaResults.value = response.data.results;
+      isResultsModalVisible.value = true;
+    } catch (error) {
+      console.error("Gacha pull failed:", error);
+      // You could add user-facing error handling here
+    }
+  };
 </script>
 
 <template>

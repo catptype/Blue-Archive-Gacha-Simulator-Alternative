@@ -5,14 +5,16 @@ from datetime import timedelta
 from fastapi import FastAPI, Depends, HTTPException, Request, status
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session, joinedload, selectinload
-from typing import Optional
+from typing import Optional, List
 
 from .util import auth, models, schemas
+from .util.auth import get_optional_current_user
 from .util.cache import get_cache, Cache
 from .util.database import engine, get_db
 from .util.schemas import create_student_response
+from .util.GachaEngine import GachaEngine
 # models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
@@ -20,6 +22,71 @@ app = FastAPI()
 # --- CORS Middleware ---
 origins = ["http://localhost:5173", "http://localhost:5173"]
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+
+# --- Helper Functions ---
+def _perform_pull(
+        banner_id: int,
+        amount: int,
+        db: Session,
+        request: Request,
+        current_user: models.User | None # <-- Accept the optional user object
+    ) -> schemas.GachaPullResponse:
+    """
+    Internal function that uses the GachaEngine and conditionally saves
+    transactions based on whether a user is present.
+    """
+    # ... (fetching the banner and instantiating the engine is the same)
+    banner = db.query(models.GachaBanner).options(
+        joinedload(models.GachaBanner.preset),
+        selectinload(models.GachaBanner.pickup_students),
+        selectinload(models.GachaBanner.excluded_students),
+        selectinload(models.GachaBanner.included_versions)
+    ).filter(models.GachaBanner.banner_id == banner_id).first()
+    
+    if not banner:
+        raise HTTPException(status_code=404, detail="Banner not found")
+    
+    engine = GachaEngine(banner=banner, db=db)
+    pulled_students_orm = engine.draw(amount)
+
+    # --- THIS IS THE KEY CHANGE ---
+    # Only try to save transactions if a user object was provided.
+    if current_user:
+        print(f"User '{current_user.username}' is pulling. Saving transactions...")
+    else:
+        print("Guest is pulling. Skipping transaction history.")
+    # --- END OF CHANGE ---
+
+    # Logic to decorate the results
+    pickup_ids = {s.student_id for s in banner.pickup_students}
+    final_results: List[schemas.GachaResultStudent] = []
+
+    for student in pulled_students_orm:
+        # 1. Create the base StudentResponse
+        student_response = create_student_response(student, request)
+        
+        # 2. Determine the context-specific flags
+        is_pickup = student.student_id in pickup_ids
+
+        if current_user:
+            is_new = True # Mock: In a real app, check user inventory
+        else:
+            is_new = False
+
+        # 3. Create the final GachaResultStudent instance
+        result_student = schemas.GachaResultStudent(
+            **student_response.model_dump(), # Unpack the base student data
+            is_pickup=is_pickup,
+            is_new=is_new
+        )
+        final_results.append(result_student)
+    
+    # 4. Return an instance of the main response schema
+    return schemas.GachaPullResponse(
+        success=True,
+        results=final_results,
+        unlocked_achievements=[] # Mocked for now
+    )
 
 # --- Authentication Endpoints ---
 
@@ -229,6 +296,29 @@ def get_banner_details(banner_id: int, request: Request, db: Session = Depends(g
     )
 
     return final_response
+
+# --- UPDATE the pull endpoints to use the new dependency ---
+@app.post("/api/gacha/{banner_id}/pull_single", response_model=schemas.GachaPullResponse)
+def perform_gacha_pull_single(
+    banner_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User | None = Depends(get_optional_current_user) # Inject optional user
+):
+    return _perform_pull(
+        banner_id=banner_id, amount=1, db=db, request=request, current_user=current_user
+    )
+
+@app.post("/api/gacha/{banner_id}/pull_ten", response_model=schemas.GachaPullResponse)
+def perform_gacha_pull_ten(
+    banner_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: models.User | None = Depends(get_optional_current_user) # Inject optional user
+):
+    return _perform_pull(
+        banner_id=banner_id, amount=10, db=db, request=request, current_user=current_user
+    )
 
 # --- Image Serving Endpoints (No changes needed here) ---
 @app.get("/image/banner/{banner_id}", name="serve_banner_image")

@@ -91,7 +91,6 @@ class GachaPreset(Base):
     __tablename__ = 'gacha_preset_table'
     preset_id = Column(Integer, primary_key=True, index=True)
     preset_name = Column(String, unique=True, nullable=False)
-    # Use Numeric for precision, like Django's DecimalField
     preset_pickup_rate = Column(Numeric(4, 1), nullable=False)
     preset_r3_rate = Column(Numeric(4, 1), nullable=False)
     preset_r2_rate = Column(Numeric(4, 1), nullable=False)

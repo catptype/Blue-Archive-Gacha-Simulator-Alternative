@@ -55,7 +55,7 @@ class StudentSchema(BaseModel):
     version: VersionSchema
     school: SchoolSchema
 
-# --- Banner Schemas ---
+# --- Gacha Schemas ---
 
 class GachaPresetSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -75,6 +75,19 @@ class BannerSchema(BaseModel):
     banner_include_limited: bool
     preset: GachaPresetSchema
 
+# --- Achievement Schemas ---
+class AchievementSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    achievement_id: int
+    achievement_name: str
+    achievement_description: str
+    # achievement_image = Column(LargeBinary, nullable=True)
+    achievement_category: str
+    achievement_key: str
+
+
+
 # --- Response Schemas ---
 # These define the final JSON output, including dynamically generated fields.
 
@@ -89,10 +102,25 @@ class BannerResponse(BannerSchema):
     image_url: Optional[str] = None # We will compute this URL
 
 class BannerDetailResponse(BannerResponse):
-    pickup_r3_students: List[StudentResponse] = []
-    nonpickup_r3_students: List[StudentResponse] = []
-    r2_students: List[StudentResponse] = []
-    r1_students: List[StudentResponse] = []
+    pickup_r3_students: List[StudentResponse]
+    nonpickup_r3_students: List[StudentResponse]
+    r2_students: List[StudentResponse]
+    r1_students: List[StudentResponse]
+
+
+class GachaResultStudent(StudentResponse):
+    is_pickup: bool
+    is_new: bool
+
+class AchievementResponse(AchievementSchema):
+    image_url: Optional[str] = None
+    
+class GachaPullResponse(BaseModel):
+    success: bool
+    results: List[GachaResultStudent]
+    unlocked_achievements: List[AchievementResponse]
+
+
 
 def create_student_response(student: Student, request: Request) -> StudentResponse:
     school_response = SchoolResponse.model_validate(student.school)
