@@ -10,7 +10,7 @@ from typing import List, Dict, Any
 from backend.util.database import SessionLocal, engine
 from .util.database import Base, SessionLocal
 from .util.models import (
-    Version, School, ImageAsset, Student, GachaPreset, GachaBanner, User, Role
+    Version, School, ImageAsset, Student, GachaPreset, GachaBanner, User, Role, Achievement
 )
 
 # Define the path to your data directory
@@ -212,6 +212,36 @@ def seed_banners(db):
             print(f"  - Added Banner: {name}")
     db.commit()
 
+def seed_achievements(db):
+    """Seeds the Achievement table from the achievements/ directory."""
+    print("\nSeeding Achievements...")
+    all_achievement_data = load_json_files_from_dir(DATA_DIR / "achievements")
+    
+    for ach_data in all_achievement_data:
+        key = ach_data.get('key')
+        if not key:
+            print("  - SKIPPING achievement file with no 'key'.")
+            continue
+
+        # Check if an achievement with this unique key already exists
+        exists = db.query(Achievement).filter_by(achievement_key=key).first()
+        if not exists:
+            # Decode the image if it exists
+            image_b64 = ach_data.get('image_base64')
+            image_bytes = base64.b64decode(image_b64) if image_b64 else None
+
+            # Create the new Achievement instance
+            new_achievement = Achievement(
+                achievement_key=key,
+                achievement_category=ach_data.get('category', 'MILESTONE'), # Use default if missing
+                achievement_name=ach_data.get('name', 'Unnamed Achievement'),
+                achievement_description=ach_data.get('description'),
+                achievement_image=image_bytes
+            )
+            db.add(new_achievement)
+            print(f"  - Added Achievement: {new_achievement.achievement_name}")
+            
+    db.commit()
 
 def main():
     """Main function to run all seeding operations."""
@@ -229,6 +259,7 @@ def main():
         seed_students(db)
         seed_presets(db)
         seed_banners(db)
+        seed_achievements(db)
     print("\nDatabase seeding complete!")
 
 
