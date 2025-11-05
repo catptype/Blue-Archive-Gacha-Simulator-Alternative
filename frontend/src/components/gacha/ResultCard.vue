@@ -1,5 +1,11 @@
 <script setup lang="ts">
     import { ref, computed } from 'vue';
+    import gachaR3Image from '../../assets/student_card/gacha_r3.png';
+    import gachaR2Image from '../../assets/student_card/gacha_r2.png';
+    import gachaR1Image from '../../assets/student_card/gacha_r1.png';
+    import yellowStarImage from '../../assets/student_card/star_yellow.png'
+    import newImage from '../../assets/student_card/imgfont_new.png'
+    import pickupImage from '../../assets/student_card/imgfont_pickup.png'
 
     // Define a more detailed interface for the student prop
     interface Student {
@@ -24,9 +30,9 @@
     // --- Computed Properties for Dynamic Styling ---
 
     const cardBackImage = computed(() => {
-        if (props.student.student_rarity === 3) return '/images/web/gacha_r3.png';
-        if (props.student.student_rarity === 2) return '/images/web/gacha_r2.png';
-        return '/images/web/gacha_r1.png';
+        if (props.student.student_rarity === 3) return gachaR3Image;
+        if (props.student.student_rarity === 2) return gachaR2Image;
+        return gachaR1Image;
     });
 
     const rarityBorderClass = computed(() => ({
@@ -97,7 +103,7 @@
               <div class="relative h-7 mb-2 flex items-center justify-center">
                 <div class="absolute left-0 top-1/2 w-[25%] h-[2px]" :class="rarityLineClass"></div>
                 <div class="relative h-full w-19 flex-shrink-0 flex items-center justify-center gap-0 rounded-full shadow-inner-sm" :class="rarityPillClass">
-                  <img v-for="i in student.student_rarity" :key="i" src="/images/web/star_yellow.png" alt="star" class="w-4 h-4">
+                  <img v-for="i in student.student_rarity" :key="i" :src="yellowStarImage" alt="star" class="w-4 h-4">
                 </div>
                 <div class="absolute right-0 top-1/2 w-[25%] h-[2px]" :class="rarityLineClass"></div>
               </div>
@@ -111,12 +117,12 @@
 
         <!-- "PICKUP" Indicator -->
         <div v-if="student.is_pickup" class="absolute bottom-0 right-0 w-24 h-24 transform -rotate-12 translate-x-6 translate-y-16 pointer-events-none">
-          <img src="/images/web/imgfont_pickup.png" alt="Pickup">
+          <img :src="pickupImage" alt="Pickup">
         </div>
         
         <!-- "NEW" Indicator -->
         <div v-if="student.is_new" class="absolute top-0 left-0 w-20 h-20 transform -rotate-12 -translate-x-5 -translate-y-5 pointer-events-none">
-          <img src="/images/web/imgfont_new.png" alt="New">
+          <img :src="newImage" alt="New">
         </div>
 
         <!-- 3-Star Special Effects -->

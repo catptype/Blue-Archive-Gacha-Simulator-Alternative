@@ -67,6 +67,14 @@ class GachaPresetSchema(BaseModel):
     preset_r2_rate: Decimal
     preset_r1_rate: Decimal
 
+class BannerSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    banner_id: int
+    banner_name: str
+    banner_include_limited: bool
+    preset: GachaPresetSchema
+
 # --- Response Schemas ---
 # These define the final JSON output, including dynamically generated fields.
 
@@ -77,20 +85,14 @@ class StudentResponse(StudentSchema):
     portrait_url: Optional[str] = None
     artwork_url: Optional[str] = None
 
-class BannerDetailResponse(BaseModel):
-    # This schema defines the exact structure the frontend wants.
-    banner_id: int
-    banner_name: str
+class BannerResponse(BannerSchema):
     image_url: Optional[str] = None # We will compute this URL
-    
-    # Nested object for the preset details
-    preset: GachaPresetSchema
-    
-    # Lists of students, using the StudentResponse schema you already have
-    pickup_r3_students: List[StudentResponse]
-    nonpickup_r3_students: List[StudentResponse]
-    r2_students: List[StudentResponse]
-    r1_students: List[StudentResponse]
+
+class BannerDetailResponse(BannerResponse):
+    pickup_r3_students: List[StudentResponse] = []
+    nonpickup_r3_students: List[StudentResponse] = []
+    r2_students: List[StudentResponse] = []
+    r1_students: List[StudentResponse] = []
 
 def create_student_response(student: Student, request: Request) -> StudentResponse:
     school_response = SchoolResponse.model_validate(student.school)

@@ -75,6 +75,31 @@ def clear_all_caches(cache: Cache = Depends(get_cache)):
 
 # --- API Endpoints ---
 
+@app.get("/api/banners/", response_model=list[schemas.BannerResponse])
+def get_banners(request: Request, db: Session = Depends(get_db), cache: Cache = Depends(get_cache)):
+    cache_key = "all_banners"
+
+    response_banners = cache.get(cache_key)
+    if response_banners:
+        print(f"CACHE HIT ({cache_key})")
+        return response_banners
+
+    print(f"CACHE MISS ({cache_key})")
+    db_banners = db.query(models.GachaBanner).all()
+
+    response_banners = []
+    for banner in db_banners:
+        banner_data = schemas.BannerResponse.model_validate(banner)
+        if banner.banner_image:
+            banner_data.image_url = str(request.url_for('serve_banner_image', banner_id=banner.banner_id))
+        response_banners.append(banner_data)
+
+    banners_to_cache = [b.dict() for b in response_banners]
+    cache.set(cache_key, banners_to_cache, expire=300)
+        
+    return response_banners
+    
+
 @app.get("/api/schools/", response_model=list[schemas.SchoolResponse])
 def get_schools(request: Request, db: Session = Depends(get_db), cache: Cache = Depends(get_cache)):
     cache_key = "all_schools"
@@ -89,9 +114,7 @@ def get_schools(request: Request, db: Session = Depends(get_db), cache: Cache = 
     
     response_schools = []
     for school in db_schools:
-        # Use model_validate instead of from_orm
         school_data = schemas.SchoolResponse.model_validate(school)
-        school_data.school_id = school.school_id
         if school.school_image:
             school_data.image_url = str(request.url_for('serve_school_image', school_id=school.school_id))
         response_schools.append(school_data)
