@@ -196,6 +196,16 @@ class UserInventoryAdmin(ModelView, model=models.UserInventory):
         "First obtain (local time)": lambda model, _: format_datetime_as_local(model, "inventory_first_obtained_on"),
     }
 
+class GachaTransactionAdmin(ModelView, model=models.GachaTransaction):
+    name = "Transaction"
+    name_plural = "Transactions"
+    icon = "fa-solid fa-receipt"
+    column_list = ["transaction_id", "user", "student", "transaction_create_on", "create_on (local time)"]
+
+    column_formatters = {
+        "create_on (local time)": lambda model, _: format_datetime_as_local(model, "transaction_create_on"),
+    }
+    
 # --- 3. Create the Initialization Function ---
 def init_admin(app: FastAPI):
     """Creates and mounts the SQLAdmin interface to the FastAPI app."""
@@ -216,3 +226,4 @@ def init_admin(app: FastAPI):
     admin.add_view(GachaBannerAdmin)
     admin.add_view(AchievementAdmin)
     admin.add_view(UserInventoryAdmin)
+    admin.add_view(GachaTransactionAdmin)

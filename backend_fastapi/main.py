@@ -50,37 +50,82 @@ def _perform_pull(
     engine = GachaEngine(banner=banner, db=db)
     pulled_students_orm = engine.draw(amount)
 
-    # --- THIS IS THE KEY CHANGE ---
-    # Only try to save transactions if a user object was provided.
-    if current_user:
-        print(f"User '{current_user.username}' is pulling. Saving transactions...")
-    else:
-        print("Guest is pulling. Skipping transaction history.")
-    # --- END OF CHANGE ---
-
-    # Logic to decorate the results
+    # Initialize variables for the response
     pickup_ids = {s.student_id for s in banner.pickup_students}
     final_results: List[schemas.GachaResultStudent] = []
 
-    for student in pulled_students_orm:
-        # 1. Create the base StudentResponse
-        student_response = create_student_response(student, request)
-        
-        # 2. Determine the context-specific flags
-        is_pickup = student.student_id in pickup_ids
+    # --- THIS IS THE KEY CHANGE ---
+    # Only try to save transactions if a user object was provided.
+    if current_user:
+        print(f"User '{current_user.username}' is pulling. Processing inventory and transactions...")
 
-        if current_user:
-            is_new = True # Mock: In a real app, check user inventory
-        else:
-            is_new = False
-
-        # 3. Create the final GachaResultStudent instance
-        result_student = schemas.GachaResultStudent(
-            **student_response.model_dump(), # Unpack the base student data
-            is_pickup=is_pickup,
-            is_new=is_new
+        # A) EFFICIENTLY PRE-FETCH the user's existing inventory for the pulled students.
+        # This avoids querying the database inside the loop (prevents N+1 problem).
+        pulled_student_ids = [s.student_id for s in pulled_students_orm]
+        user_inventory_query = db.query(models.UserInventory).filter(
+            models.UserInventory.user_id_fk == current_user.user_id,
+            models.UserInventory.student_id_fk.in_(pulled_student_ids)
         )
-        final_results.append(result_student)
+        # Create a dictionary for fast lookups: {student_id: UserInventory_object}
+        inventory_map = {item.student_id_fk: item for item in user_inventory_query}
+
+        # B) LOOP through the gacha results to process each one.
+        for student in pulled_students_orm:
+
+            # i. Create a transaction record for every pull.
+            new_transaction = models.GachaTransaction(
+                user_id_fk=current_user.user_id,
+                banner_id_fk=banner_id,
+                student_id_fk=student.student_id
+            )
+            db.add(new_transaction)
+
+            # ii. Check if this is a new student FOR THE USER.
+            # This is determined by looking at the inventory state *before* this pull started.
+            is_new = student.student_id not in inventory_map
+
+            # iii. Update or create the inventory entry.
+            inventory_item = inventory_map.get(student.student_id)
+            if inventory_item:
+                # The user already has this student, so just increment the count.
+                inventory_item.inventory_num_obtained += 1
+            else:
+                # This is the first time the user has ever obtained this student.
+                # Create a new inventory record.
+                new_inventory_item = models.UserInventory(
+                    user_id_fk=current_user.user_id,
+                    student_id_fk=student.student_id,
+                    inventory_num_obtained=1
+                )
+                db.add(new_inventory_item)
+                # IMPORTANT: Add the newly created item to our map. This correctly
+                # handles the case where the user pulls the same *new* student
+                # multiple times in a single 10-pull. The first one will be marked
+                # as `is_new=True`, and the second one will be found here and incremented.
+                inventory_map[student.student_id] = new_inventory_item
+            
+            # iv. Build the decorated result for the frontend response.
+            student_response = create_student_response(student, request)
+            result_student = schemas.GachaResultStudent(
+                **student_response.model_dump(),
+                is_pickup=(student.student_id in pickup_ids),
+                is_new=is_new
+            )
+            final_results.append(result_student)
+
+        # C) COMMIT all changes (new transactions, new/updated inventory) at once.
+        db.commit()
+    else:
+        print("Guest is pulling. Skipping transaction history.")
+        for student in pulled_students_orm:
+            student_response = create_student_response(student, request)
+            result_student = schemas.GachaResultStudent(
+                **student_response.model_dump(),
+                is_pickup=(student.student_id in pickup_ids),
+                is_new=False # Guests never have "new" students
+            )
+            final_results.append(result_student)
+    # --- END OF CHANGE ---
     
     # 4. Return an instance of the main response schema
     return schemas.GachaPullResponse(
