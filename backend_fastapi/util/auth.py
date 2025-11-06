@@ -15,7 +15,7 @@ from .database import get_db
 # You should use environment variables for these in a real application
 SECRET_KEY = os.environ.get("SECRET_KEY", "a_very_secret_key_that_should_be_in_env")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 # --- NEW: An OAuth2 scheme that does NOT automatically throw an error ---
 # This is the key. If the Authorization header is missing, it will pass `None` to the dependency.

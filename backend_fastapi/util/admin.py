@@ -8,8 +8,9 @@ from markupsafe import Markup
 # Import your database engine and models
 from .database import engine, SessionLocal
 from . import models
-from .auth import SECRET_KEY, ALGORITHM # Import secrets from your auth module
+from .auth import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token # Import secrets from your auth module
 from .timezone import format_datetime_as_local
+from datetime import timedelta
 
 # --- 1. Define the Authentication Backend ---
 class AdminAuth(AuthenticationBackend):
@@ -25,8 +26,9 @@ class AdminAuth(AuthenticationBackend):
             user = db.query(models.User).filter(models.User.username == username).first()
             if user and verify_password(password, user.hashed_password) and user.role.role_name == "superuser":
                 # Create a token for the session
-                from .auth import create_access_token
-                token = create_access_token(data={"sub": user.username})
+                # from .auth import create_access_token
+                expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+                token = create_access_token(data={"sub": user.username}, expires_delta=expires)
                 request.session.update({"token": token})
                 return True
         return False
