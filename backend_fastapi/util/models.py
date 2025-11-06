@@ -93,9 +93,9 @@ class Student(Base):
     school_id_fk = Column(Integer, ForeignKey('student_school_table.school_id'))
     asset_id_fk = Column(Integer, ForeignKey('image_asset_table.asset_id'), nullable=True)
 
-    version = relationship("Version", lazy='subquery')
-    school = relationship("School", lazy='subquery')
-    asset = relationship("ImageAsset", uselist=False, lazy='subquery')
+    version = relationship("Version", lazy='selectin')
+    school = relationship("School", lazy='selectin')
+    asset = relationship("ImageAsset", uselist=False, lazy='joined')
     
     __table_args__ = (UniqueConstraint('student_name', 'version_id_fk', name='_student_version_uc'),)
 
@@ -123,12 +123,12 @@ class GachaBanner(Base):
     banner_include_limited = Column(Boolean, default=False)
     preset_id_fk = Column(Integer, ForeignKey('gacha_preset_table.preset_id'), nullable=True)
     
-    preset = relationship("GachaPreset")
+    preset = relationship("GachaPreset", lazy='joined')
     
     # Many-to-Many relationships defined using the association tables
-    included_versions = relationship("Version", secondary=banner_version_association)
-    pickup_students = relationship("Student", secondary=banner_pickup_association, lazy='subquery')
-    excluded_students = relationship("Student", secondary=banner_exclude_association, lazy='subquery')
+    included_versions = relationship("Version", secondary=banner_version_association, lazy='selectin')
+    pickup_students = relationship("Student", secondary=banner_pickup_association, lazy='selectin')
+    excluded_students = relationship("Student", secondary=banner_exclude_association, lazy='selectin')
 
 class GachaTransaction(Base):
     __tablename__ = 'gacha_transaction_table'
@@ -152,8 +152,8 @@ class UserInventory(Base):
     user_id_fk = Column(Integer, ForeignKey('user_table.user_id'))
     student_id_fk = Column(Integer, ForeignKey('student_table.student_id'))
 
-    user = relationship("User")
-    student = relationship("Student")
+    user = relationship("User", lazy='subquery')
+    student = relationship("Student", lazy='subquery')
     
     __table_args__ = (UniqueConstraint('user_id_fk', 'student_id_fk', name='_user_student_uc'),)
 

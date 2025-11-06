@@ -9,6 +9,7 @@ from markupsafe import Markup
 from .database import engine, SessionLocal
 from . import models
 from .auth import SECRET_KEY, ALGORITHM # Import secrets from your auth module
+from .timezone import format_datetime_as_local
 
 # --- 1. Define the Authentication Backend ---
 class AdminAuth(AuthenticationBackend):
@@ -174,7 +175,24 @@ class UserInventoryAdmin(ModelView, model=models.UserInventory):
     name = "Inventory"
     name_plural = "Inventories"
     icon = "fa-solid fa-box-archive"
-    column_list = ["inventory_id", "user", "student"]
+    column_list = ["inventory_id", "user", "Portrait", "student", "inventory_num_obtained", "inventory_first_obtained_on", "First obtain (local time)"]
+
+    @staticmethod
+    def _format_portrait(model, _, size: int = 40) -> Markup:
+        student = model.student
+        if student and student.asset:
+            html_string = (
+                f'<a href="/admin/student/details/{student.student_id}" title="{student}">'
+                f'  <img src="/image/student/{student.student_id}/portrait" width="{size}" style="border-radius: 4px; margin: 2px;">'
+                f'</a>'
+            )
+            return Markup(html_string)
+        return ""
+    
+    column_formatters = {
+        "Portrait": lambda model, _: UserInventoryAdmin._format_portrait(model, _, size=40),
+        "First obtain (local time)": lambda model, _: format_datetime_as_local(model, "inventory_first_obtained_on"),
+    }
 
 # --- 3. Create the Initialization Function ---
 def init_admin(app: FastAPI):
