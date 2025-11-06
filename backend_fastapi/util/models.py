@@ -93,9 +93,9 @@ class Student(Base):
     school_id_fk = Column(Integer, ForeignKey('student_school_table.school_id'))
     asset_id_fk = Column(Integer, ForeignKey('image_asset_table.asset_id'), nullable=True)
 
-    version = relationship("Version")
-    school = relationship("School")
-    asset = relationship("ImageAsset", uselist=False)
+    version = relationship("Version", lazy='subquery')
+    school = relationship("School", lazy='subquery')
+    asset = relationship("ImageAsset", uselist=False, lazy='subquery')
     
     __table_args__ = (UniqueConstraint('student_name', 'version_id_fk', name='_student_version_uc'),)
 
@@ -127,8 +127,8 @@ class GachaBanner(Base):
     
     # Many-to-Many relationships defined using the association tables
     included_versions = relationship("Version", secondary=banner_version_association)
-    pickup_students = relationship("Student", secondary=banner_pickup_association)
-    excluded_students = relationship("Student", secondary=banner_exclude_association)
+    pickup_students = relationship("Student", secondary=banner_pickup_association, lazy='subquery')
+    excluded_students = relationship("Student", secondary=banner_exclude_association, lazy='subquery')
 
 class GachaTransaction(Base):
     __tablename__ = 'gacha_transaction_table'

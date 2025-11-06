@@ -3,6 +3,7 @@ from sqladmin import Admin, ModelView
 from sqladmin.authentication import AuthenticationBackend
 from starlette.requests import Request
 from jose import jwt
+from markupsafe import Markup
 
 # Import your database engine and models
 from .database import engine, SessionLocal
@@ -94,7 +95,68 @@ class GachaBannerAdmin(ModelView, model=models.GachaBanner):
     name = "Banner"
     name_plural = "Banners"
     icon = "fa-solid fa-bullhorn"
-    column_list = ["banner_id", "banner_name", "preset"]
+    column_list = ["banner_id", "banner_image", "banner_name", "preset", "included_versions", "Pickups", "Excluded"]
+
+    @staticmethod
+    def _format_pickups(model, _, size: int = 40) -> Markup:
+        """
+        A reusable static method to generate the HTML for pickup student images.
+        Takes an optional 'size' argument for flexibility.
+        """
+        html_string = ''.join(
+            f'<a href="/admin/student/details/{student.student_id}" title="{student}">'
+            f'  <img src="/image/student/{student.student_id}/portrait" width="{size}" style="border-radius: 4px; margin: 2px;">'
+            f'</a>'
+            for student in model.pickup_students if student.asset
+        )
+        return Markup(html_string)
+    
+    @staticmethod
+    def _format_excluded(model, _, size: int = 40) -> Markup:
+        """
+        A reusable static method to generate the HTML for pickup student images.
+        Takes an optional 'size' argument for flexibility.
+        """
+        html_string = ''.join(
+            f'<a href="/admin/student/details/{student.student_id}" title="{student}">'
+            f'  <img src="/image/student/{student.student_id}/portrait" width="{size}" style="border-radius: 4px; margin: 2px;">'
+            f'</a>'
+            for student in model.excluded_students if student.asset
+        )
+        return Markup(html_string)
+
+    column_formatters = {
+        "banner_image": lambda model, _: Markup(
+            f'<img src="/image/banner/{model.banner_id}" width="120">' # Assumes you create this endpoint
+        ) if model.banner_image else "",
+
+        "Pickups": lambda model, _: GachaBannerAdmin._format_pickups(model, _, size=40),
+        "Excludes": lambda model, _: GachaBannerAdmin._format_excluded(model, _, size=40),
+    }
+
+    column_details_list = [
+        models.GachaBanner.banner_id,
+        models.GachaBanner.banner_name,
+        models.GachaBanner.preset,
+        models.GachaBanner.banner_include_limited,
+        models.GachaBanner.included_versions,
+        "Pickups",
+        "Excludes"
+    ]
+
+    column_formatters_detail = {
+        "Pickups": lambda model, _: GachaBannerAdmin._format_pickups(model, _, size=60),
+        "Excludes": lambda model, _: GachaBannerAdmin._format_excluded(model, _, size=60),
+    }
+
+    form_columns = [
+        models.GachaBanner.banner_name,
+        models.GachaBanner.preset,
+        models.GachaBanner.banner_include_limited,
+        models.GachaBanner.included_versions,
+        models.GachaBanner.pickup_students,
+        models.GachaBanner.excluded_students,
+    ]
 
 class GachaPresetAdmin(ModelView, model=models.GachaPreset):
     name = "Preset"
@@ -107,6 +169,12 @@ class AchievementAdmin(ModelView, model=models.Achievement):
     name_plural = "Achievements"
     icon = "fa-solid fa-trophy"
     column_list = ["achievement_id", "achievement_category", "achievement_name", "achievement_description", "achievement_key"]
+
+class UserInventoryAdmin(ModelView, model=models.UserInventory):
+    name = "Inventory"
+    name_plural = "Inventories"
+    icon = "fa-solid fa-box-archive"
+    column_list = ["inventory_id", "user", "student"]
 
 # --- 3. Create the Initialization Function ---
 def init_admin(app: FastAPI):
@@ -127,3 +195,4 @@ def init_admin(app: FastAPI):
     admin.add_view(GachaPresetAdmin)
     admin.add_view(GachaBannerAdmin)
     admin.add_view(AchievementAdmin)
+    admin.add_view(UserInventoryAdmin)

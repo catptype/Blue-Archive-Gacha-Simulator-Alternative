@@ -4,3 +4,4 @@ sqladmin
 bcrypt
 python-jose
 redis
+markupsafe

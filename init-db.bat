@@ -5,6 +5,6 @@ CALL "%USERPROFILE%\miniconda3\Scripts\activate.bat"
 REM ✅ Activate conda environment
 call conda activate hobby
 
-python -m backend.create_db
+python -m backend_fastapi.create_db
 
 pause
