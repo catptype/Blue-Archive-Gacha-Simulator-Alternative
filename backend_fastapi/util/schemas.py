@@ -1,10 +1,12 @@
 # backend/schemas.py
 from decimal import Decimal
 from pydantic import BaseModel, ConfigDict
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 from .models import Student
 from fastapi import Request
+
+from datetime import datetime
 
 # --- User Schemas ---
 
@@ -85,7 +87,6 @@ class AchievementSchema(BaseModel):
     achievement_id: int
     achievement_name: str
     achievement_description: str
-    # achievement_image = Column(LargeBinary, nullable=True)
     achievement_category: str
     achievement_key: str
 
@@ -122,7 +123,22 @@ class GachaPullResponse(BaseModel):
     results: List[GachaResultStudent]
     unlocked_achievements: List[AchievementResponse]
 
+# --- Dashboard schemas ---
 
+# --- NEW: Schema for the KPI Widget ---
+class DashboardKpiResponse(BaseModel):
+    total_pulls: int
+    total_pyroxene_spent: int
+    r3_count: int
+    r2_count: int
+    r1_count: int
+
+# --- NEW: Schema for the Top Students Widget ---
+# This defines a single entry in the "Top Students" list.
+class TopStudentEntry(BaseModel):
+    student: StudentResponse # We reuse the existing detailed StudentResponse
+    count: int
+    first_obtained: datetime
 
 def create_student_response(student: Student, request: Request) -> StudentResponse:
     school_response = SchoolResponse.model_validate(student.school)

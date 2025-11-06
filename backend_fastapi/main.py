@@ -2,13 +2,14 @@ import base64
 import hashlib
 
 from datetime import timedelta
-from fastapi import FastAPI, Depends, HTTPException, Request, status
+from fastapi import APIRouter, FastAPI, Depends, HTTPException, Request, status
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session, joinedload, selectinload
 from typing import Optional, List
-
+from sqlalchemy import func, desc
+from collections import Counter
 from .util import auth, models, schemas
 from .util.auth import get_optional_current_user, get_required_current_user
 from .util.cache import get_cache, Cache
@@ -374,6 +375,73 @@ def perform_gacha_pull_ten(
     return _perform_pull(
         banner_id=banner_id, amount=10, db=db, request=request, current_user=current_user
     )
+
+@app.get("/api/dashboard/summary/kpis", response_model=schemas.DashboardKpiResponse)
+def get_dashboard_kpis(
+    current_user: models.User = Depends(get_required_current_user),
+    db: Session = Depends(get_db)
+):
+    # --- PERFORMANCE IMPROVEMENT: Fetch all rarities in a single, efficient query ---
+    rarity_pulls = db.query(models.Student.student_rarity).join(
+        models.GachaTransaction, models.GachaTransaction.student_id_fk == models.Student.student_id
+    ).filter(
+        models.GachaTransaction.user_id_fk == current_user.user_id
+    ).all()
+
+    # The result is a list of tuples, e.g., [(3,), (2,), (2,)].
+    # We use a Counter to efficiently count them.
+    rarity_counter = Counter(r[0] for r in rarity_pulls)
+    total_pulls = len(rarity_pulls)
+
+    # Return an instance of the Pydantic schema
+    return schemas.DashboardKpiResponse(
+        total_pulls=total_pulls,
+        total_pyroxene_spent=total_pulls * 120,
+        r3_count=rarity_counter.get(3, 0),
+        r2_count=rarity_counter.get(2, 0),
+        r1_count=rarity_counter.get(1, 0),
+    )
+
+@app.get("/api/dashboard/summary/top-students/{rarity}", response_model=List[schemas.TopStudentEntry])
+def get_top_students_by_rarity(
+    rarity: int,
+    request: Request, # Add Request to build image URLs
+    current_user: models.User = Depends(get_required_current_user),
+    db: Session = Depends(get_db)
+):
+    # The database query is unchanged
+    top_students_query = (
+        db.query(
+            models.Student,
+            func.count(models.Student.student_id).label('count'),
+            func.min(models.GachaTransaction.transaction_create_on).label('first_obtained')
+        )
+        .join(models.GachaTransaction)
+        .filter(
+            models.GachaTransaction.user_id_fk == current_user.user_id,
+            models.Student.student_rarity == rarity
+        )
+        .group_by(models.Student.student_id)
+        .order_by(func.count(models.Student.student_id).desc(), func.min(models.GachaTransaction.transaction_create_on).asc())
+        .limit(3)
+        .all()
+    )
+    
+    # --- BUILD THE SCHEMA RESPONSE ---
+    response_data: List[schemas.TopStudentEntry] = []
+    for student_orm, count, first_obtained in top_students_query:
+        # 1. Reuse our helper to create the detailed StudentResponse
+        student_response = create_student_response(student_orm, request)
+        
+        # 2. Create an instance of our new TopStudentEntry schema
+        entry = schemas.TopStudentEntry(
+            student=student_response,
+            count=count,
+            first_obtained=first_obtained
+        )
+        response_data.append(entry)
+        
+    return response_data
 
 # --- Image Serving Endpoints (No changes needed here) ---
 @app.get("/image/banner/{banner_id}", name="serve_banner_image")
