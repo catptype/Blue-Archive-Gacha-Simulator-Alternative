@@ -139,9 +139,9 @@ class GachaTransaction(Base):
     banner_id_fk = Column(Integer, ForeignKey('gacha_banner_table.banner_id'))
     student_id_fk = Column(Integer, ForeignKey('student_table.student_id'))
 
-    user = relationship("User")
-    banner = relationship("GachaBanner")
-    student = relationship("Student")
+    user = relationship("User", lazy='selectin')
+    banner = relationship("GachaBanner", lazy='selectin')
+    student = relationship("Student", lazy='selectin')
 
 class UserInventory(Base):
     __tablename__ = 'user_inventory_table'
@@ -152,8 +152,8 @@ class UserInventory(Base):
     user_id_fk = Column(Integer, ForeignKey('user_table.user_id'))
     student_id_fk = Column(Integer, ForeignKey('student_table.student_id'))
 
-    user = relationship("User", lazy='subquery')
-    student = relationship("Student", lazy='subquery')
+    user = relationship("User", lazy='selectin')
+    student = relationship("Student", lazy='selectin')
     
     __table_args__ = (UniqueConstraint('user_id_fk', 'student_id_fk', name='_user_student_uc'),)
 
@@ -174,7 +174,7 @@ class UnlockAchievement(Base):
     user_id_fk = Column(Integer, ForeignKey('user_table.user_id'))
     achievement_id_fk = Column(Integer, ForeignKey('achievement_table.achievement_id'))
 
-    user = relationship("User")
-    achievement = relationship("Achievement")
+    user = relationship("User", lazy='selectin')
+    achievement = relationship("Achievement", lazy='selectin')
 
     __table_args__ = (UniqueConstraint('user_id_fk', 'achievement_id_fk', name='_user_achievement_uc'),)

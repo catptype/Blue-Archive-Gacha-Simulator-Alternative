@@ -200,9 +200,22 @@ class GachaTransactionAdmin(ModelView, model=models.GachaTransaction):
     name = "Transaction"
     name_plural = "Transactions"
     icon = "fa-solid fa-receipt"
-    column_list = ["transaction_id", "user", "student", "transaction_create_on", "create_on (local time)"]
+    column_list = ["transaction_id", "user", "Portrait", "student", "transaction_create_on", "create_on (local time)"]
+
+    @staticmethod
+    def _format_portrait(model, _, size: int = 40) -> Markup:
+        student = model.student
+        if student and student.asset:
+            html_string = (
+                f'<a href="/admin/student/details/{student.student_id}" title="{student}">'
+                f'  <img src="/image/student/{student.student_id}/portrait" width="{size}" style="border-radius: 4px; margin: 2px;">'
+                f'</a>'
+            )
+            return Markup(html_string)
+        return ""
 
     column_formatters = {
+        "Portrait": lambda model, _: GachaTransactionAdmin._format_portrait(model, _, size=40),
         "create_on (local time)": lambda model, _: format_datetime_as_local(model, "transaction_create_on"),
     }
     
