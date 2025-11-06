@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from typing import Optional, List
 
 from .util import auth, models, schemas
-from .util.auth import get_optional_current_user
+from .util.auth import get_optional_current_user, get_required_current_user
 from .util.cache import get_cache, Cache
 from .util.database import engine, get_db
 from .util.schemas import create_student_response
@@ -132,6 +132,15 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
         data={"sub": user.username}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+@app.get("/api/users/me", response_model=schemas.UserSchema)
+def read_users_me(current_user: models.User = Depends(get_required_current_user)):
+    """
+    Fetches the data for the currently authenticated user.
+    If the token is invalid or expired, this endpoint will automatically
+    return a 401 Unauthorized error.
+    """
+    return current_user
 
 @app.post("/api/admin/clear-cache", status_code=204)
 def clear_all_caches(cache: Cache = Depends(get_cache)):

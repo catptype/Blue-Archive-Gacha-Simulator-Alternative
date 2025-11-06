@@ -20,6 +20,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60
 # --- NEW: An OAuth2 scheme that does NOT automatically throw an error ---
 # This is the key. If the Authorization header is missing, it will pass `None` to the dependency.
 optional_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/token", auto_error=False)
+required_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/token")
 
 def get_password_hash(password: str) -> str:
     """Hashes a password and returns it as a string for database storage."""
@@ -67,4 +68,31 @@ def get_optional_current_user(token: str | None = Depends(optional_oauth2_scheme
         return None # Or raise credentials_exception
 
     user = db.query(models.User).filter(models.User.username == username).first()
+    return user
+
+def get_required_current_user(
+    token: str = Depends(required_oauth2_scheme), # Uses the new scheme
+    db: Session = Depends(get_db)
+) -> models.User:
+    """
+    Dependency that requires a valid token and returns the User object.
+    Raises HTTPException(401) if the token is missing or invalid.
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str | None = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except JWTError:
+        # This will now correctly propagate the error for invalid/expired tokens
+        raise credentials_exception
+
+    user = db.query(models.User).filter(models.User.username == username).first()
+    if user is None:
+        raise credentials_exception
     return user

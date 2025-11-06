@@ -38,10 +38,24 @@ export const useAuthStore = defineStore('auth', () => {
         setUser({ username: formData.get('username') });
     }
 
+    // --- NEW: Function to fetch user data from the protected endpoint ---
+    async function fetchUser() {
+        if (!token.value) return; // Don't try if there's no token
+        try {
+            const response = await apiClient.get('/users/me');
+            setUser(response.data); // Set the user with full data (id, role, etc.)
+        } catch (error) {
+            // This is where the magic happens!
+            // If the token is expired, this call will fail with a 401.
+            // The Axios response interceptor will catch it and call clearAuth().
+            console.error("Failed to fetch user. Token might be invalid.", error);
+        }
+    }
+
     function logout() {
         clearAuth();
         router.push('/'); // Redirect to home page
     }
 
-    return { token, user, login, logout };
+    return { token, user, login, logout, fetchUser };
 });
