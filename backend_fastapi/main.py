@@ -407,8 +407,22 @@ def get_top_students_by_rarity(
     rarity: int,
     request: Request, # Add Request to build image URLs
     current_user: models.User = Depends(get_required_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db), 
+    cache: Cache = Depends(get_cache)
 ):
+    
+    cache_key = f"dashboard:top_students:{current_user.user_id}:{rarity}"
+
+    # 3. Try to get the data from the cache first
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        print(f"CACHE HIT for {cache_key}")
+        # The data in the cache is already a JSON-serializable list of dicts.
+        # FastAPI will automatically validate it against the response_model.
+        return cached_data
+    
+    print(f"CACHE MISS for {cache_key}")
+    
     # The database query is unchanged
     top_students_query = (
         db.query(
@@ -440,6 +454,9 @@ def get_top_students_by_rarity(
             first_obtained=first_obtained
         )
         response_data.append(entry)
+
+    data_to_cache = [entry.model_dump(mode="json") for entry in response_data]
+    cache.set(cache_key, data_to_cache, expire=300) # Cache for 1 hour
         
     return response_data
 
