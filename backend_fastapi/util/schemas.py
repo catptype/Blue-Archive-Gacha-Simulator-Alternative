@@ -125,20 +125,35 @@ class GachaPullResponse(BaseModel):
 
 # --- Dashboard schemas ---
 
-# --- NEW: Schema for the KPI Widget ---
-class DashboardKpiResponse(BaseModel):
-    total_pulls: int
-    total_pyroxene_spent: int
+
+
+# --- NEW: Schema for the Top Students Widget ---
+# This defines a single entry in the "Top Students" list.
+class TopStudentResponse(BaseModel):
+    student: StudentResponse # We reuse the existing detailed StudentResponse
+    count: int
+    first_obtained: datetime
+
+class GachaTransactionResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
+    transaction_id: int
+    transaction_create_on: datetime
+    student: StudentResponse
+
+class OverallRarityChartResponse(BaseModel):
     r3_count: int
     r2_count: int
     r1_count: int
 
-# --- NEW: Schema for the Top Students Widget ---
-# This defines a single entry in the "Top Students" list.
-class TopStudentEntry(BaseModel):
-    student: StudentResponse # We reuse the existing detailed StudentResponse
-    count: int
-    first_obtained: datetime
+# --- NEW: Schema for the KPI Widget ---
+class DashboardKpiResponse(OverallRarityChartResponse):
+    total_pulls: int
+    total_pyroxene_spent: int
+
+class BannerBreakdownChartResponse(BaseModel):
+    # The keys of this dictionary will be the banner names
+    data: Dict[str, OverallRarityChartResponse]
 
 def create_student_response(student: Student, request: Request) -> StudentResponse:
     school_response = SchoolResponse.model_validate(student.school)

@@ -9,7 +9,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session, joinedload, selectinload
 from typing import Optional, List
 from sqlalchemy import func, desc
-from collections import Counter
+from collections import Counter, defaultdict
 from .util import auth, models, schemas
 from .util.auth import get_optional_current_user, get_required_current_user
 from .util.cache import get_cache, Cache
@@ -402,7 +402,7 @@ def get_dashboard_kpis(
         r1_count=rarity_counter.get(1, 0),
     )
 
-@app.get("/api/dashboard/summary/top-students/{rarity}", response_model=List[schemas.TopStudentEntry])
+@app.get("/api/dashboard/summary/top-students/{rarity}", response_model=List[schemas.TopStudentResponse])
 def get_top_students_by_rarity(
     rarity: int,
     request: Request, # Add Request to build image URLs
@@ -442,13 +442,13 @@ def get_top_students_by_rarity(
     )
     
     # --- BUILD THE SCHEMA RESPONSE ---
-    response_data: List[schemas.TopStudentEntry] = []
+    response_data: List[schemas.TopStudentResponse] = []
     for student_orm, count, first_obtained in top_students_query:
         # 1. Reuse our helper to create the detailed StudentResponse
         student_response = create_student_response(student_orm, request)
         
-        # 2. Create an instance of our new TopStudentEntry schema
-        entry = schemas.TopStudentEntry(
+        # 2. Create an instance of our new TopStudentResponse schema
+        entry = schemas.TopStudentResponse(
             student=student_response,
             count=count,
             first_obtained=first_obtained
@@ -459,6 +459,140 @@ def get_top_students_by_rarity(
     cache.set(cache_key, data_to_cache, expire=300) # Cache for 1 hour
         
     return response_data
+
+@app.get(
+    "/api/dashboard/summary/first-r3-pull", 
+    response_model=Optional[schemas.GachaTransactionResponse] # The response can be null
+)
+def get_first_r3_pull(
+    request: Request,
+    current_user: models.User = Depends(get_required_current_user),
+    db: Session = Depends(get_db),
+    cache: Cache = Depends(get_cache)
+):
+    """
+    Finds the user's first-ever 3-star pull transaction.
+    """
+    cache_key = f"dashboard:first_r3_pull:{current_user.user_id}"
+    
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        print(f"CACHE HIT for {cache_key}")
+        # The special value "NONE" indicates a cached "not found" result
+        return None if cached_data == "NONE" else cached_data
+
+    print(f"CACHE MISS for {cache_key}")
+    first_r3_pull_orm = (
+        db.query(models.GachaTransaction)
+        .join(models.Student)
+        .filter(
+            models.GachaTransaction.user_id_fk == current_user.user_id,
+            models.Student.student_rarity == 3
+        )
+        .order_by(models.GachaTransaction.transaction_create_on.asc())
+        .first()
+    )
+
+    if not first_r3_pull_orm:
+        # Cache the "not found" result for 1 hour to prevent re-querying
+        cache.set(cache_key, "NONE", expire=3600)
+        return None
+
+    # Build the Pydantic response object
+    student_response = create_student_response(first_r3_pull_orm.student, request)
+    response_data = schemas.GachaTransactionResponse(
+        transaction_id=first_r3_pull_orm.transaction_id,
+        transaction_create_on=first_r3_pull_orm.transaction_create_on,
+        student=student_response
+    )
+    
+    # Cache the successful result
+    cache.set(cache_key, response_data.model_dump(mode="json"), expire=None) # Cache forever
+
+    return response_data
+
+@app.get(
+    "/api/dashboard/summary/chart-overall-rarity", 
+    response_model=schemas.OverallRarityChartResponse
+)
+def get_chart_overall_rarity(
+    current_user: models.User = Depends(get_required_current_user),
+    db: Session = Depends(get_db),
+    cache: Cache = Depends(get_cache)
+):
+    cache_key = f"dashboard:chart_overall_rarity:{current_user.user_id}"
+    
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        print(f"CACHE HIT for {cache_key}")
+        return cached_data
+
+    print(f"CACHE MISS for {cache_key}")
+    
+    # Efficiently query just the rarity of all students the user has pulled
+    rarity_pulls = db.query(models.Student.student_rarity).join(
+        models.GachaTransaction, models.GachaTransaction.student_id_fk == models.Student.student_id
+    ).filter(
+        models.GachaTransaction.user_id_fk == current_user.user_id
+    ).all()
+    
+    # The result is a list of tuples like [(3,), (2,), (2,)]. Use Counter to count them.
+    rarity_counter = Counter(r[0] for r in rarity_pulls)
+    
+    response_data = schemas.OverallRarityChartResponse(
+        r3_count=rarity_counter.get(3, 0),
+        r2_count=rarity_counter.get(2, 0),
+        r1_count=rarity_counter.get(1, 0),
+    )
+    
+    # Cache the result for 1 hour
+    cache.set(cache_key, response_data.model_dump(), expire=300)
+
+    return response_data
+
+@app.get(
+    "/api/dashboard/summary/chart-banner-breakdown",
+    response_model=schemas.BannerBreakdownChartResponse
+)
+def get_chart_banner_breakdown(
+    current_user: models.User = Depends(get_required_current_user),
+    db: Session = Depends(get_db),
+    cache: Cache = Depends(get_cache)
+):
+    cache_key = f"dashboard:chart_banner_breakdown:{current_user.user_id}"
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        print(f"CACHE HIT for {cache_key}")
+        return cached_data
+
+    print(f"CACHE MISS for {cache_key}")
+    
+    # Efficiently fetch all pulls with banner name and student rarity
+    pulls = db.query(
+        models.GachaBanner.banner_name,
+        models.Student.student_rarity
+    ).join(
+        models.GachaTransaction, models.GachaTransaction.banner_id_fk == models.GachaBanner.banner_id
+    ).join(
+        models.Student, models.GachaTransaction.student_id_fk == models.Student.student_id
+    ).filter(models.GachaTransaction.user_id_fk == current_user.user_id).all()
+
+    # Process in Python for speed
+    pulls_by_banner = defaultdict(Counter)
+    for banner_name, rarity in pulls:
+        pulls_by_banner[banner_name][rarity] += 1
+    
+    response_data = {}
+    for banner_name, rarity_counter in pulls_by_banner.items():
+        response_data[banner_name] = schemas.OverallRarityChartResponse(
+            r3_count=rarity_counter.get(3, 0),
+            r2_count=rarity_counter.get(2, 0),
+            r1_count=rarity_counter.get(1, 0),
+        )
+    
+    final_response = schemas.BannerBreakdownChartResponse(data=response_data)
+    cache.set(cache_key, final_response.model_dump(), expire=300)
+    return final_response
 
 # --- Image Serving Endpoints (No changes needed here) ---
 @app.get("/image/banner/{banner_id}", name="serve_banner_image")

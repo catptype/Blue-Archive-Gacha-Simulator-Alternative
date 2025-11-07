@@ -5,8 +5,9 @@
     // Vue will only download the code for a widget when it's needed.
     const KpiWidget = defineAsyncComponent(() => import('./widgets/Kpi.vue'));
     const TopStudentsWidget = defineAsyncComponent(() => import('./widgets/TopStudents.vue'));
-    // const FirstPullWidget = defineAsyncComponent(() => import('./widgets/FirstPullWidget.vue'));
-    // const OverallRarityChart = defineAsyncComponent(() => import('./widgets/OverallRarityChart.vue'));
+    const FirstPullWidget = defineAsyncComponent(() => import('./widgets/FirstPullWidget.vue'));
+    const OverallRarityChart = defineAsyncComponent(() => import('./widgets/OverallRarityChart.vue'));
+    const BannerBreakdownChart = defineAsyncComponent(() => import('./widgets/BannerBreakdownChart.vue'));
 </script>
 
 <template>
@@ -35,7 +36,7 @@
       </div>
       <div class="lg:col-span-1">
         <Suspense>
-          <!-- <FirstPullWidget /> -->
+          <FirstPullWidget />
           <template #fallback>
             <div class="w-full h-48 flex items-center justify-center bg-slate-700/50 rounded-lg text-slate-400">
               Loading First Pull...
@@ -47,16 +48,30 @@
     
     <!-- Charts & Analysis Grid -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- ADD THIS WIDGET -->
       <Suspense>
-        <!-- <OverallRarityChart /> -->
+        <OverallRarityChart />
         <template #fallback>
           <div class="w-full h-72 flex items-center justify-center bg-slate-700/50 rounded-lg text-slate-400">
             Loading Chart...
           </div>
         </template>
       </Suspense>
-      <!-- ... other chart widgets inside their own <Suspense> boundaries ... -->
+
+      <!-- Banner Breakdown Chart Shell -->
+      <Suspense>
+        <BannerBreakdownChart />
+        <template #fallback>
+          <div class="w-full h-72 flex items-center justify-center bg-slate-700/50 rounded-lg text-slate-400">
+            Loading Chart...
+          </div>
+        </template>
+      </Suspense>
+      
+      <!-- Banner Activity Chart Shell -->
+      <div class="w-full h-72 flex items-center justify-center bg-slate-700/50 rounded-lg">Loading Chart...</div>
     </div>
+    <!-- ... other widgets ... -->
   </div>
 </template>
 
