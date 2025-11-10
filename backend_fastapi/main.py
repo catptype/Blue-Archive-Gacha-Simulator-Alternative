@@ -31,7 +31,8 @@ def _perform_pull(
         amount: int,
         db: Session,
         request: Request,
-        current_user: models.User | None # <-- Accept the optional user object
+        current_user: models.User | None,
+        cache: Cache
     ) -> schemas.GachaPullResponse:
     """
     Internal function that uses the GachaEngine and conditionally saves
@@ -116,6 +117,10 @@ def _perform_pull(
 
         # C) COMMIT all changes (new transactions, new/updated inventory) at once.
         db.commit()
+
+        cache_pattern = f"dashboard:*:{current_user.user_id}*"
+        cache.delete_by_pattern(cache_pattern)
+        
     else:
         print("Guest is pulling. Skipping transaction history.")
         for student in pulled_students_orm:
@@ -359,10 +364,11 @@ def perform_gacha_pull_single(
     banner_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: models.User | None = Depends(get_optional_current_user) # Inject optional user
+    current_user: models.User | None = Depends(get_optional_current_user), # Inject optional user
+    cache: Cache = Depends(get_cache)
 ):
     return _perform_pull(
-        banner_id=banner_id, amount=1, db=db, request=request, current_user=current_user
+        banner_id=banner_id, amount=1, db=db, request=request, current_user=current_user, cache=cache
     )
 
 @app.post("/api/gacha/{banner_id}/pull_ten", response_model=schemas.GachaPullResponse)
@@ -370,10 +376,11 @@ def perform_gacha_pull_ten(
     banner_id: int,
     request: Request,
     db: Session = Depends(get_db),
-    current_user: models.User | None = Depends(get_optional_current_user) # Inject optional user
+    current_user: models.User | None = Depends(get_optional_current_user), # Inject optional user
+    cache: Cache = Depends(get_cache)
 ):
     return _perform_pull(
-        banner_id=banner_id, amount=10, db=db, request=request, current_user=current_user
+        banner_id=banner_id, amount=10, db=db, request=request, current_user=current_user, cache=cache
     )
 
 @app.get("/api/dashboard/summary/kpis", response_model=schemas.DashboardKpiResponse)
@@ -593,6 +600,76 @@ def get_chart_banner_breakdown(
     final_response = schemas.BannerBreakdownChartResponse(data=response_data)
     cache.set(cache_key, final_response.model_dump(), expire=300)
     return final_response
+
+@app.get(
+    "/api/dashboard/summary/milestone-timeline",
+    response_model=List[schemas.MilestoneResponse]
+)
+def get_milestone_timeline(
+    request: Request,
+    current_user: models.User = Depends(get_required_current_user),
+    db: Session = Depends(get_db),
+    cache: Cache = Depends(get_cache)
+):
+    cache_key = f"dashboard:milestones:{current_user.user_id}"
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        print(f"CACHE HIT for {cache_key}")
+        return None if cached_data == "NONE" else cached_data
+
+    print(f"CACHE MISS for {cache_key}")
+    
+    # --- START OF THE NEW, EFFICIENT QUERY ---
+
+    # Step 1: Create a subquery (like a temporary virtual table) that numbers
+    # every single pull for the current user chronologically.
+    numbered_pulls_subquery = (
+        db.query(
+            models.GachaTransaction.student_id_fk,
+            func.row_number().over(order_by=models.GachaTransaction.transaction_create_on.asc()).label("pull_number")
+        )
+        .filter(models.GachaTransaction.user_id_fk == current_user.user_id)
+        .subquery()
+    )
+
+    # Step 2: Query from the subquery to find the *first* (minimum) pull number
+    # for each unique 3-star student.
+    milestone_query_results = (
+        db.query(
+            models.Student,
+            func.min(numbered_pulls_subquery.c.pull_number).label("first_pull_number")
+        )
+        .join(
+            numbered_pulls_subquery,
+            models.Student.student_id == numbered_pulls_subquery.c.student_id_fk
+        )
+        .filter(models.Student.student_rarity == 3)
+        .group_by(models.Student.student_id)
+        .order_by(func.min(numbered_pulls_subquery.c.pull_number).asc())
+        .all()
+    )
+
+    # --- END OF THE NEW QUERY ---
+
+    if not milestone_query_results:
+        cache.set(cache_key, "NONE", expire=300)
+        return []
+
+    # 3. Process the small, final result set into the response schema.
+    # The result is a list of tuples: (Student_object, pull_number)
+    milestone_pulls: List[schemas.MilestoneResponse] = []
+    for student_orm, pull_number in milestone_query_results:
+        student_response = create_student_response(student_orm, request)
+        milestone_entry = schemas.MilestoneResponse(
+            student=student_response,
+            pull_number=pull_number
+        )
+        milestone_pulls.append(milestone_entry)
+    
+    data_to_cache = [entry.model_dump(mode="json") for entry in milestone_pulls]
+    cache.set(cache_key, data_to_cache, expire=300)
+
+    return milestone_pulls
 
 # --- Image Serving Endpoints (No changes needed here) ---
 @app.get("/image/banner/{banner_id}", name="serve_banner_image")

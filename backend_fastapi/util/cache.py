@@ -2,6 +2,7 @@ import os
 import json
 from abc import ABC, abstractmethod
 import redis
+import fnmatch
 
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
 CACHE_TYPE = os.getenv("CACHE_TYPE", "memory").lower() # redis or memory
@@ -17,6 +18,10 @@ class Cache(ABC):
 
     @abstractmethod
     def delete(self, key: str):
+        pass
+
+    @abstractmethod
+    def delete_by_pattern(self, pattern: str):
         pass
 
 class InMemoryCache(Cache):
@@ -38,6 +43,13 @@ class InMemoryCache(Cache):
 
     def delete(self, key: str):
         if key in self._cache:
+            del self._cache[key]
+    
+    def delete_by_pattern(self, pattern: str):
+        # fnmatch is Python's standard library for unix-style wildcard matching
+        keys_to_delete = [k for k in self._cache if fnmatch.fnmatch(k, pattern)]
+        print(f"In-Memory Cache: Deleting {len(keys_to_delete)} keys matching '{pattern}'")
+        for key in keys_to_delete:
             del self._cache[key]
 
 class RedisCache(Cache):
@@ -62,6 +74,13 @@ class RedisCache(Cache):
         
     def delete(self, key: str):
         self.redis_client.delete(key)
+    
+    def delete_by_pattern(self, pattern: str):
+        # Use Redis's SCAN command for safe iteration in production
+        keys_to_delete = [key for key in self.redis_client.scan_iter(match=pattern)]
+        if keys_to_delete:
+            print(f"Redis Cache: Deleting {len(keys_to_delete)} keys matching '{pattern}'")
+            self.redis_client.delete(*keys_to_delete)
 
 
 # --- 4. The Factory and Dependency ---

@@ -155,6 +155,10 @@ class BannerBreakdownChartResponse(BaseModel):
     # The keys of this dictionary will be the banner names
     data: Dict[str, OverallRarityChartResponse]
 
+class MilestoneResponse(BaseModel):
+    student: StudentResponse # Reuse the detailed student response schema
+    pull_number: int
+
 def create_student_response(student: Student, request: Request) -> StudentResponse:
     school_response = SchoolResponse.model_validate(student.school)
     school_response.school_id = student.school.school_id

@@ -6,8 +6,10 @@
     const KpiWidget = defineAsyncComponent(() => import('./widgets/Kpi.vue'));
     const TopStudentsWidget = defineAsyncComponent(() => import('./widgets/TopStudents.vue'));
     const FirstPullWidget = defineAsyncComponent(() => import('./widgets/FirstPullWidget.vue'));
-    const OverallRarityChart = defineAsyncComponent(() => import('./widgets/OverallRarityChart.vue'));
-    const BannerBreakdownChart = defineAsyncComponent(() => import('./widgets/BannerBreakdownChart.vue'));
+    // const OverallRarityChart = defineAsyncComponent(() => import('./widgets/OverallRarityChart.vue'));
+    // const BannerBreakdownChart = defineAsyncComponent(() => import('./widgets/BannerBreakdownChart.vue'));
+    const RarityOriginChart = defineAsyncComponent(() => import('./widgets/RarityOriginChart.vue'));
+    const MilestoneTimelineWidget = defineAsyncComponent(() => import('./widgets/MilestoneTimelineWidget.vue'));
 </script>
 
 <template>
@@ -47,20 +49,11 @@
     </div>
     
     <!-- Charts & Analysis Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <!-- ADD THIS WIDGET -->
-      <Suspense>
-        <OverallRarityChart />
-        <template #fallback>
-          <div class="w-full h-72 flex items-center justify-center bg-slate-700/50 rounded-lg text-slate-400">
-            Loading Chart...
-          </div>
-        </template>
-      </Suspense>
+    <div class="grid grid-cols-1 gap-6">
 
-      <!-- Banner Breakdown Chart Shell -->
+      <!-- Barchart breakdown -->
       <Suspense>
-        <BannerBreakdownChart />
+        <RarityOriginChart />
         <template #fallback>
           <div class="w-full h-72 flex items-center justify-center bg-slate-700/50 rounded-lg text-slate-400">
             Loading Chart...
@@ -68,8 +61,15 @@
         </template>
       </Suspense>
       
-      <!-- Banner Activity Chart Shell -->
-      <div class="w-full h-72 flex items-center justify-center bg-slate-700/50 rounded-lg">Loading Chart...</div>
+      <Suspense>
+        <MilestoneTimelineWidget />
+        <template #fallback>
+          <div class="w-full h-48 flex items-center justify-center bg-slate-700/50 rounded-lg text-slate-400">
+            Loading Timeline...
+          </div>
+        </template>
+      </Suspense>
+      
     </div>
     <!-- ... other widgets ... -->
   </div>
