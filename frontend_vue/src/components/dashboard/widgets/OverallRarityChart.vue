@@ -20,68 +20,44 @@ const hasData = computed(() => chartSeries.value.some(value => value > 0));
 // The `options` object contains all the configuration for ApexCharts.
 // read https://apexcharts.com/docs/options/plotoptions/pie/
 const chartOptions = ref({
-  // `labels` corresponds to the `series` array.
-  labels: ['★★★', '★★', '★'],
-  
-  // `colors` for each slice of the doughnut.
-  colors: ['#f472b6', '#eab308', '#3b82f6'],
+        labels: ['★★★', '★★', '★'],
+        colors: ['#f472b6', '#eab308', '#3b82f6'],
+        chart: { type: 'donut', background: 'transparent' },
+        plotOptions: {
+          pie: { donut: { size: '33%' } }
+        },
+        
+        legend: {
+            position: 'top',
+            labels: { colors: '#cbd5e1' }, // slate-300
+            markers: { width: 12, height: 12 },
+            itemMargin: { horizontal: 5 }
+        },
 
-  // General chart settings
-  chart: {
-    type: 'donut',
-    background: 'transparent', // Ensure it uses our dark background
-    
-  },
 
-  plotOptions: {
-    pie: {
-      donut: {
-        size: '33%',
-      }
-    }
-  },
-  
-  // Data labels inside the doughnut slices
-  dataLabels: {
-    enabled: true,
-    style: {
-      fontSize: '16px',
-      fontWeight: 'bold',
-    },
-    dropShadow: {
-        enabled: true,
-        top: 1,
-        left: 1,
-        blur: 1,
-        color: '#000',
-        opacity: 0.45
-    }
-  },
+        dataLabels: {
+          enabled: true,
+          formatter: function (val, opts) {
+            const seriesValue = chartSeries.value[opts.seriesIndex];
+            return seriesValue;
+          },
+          style: {
+            fontSize: '1rem',
+            fontWeight: 'bold',
+            colors: ['#fff']
+          },
+          dropShadow: {
+              enabled: true,
+              top: 1,
+              left: 1,
+              blur: 1,
+              color: '#000',
+              opacity: 0.7
+          }
+        },
 
-  // Theme settings for dark mode
-  theme: {
-    mode: 'dark',
-  },
-
-  // Legend styling
-  legend: {
-    position: 'top',
-    labels: {
-      colors: '#cbd5e1' // slate-300
-    },
-    markers: {
-      width: 12,
-      height: 12,
-    },
-    itemMargin: {
-      horizontal: 5,
-    }
-  },
-  
-  // Remove the ugly border around the chart
-  stroke: { show: false },
-
-});
+        stroke: { show: false },
+    });
 </script>
 
 <template>

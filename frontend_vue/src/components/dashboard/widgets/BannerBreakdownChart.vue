@@ -25,24 +25,39 @@
         colors: ['#f472b6', '#eab308', '#3b82f6'],
         chart: { type: 'donut', background: 'transparent' },
         plotOptions: {
-            pie: {
-                donut: {
-                    size: '33%', // Make it thinner to accommodate the selector
-
-                }
-            }
+          pie: { donut: { size: '33%' } }
         },
+        
         legend: {
             position: 'top',
             labels: { colors: '#cbd5e1' }, // slate-300
-            markers: {
-                width: 12,
-                height: 12,
-            },
+            markers: { width: 12, height: 12 },
             itemMargin: { horizontal: 5 }
-        }, // Hide the legend to save space
+        },
+
+
+        dataLabels: {
+          enabled: true,
+          formatter: function (val, opts) {
+            const seriesValue = chartSeries.value[opts.seriesIndex];
+            return seriesValue;
+          },
+          style: {
+            fontSize: '1rem',
+            fontWeight: 'bold',
+            colors: ['#fff']
+          },
+          dropShadow: {
+              enabled: true,
+              top: 1,
+              left: 1,
+              blur: 1,
+              color: '#000',
+              opacity: 0.7
+          }
+        },
+
         stroke: { show: false },
-        // theme: { mode: 'dark' },
     });
 </script>
 
