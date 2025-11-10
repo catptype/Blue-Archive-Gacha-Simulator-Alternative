@@ -19,12 +19,12 @@
 </script>
 
 <template>
-  <div class="p-4 bg-slate-700/50 rounded-lg h-full flex flex-col items-center justify-between">
-    <h3 class="text-xl font-semibold text-center">Your First ★★★ Pull</h3>
+  <div class="p-4 bg-slate-700/50 rounded-lg h-full flex flex-col items-center justify-between gap-4">
+    <h3 class="text-xl font-semibold text-center">Your First ★★★</h3>
     
     <!-- Data exists state -->
     <template v-if="data">
-      <div class="transform scale-90">
+      <div >
         <!-- Reuse the ResultCard component for a consistent look -->
         <ResultCard :student="data.student" :is-flipped="true" />
       </div>

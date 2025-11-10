@@ -90,13 +90,15 @@ class AchievementSchema(BaseModel):
     achievement_category: str
     achievement_key: str
 
+class LuckGapsSchema(BaseModel):
+    min: Optional[int] = None
+    max: Optional[int] = None
+    avg: Optional[float] = None
+
 
 
 # --- Response Schemas ---
 # These define the final JSON output, including dynamically generated fields.
-
-
-
 class StudentResponse(StudentSchema):
     portrait_url: Optional[str] = None
     artwork_url: Optional[str] = None
@@ -158,6 +160,17 @@ class BannerBreakdownChartResponse(BaseModel):
 class MilestoneResponse(BaseModel):
     student: StudentResponse # Reuse the detailed student response schema
     pull_number: int
+
+
+# --- NEW: The main schema for a single row in the performance table ---
+class BannerLuckResponse(BaseModel):
+    banner_name: str
+    total_pulls: int
+    r3_count: int
+    user_rate: float
+    banner_rate: float
+    luck_variance: float
+    gaps: Optional[LuckGapsSchema] = None
 
 def create_student_response(student: Student, request: Request) -> StudentResponse:
     school_response = SchoolResponse.model_validate(student.school)

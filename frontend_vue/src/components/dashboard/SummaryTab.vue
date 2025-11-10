@@ -10,6 +10,7 @@
     // const BannerBreakdownChart = defineAsyncComponent(() => import('./widgets/BannerBreakdownChart.vue'));
     const RarityOriginChart = defineAsyncComponent(() => import('./widgets/RarityOriginChart.vue'));
     const MilestoneTimelineWidget = defineAsyncComponent(() => import('./widgets/MilestoneTimelineWidget.vue'));
+    const PerformanceTableWidget = defineAsyncComponent(() => import('./widgets/PerformanceTableWidget.vue'));
 </script>
 
 <template>
@@ -69,6 +70,15 @@
           </div>
         </template>
       </Suspense>
+
+      <Suspense>
+          <PerformanceTableWidget />
+          <template #fallback>
+            <div class="w-full h-72 flex items-center justify-center bg-slate-700/50 rounded-lg text-slate-400">
+              Loading Performance Data...
+            </div>
+          </template>
+        </Suspense>
       
     </div>
     <!-- ... other widgets ... -->

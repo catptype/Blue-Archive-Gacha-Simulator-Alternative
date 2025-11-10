@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import statistics
 
 from datetime import timedelta
 from fastapi import APIRouter, FastAPI, Depends, HTTPException, Request, status
@@ -8,15 +9,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session, joinedload, selectinload
 from typing import Optional, List
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, case
 from collections import Counter, defaultdict
+
 from .util import auth, models, schemas
+from .util.admin import init_admin
 from .util.auth import get_optional_current_user, get_required_current_user
 from .util.cache import get_cache, Cache
 from .util.database import engine, get_db
 from .util.schemas import create_student_response
 from .util.GachaEngine import GachaEngine
-from .util.admin import init_admin
+
+DEFAULT_TIMEOUT = 180
 
 app = FastAPI()
 init_admin(app)
@@ -223,7 +227,7 @@ def get_banners(request: Request, db: Session = Depends(get_db), cache: Cache = 
         response_banners.append(banner_data)
 
     banners_to_cache = [b.dict() for b in response_banners]
-    cache.set(cache_key, banners_to_cache, expire=300)
+    cache.set(cache_key, banners_to_cache, expire=DEFAULT_TIMEOUT)
         
     return response_banners
     
@@ -248,7 +252,7 @@ def get_schools(request: Request, db: Session = Depends(get_db), cache: Cache = 
         response_schools.append(school_data)
 
     schools_to_cache = [s.dict() for s in response_schools]
-    cache.set(cache_key, schools_to_cache, expire=300)
+    cache.set(cache_key, schools_to_cache, expire=DEFAULT_TIMEOUT)
         
     return response_schools
 
@@ -483,7 +487,7 @@ def get_top_students_by_rarity(
         response_data.append(entry)
 
     data_to_cache = [entry.model_dump(mode="json") for entry in response_data]
-    cache.set(cache_key, data_to_cache, expire=300) # Cache for 1 hour
+    cache.set(cache_key, data_to_cache, expire=DEFAULT_TIMEOUT) # Cache for 1 hour
         
     return response_data
 
@@ -522,7 +526,7 @@ def get_first_r3_pull(
 
     if not first_r3_pull_orm:
         # Cache the "not found" result for 1 hour to prevent re-querying
-        cache.set(cache_key, "NONE", expire=3600)
+        cache.set(cache_key, "NONE", expire=DEFAULT_TIMEOUT)
         return None
 
     # Build the Pydantic response object
@@ -534,7 +538,7 @@ def get_first_r3_pull(
     )
     
     # Cache the successful result
-    cache.set(cache_key, response_data.model_dump(mode="json"), expire=None) # Cache forever
+    cache.set(cache_key, response_data.model_dump(mode="json"), expire=DEFAULT_TIMEOUT) # Cache forever
 
     return response_data
 
@@ -573,7 +577,7 @@ def get_chart_overall_rarity(
     )
     
     # Cache the result for 1 hour
-    cache.set(cache_key, response_data.model_dump(), expire=300)
+    cache.set(cache_key, response_data.model_dump(), expire=DEFAULT_TIMEOUT)
 
     return response_data
 
@@ -618,7 +622,7 @@ def get_chart_banner_breakdown(
         )
     
     final_response = schemas.BannerBreakdownChartResponse(data=response_data)
-    cache.set(cache_key, final_response.model_dump(), expire=300)
+    cache.set(cache_key, final_response.model_dump(), expire=DEFAULT_TIMEOUT)
     return final_response
 
 @app.get(
@@ -672,7 +676,7 @@ def get_milestone_timeline(
     # --- END OF THE NEW QUERY ---
 
     if not milestone_query_results:
-        cache.set(cache_key, "NONE", expire=300)
+        cache.set(cache_key, "NONE", expire=DEFAULT_TIMEOUT)
         return []
 
     # 3. Process the small, final result set into the response schema.
@@ -687,9 +691,91 @@ def get_milestone_timeline(
         milestone_pulls.append(milestone_entry)
     
     data_to_cache = [entry.model_dump(mode="json") for entry in milestone_pulls]
-    cache.set(cache_key, data_to_cache, expire=300)
+    cache.set(cache_key, data_to_cache, expire=DEFAULT_TIMEOUT)
 
     return milestone_pulls
+
+@app.get(
+    "/api/dashboard/summary/performance-table",
+    response_model=List[schemas.BannerLuckResponse]
+)
+def get_performance_table(
+    current_user: models.User = Depends(get_required_current_user),
+    db: Session = Depends(get_db),
+    cache: Cache = Depends(get_cache)
+):
+    cache_key = f"dashboard:performance_table:{current_user.user_id}"
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        print(f"CACHE HIT for {cache_key}")
+        return cached_data
+
+    print(f"CACHE MISS for {cache_key}")
+
+    # 1. Perform an efficient aggregation query to get stats for ALL banners at once.
+    banner_stats_query = (
+        db.query(
+            models.GachaBanner.banner_id,
+            models.GachaBanner.banner_name,
+            models.GachaPreset.preset_r3_rate,
+            func.count(models.GachaTransaction.transaction_id).label("total_pulls"),
+            func.sum(case((models.Student.student_rarity == 3, 1), else_=0)).label("r3_count")
+        )
+        .join(models.GachaTransaction, models.GachaTransaction.banner_id_fk == models.GachaBanner.banner_id)
+        .join(models.Student, models.GachaTransaction.student_id_fk == models.Student.student_id)
+        .join(models.GachaPreset, models.GachaBanner.preset_id_fk == models.GachaPreset.preset_id)
+        .filter(models.GachaTransaction.user_id_fk == current_user.user_id)
+        .group_by(models.GachaBanner.banner_id, models.GachaBanner.banner_name, models.GachaPreset.preset_r3_rate)
+        .order_by(models.GachaBanner.banner_name)
+    ).all()
+
+    banner_analysis: List[schemas.BannerLuckResponse] = []
+    for banner_id, banner_name, banner_rate_decimal, total_pulls, r3_count in banner_stats_query:
+        banner_rate = float(banner_rate_decimal)
+        user_rate = (r3_count / total_pulls) * 100 if total_pulls > 0 else 0.0
+
+        gaps_data = None
+        # 2. Only perform the expensive gap analysis if there are enough 3-stars.
+        if r3_count > 1:
+            # Fetch the chronological pulls FOR THIS BANNER ONLY.
+            r3_pulls_for_banner = db.query(
+                func.row_number().over(
+                    order_by=models.GachaTransaction.transaction_create_on.asc(),
+                    partition_by=models.GachaTransaction.banner_id_fk
+                ).label("pull_num")
+            ).filter(
+                models.GachaTransaction.user_id_fk == current_user.user_id,
+                models.GachaTransaction.banner_id_fk == banner_id,
+                models.GachaTransaction.student_id_fk.in_(
+                    db.query(models.Student.student_id).filter(models.Student.student_rarity == 3)
+                )
+            ).order_by("pull_num").all()
+            
+            r3_indices = [p[0] for p in r3_pulls_for_banner]
+            gaps = [r3_indices[i] - r3_indices[i-1] for i in range(1, len(r3_indices))]
+            
+            gaps_data = schemas.LuckGapsSchema(
+                min=min(gaps),
+                max=max(gaps),
+                avg=round(statistics.mean(gaps), 1)
+            )
+
+        # 3. Assemble the Pydantic model for this row.
+        analysis_entry = schemas.BannerLuckResponse(
+            banner_name=banner_name,
+            total_pulls=total_pulls,
+            r3_count=r3_count,
+            user_rate=round(user_rate, 2),
+            banner_rate=banner_rate,
+            luck_variance=round(user_rate - banner_rate, 2),
+            gaps=gaps_data
+        )
+        banner_analysis.append(analysis_entry)
+
+    data_to_cache = [entry.model_dump() for entry in banner_analysis]
+    cache.set(cache_key, data_to_cache, expire=DEFAULT_TIMEOUT)
+    
+    return banner_analysis
 
 # --- Image Serving Endpoints (No changes needed here) ---
 @app.get("/image/banner/{banner_id}", name="serve_banner_image")
@@ -719,7 +805,7 @@ def serve_banner_image(banner_id: int, request: Request, db: Session = Depends(g
             "image_b64": image_b64_string
         }
         # Store in the application cache for 1 hour (3600 seconds)
-        cache.set(cache_key, data_to_cache, expire=3600)
+        cache.set(cache_key, data_to_cache, expire=DEFAULT_TIMEOUT)
     
     # 5. Check the browser's cache using the ETag
     # The browser sends this header if it has a cached version.
@@ -765,7 +851,7 @@ def serve_school_image(school_id: int, request: Request, db: Session = Depends(g
             "image_b64": image_b64_string
         }
         # Store in the application cache for 1 hour (3600 seconds)
-        cache.set(cache_key, data_to_cache, expire=3600)
+        cache.set(cache_key, data_to_cache, expire=DEFAULT_TIMEOUT)
     
     # 5. Check the browser's cache using the ETag
     # The browser sends this header if it has a cached version.
@@ -818,7 +904,7 @@ def serve_student_image(student_id: int, image_type: str, request: Request, db: 
             "image_b64": image_b64_string
         }
         # Store in the application cache for 1 hour
-        cache.set(cache_key, data_to_cache, expire=300)
+        cache.set(cache_key, data_to_cache, expire=DEFAULT_TIMEOUT)
     
     # 5. Check the browser cache using the ETag
     print(request.headers.get("if-none-match"))
