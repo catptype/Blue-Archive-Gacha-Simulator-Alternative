@@ -430,23 +430,43 @@ def get_top_students_by_rarity(
     
     print(f"CACHE MISS for {cache_key}")
     
-    # The database query is unchanged
-    top_students_query = (
+     # --- START OF THE NEW, EFFICIENT QUERY ---
+
+    # Step 1: Create a subquery that works ONLY on the GachaTransaction table.
+    # It finds the most frequent student_id_fk for this user.
+    top_student_ids_subquery = (
         db.query(
-            models.Student,
-            func.count(models.Student.student_id).label('count'),
+            models.GachaTransaction.student_id_fk,
+            func.count(models.GachaTransaction.student_id_fk).label('count'),
             func.min(models.GachaTransaction.transaction_create_on).label('first_obtained')
         )
-        .join(models.GachaTransaction)
+        .join(models.Student) # Join to filter by rarity
         .filter(
             models.GachaTransaction.user_id_fk == current_user.user_id,
             models.Student.student_rarity == rarity
         )
-        .group_by(models.Student.student_id)
-        .order_by(func.count(models.Student.student_id).desc(), func.min(models.GachaTransaction.transaction_create_on).asc())
+        .group_by(models.GachaTransaction.student_id_fk)
+        .order_by(func.count(models.GachaTransaction.student_id_fk).desc(), func.min(models.GachaTransaction.transaction_create_on).asc())
         .limit(3)
+        .subquery()
+    )
+
+    # Step 2: Join the small result of the subquery with the Student table
+    # to get the full student details.
+    top_students_query = (
+        db.query(
+            models.Student,
+            top_student_ids_subquery.c.count,
+            top_student_ids_subquery.c.first_obtained
+        )
+        .join(
+            top_student_ids_subquery,
+            models.Student.student_id == top_student_ids_subquery.c.student_id_fk
+        )
+        .order_by(top_student_ids_subquery.c.count.desc(), top_student_ids_subquery.c.first_obtained.asc())
         .all()
     )
+    # --- END OF THE NEW QUERY ---
     
     # --- BUILD THE SCHEMA RESPONSE ---
     response_data: List[schemas.TopStudentResponse] = []
