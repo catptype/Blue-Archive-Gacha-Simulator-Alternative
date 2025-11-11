@@ -993,6 +993,7 @@ def serve_student_image(student_id: int, image_type: str, request: Request, db: 
         # Data in cache is stored as a dictionary with etag and the b64 image
         image_bytes = base64.b64decode(cached_data['image_b64'])
         etag = cached_data['etag']
+        filename = cached_data['filename']
     else:
         print(f"CACHE MISS for {cache_key}")
         student = db.query(models.Student).options(joinedload(models.Student.asset)).filter(models.Student.student_id == student_id).first()
@@ -1013,9 +1014,12 @@ def serve_student_image(student_id: int, image_type: str, request: Request, db: 
         etag = hashlib.sha1(image_bytes).hexdigest()
         image_b64_string = base64.b64encode(image_bytes).decode("utf-8")
         
+        filename = f"{student.student_name}_{student.version.version_name}_{image_type}.png"
+
         data_to_cache = {
             "etag": etag,
-            "image_b64": image_b64_string
+            "image_b64": image_b64_string,
+            "filename": filename 
         }
         # Store in the application cache for 1 hour
         cache.set(cache_key, data_to_cache, expire=DEFAULT_TIMEOUT)
@@ -1030,6 +1034,7 @@ def serve_student_image(student_id: int, image_type: str, request: Request, db: 
     # with the correct headers to enable browser caching for next time.
     headers = {
         "Cache-Control": "public, max-age=86400",  # Cache for 1 day (86400 seconds)
-        "ETag": etag
+        "ETag": etag,
+        "Content-Disposition": f'inline; filename="{filename}"'
     }
     return Response(content=image_bytes, media_type="image/png", headers=headers)
