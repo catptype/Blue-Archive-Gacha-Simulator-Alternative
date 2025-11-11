@@ -1,6 +1,6 @@
 <script setup lang="ts">
     import { ref, computed } from 'vue';
-    import apiClient from '../../../services/client';
+    import apiClient from '@/services/client';
 
     // 1. Fetch the same data as before
     const { data: apiData } = await apiClient.get('/dashboard/summary/chart-banner-breakdown');

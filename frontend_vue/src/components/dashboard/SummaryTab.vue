@@ -1,16 +1,12 @@
 <script setup lang="ts">
     import { defineAsyncComponent } from 'vue';
-
-    // Use defineAsyncComponent for better code splitting.
-    // Vue will only download the code for a widget when it's needed.
     const KpiWidget = defineAsyncComponent(() => import('./widgets/Kpi.vue'));
     const TopStudentsWidget = defineAsyncComponent(() => import('./widgets/TopStudents.vue'));
     const FirstPullWidget = defineAsyncComponent(() => import('./widgets/FirstPullWidget.vue'));
-    // const OverallRarityChart = defineAsyncComponent(() => import('./widgets/OverallRarityChart.vue'));
-    // const BannerBreakdownChart = defineAsyncComponent(() => import('./widgets/BannerBreakdownChart.vue'));
     const RarityOriginChart = defineAsyncComponent(() => import('./widgets/RarityOriginChart.vue'));
     const MilestoneTimelineWidget = defineAsyncComponent(() => import('./widgets/MilestoneTimelineWidget.vue'));
     const PerformanceTableWidget = defineAsyncComponent(() => import('./widgets/PerformanceTableWidget.vue'));
+    const CollectionProgressionWidget = defineAsyncComponent(() => import('./widgets/CollectionProgressionWidget.vue'));
 </script>
 
 <template>
@@ -48,6 +44,15 @@
         </Suspense>
       </div>
     </div>
+
+    <Suspense>
+      <CollectionProgressionWidget />
+      <template #fallback>
+        <div class="w-full h-48 flex items-center justify-center bg-slate-700/50 rounded-lg text-slate-400">
+          Loading Collection Data...
+        </div>
+      </template>
+    </Suspense>
     
     <!-- Charts & Analysis Grid -->
     <div class="grid grid-cols-1 gap-6">
@@ -72,13 +77,13 @@
       </Suspense>
 
       <Suspense>
-          <PerformanceTableWidget />
-          <template #fallback>
-            <div class="w-full h-72 flex items-center justify-center bg-slate-700/50 rounded-lg text-slate-400">
-              Loading Performance Data...
-            </div>
-          </template>
-        </Suspense>
+        <PerformanceTableWidget />
+        <template #fallback>
+          <div class="w-full h-72 flex items-center justify-center bg-slate-700/50 rounded-lg text-slate-400">
+            Loading Performance Data...
+          </div>
+        </template>
+      </Suspense>
       
     </div>
     <!-- ... other widgets ... -->

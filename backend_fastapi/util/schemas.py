@@ -157,6 +157,11 @@ class BannerBreakdownChartResponse(BaseModel):
     # The keys of this dictionary will be the banner names
     data: Dict[str, OverallRarityChartResponse]
 
+class CollectionProgressionResponse(BaseModel):
+    rarity: int
+    obtained: int
+    total: int
+
 class MilestoneResponse(BaseModel):
     student: StudentResponse # Reuse the detailed student response schema
     pull_number: int

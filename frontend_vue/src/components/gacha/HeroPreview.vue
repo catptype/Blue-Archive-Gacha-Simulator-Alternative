@@ -1,7 +1,9 @@
 <script setup lang="ts">
     import { ref, watch } from 'vue';
-    import planaMov from '../../assets/plana-gacha.mov';
+    import planaMov from '@/assets/plana-gacha.mov';
+    
     interface Banner { banner_name: string; }
+    
     const props = defineProps<{ activeBanner: Banner | null }>();
     const textVisible = ref(false);
 

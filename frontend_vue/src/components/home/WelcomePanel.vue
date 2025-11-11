@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import aronaImage from '../../assets/arona.png'; // Vite handles the path aliasing '@' to '/src'
+import aronaImage from '@/assets/arona.png'; // Vite handles the path aliasing '@' to '/src'
 </script>
 
 <template>

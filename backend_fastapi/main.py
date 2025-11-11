@@ -777,6 +777,63 @@ def get_performance_table(
     
     return banner_analysis
 
+@app.get(
+    "/api/dashboard/summary/collection-progression",
+    response_model=List[schemas.CollectionProgressionResponse]
+)
+def get_collection_progression(
+    current_user: models.User = Depends(get_required_current_user),
+    db: Session = Depends(get_db),
+    cache: Cache = Depends(get_cache)
+):
+    cache_key = f"dashboard:collection_progression:{current_user.user_id}"
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        print(f"CACHE HIT for {cache_key}")
+        return cached_data
+
+    print(f"CACHE MISS for {cache_key}")
+
+    # Query 1: Get the total number of students for each rarity.
+    # This is the same for all users, so it's very fast.
+    total_counts_query = (
+        db.query(
+            models.Student.student_rarity,
+            func.count(models.Student.student_id)
+        ).group_by(models.Student.student_rarity).all()
+    )
+    total_map = {rarity: count for rarity, count in total_counts_query}
+
+    # Query 2: Get the number of unique students the USER has obtained for each rarity.
+    obtained_counts_query = (
+        db.query(
+            models.Student.student_rarity,
+            func.count(models.UserInventory.student_id_fk)
+        )
+        .join(models.Student)
+        .filter(models.UserInventory.user_id_fk == current_user.user_id)
+        .group_by(models.Student.student_rarity)
+    ).all()
+    obtained_map = {rarity: count for rarity, count in obtained_counts_query}
+
+    # Assemble the response
+    response_data: List[schemas.CollectionProgressionResponse] = []
+    for rarity in [3, 2, 1]: # Iterate in desired display order
+        obtained_count = obtained_map.get(rarity, 0)
+        total_count = total_map.get(rarity, 0)
+        
+        response_data.append(schemas.CollectionProgressionResponse(
+            rarity=rarity,
+            obtained=obtained_count,
+            total=total_count
+        ))
+        
+    data_to_cache = [entry.model_dump() for entry in response_data]
+    # Cache for 1 hour. This should be invalidated after a pull that yields a *new* student.
+    cache.set(cache_key, data_to_cache, expire=3600)
+
+    return response_data
+
 # --- Image Serving Endpoints (No changes needed here) ---
 @app.get("/image/banner/{banner_id}", name="serve_banner_image")
 def serve_banner_image(banner_id: int, request: Request, db: Session = Depends(get_db), cache: Cache = Depends(get_cache)):

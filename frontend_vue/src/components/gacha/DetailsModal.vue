@@ -1,12 +1,11 @@
 <script setup lang="ts">
     import { ref, onMounted, computed } from 'vue';
-    import axios from 'axios';
+    import apiClient from '@/services/client';
     import StudentPoolSection from './StudentPoolSection.vue';
 
     const props = defineProps<{ bannerId: number }>();
     const emit = defineEmits(['close']);
 
-    const API_BASE_URL = 'http://127.0.0.1:8000/api';
     const bannerData = ref<any>(null);
     const isLoading = ref(true);
     const error = ref('');
@@ -14,7 +13,7 @@
 
     onMounted(async () => {
         try {
-            const response = await axios.get(`${API_BASE_URL}/banners/${props.bannerId}/details/`);
+            const response = await apiClient.get(`/banners/${props.bannerId}/details/`);
             bannerData.value = response.data;
         } catch (err) {
             error.value = "Failed to load banner details.";

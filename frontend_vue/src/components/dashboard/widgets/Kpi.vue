@@ -1,6 +1,6 @@
 <script setup lang="ts">
-    import apiClient from '../../../services/client';
-    import pyroxeneImage from '../../../assets/pyroxene.png';
+    import apiClient from '@/services/client';
+    import pyroxeneImage from '@/assets/pyroxene.png';
     const { data } = await apiClient.get('/dashboard/summary/kpis');
 </script>
 

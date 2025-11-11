@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import backgroundImage from '../assets/background.png'; // Vite handles the path aliasing '@' to '/src'
+import backgroundImage from '@/assets/background.png'; // Vite handles the path aliasing '@' to '/src'
 </script>
 
 <template>

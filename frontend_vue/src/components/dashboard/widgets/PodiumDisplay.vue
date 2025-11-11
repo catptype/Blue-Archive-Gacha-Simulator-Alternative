@@ -1,10 +1,10 @@
 <script setup lang="ts">
     import { computed } from 'vue';
-    import ResultCard from '../../../components/gacha/ResultCard.vue';
+    import ResultCard from '@/components/gacha/ResultCard.vue';
     // Import rank images (make sure they are in src/assets)
-    import rank1Image from '../../../assets/rank1.png';
-    import rank2Image from '../../../assets/rank2.png';
-    import rank3Image from '../../../assets/rank3.png';
+    import rank1Image from '@/assets/rank1.png';
+    import rank2Image from '@/assets/rank2.png';
+    import rank3Image from '@/assets/rank3.png';
 
     // defineProps<{ topStudents: any[] }>();
 

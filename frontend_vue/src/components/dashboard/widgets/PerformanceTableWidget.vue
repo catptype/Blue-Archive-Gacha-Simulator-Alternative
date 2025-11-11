@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import apiClient from '../../../services/client';
+    import apiClient from '@/services/client';
 
     const { data } = await apiClient.get('/dashboard/summary/performance-table');
 

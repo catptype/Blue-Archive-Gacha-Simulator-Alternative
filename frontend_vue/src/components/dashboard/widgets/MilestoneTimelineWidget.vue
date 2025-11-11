@@ -1,6 +1,6 @@
 <script setup lang="ts">
     import { computed } from 'vue';
-    import apiClient from '../../../services/client';
+    import apiClient from '@/services/client';
 
     const { data: milestones } = await apiClient.get('/dashboard/summary/milestone-timeline');
     // Calculate the dynamic width for the timeline container

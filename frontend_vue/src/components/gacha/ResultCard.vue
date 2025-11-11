@@ -1,11 +1,11 @@
 <script setup lang="ts">
     import { ref, computed } from 'vue';
-    import gachaR3Image from '../../assets/student_card/gacha_r3.png';
-    import gachaR2Image from '../../assets/student_card/gacha_r2.png';
-    import gachaR1Image from '../../assets/student_card/gacha_r1.png';
-    import yellowStarImage from '../../assets/student_card/star_yellow.png'
-    import newImage from '../../assets/student_card/imgfont_new.png'
-    import pickupImage from '../../assets/student_card/imgfont_pickup.png'
+    import gachaR3Image from '@/assets/student_card/gacha_r3.png';
+    import gachaR2Image from '@/assets/student_card/gacha_r2.png';
+    import gachaR1Image from '@/assets/student_card/gacha_r1.png';
+    import yellowStarImage from '@/assets/student_card/star_yellow.png'
+    import newImage from '@/assets/student_card/imgfont_new.png'
+    import pickupImage from '@/assets/student_card/imgfont_pickup.png'
 
     // Define a more detailed interface for the student prop
     interface Student {

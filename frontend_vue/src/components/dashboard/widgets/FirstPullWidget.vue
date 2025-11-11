@@ -1,7 +1,7 @@
 <script setup lang="ts">
     import { computed } from 'vue';
-    import apiClient from '../../../services/client';
-    import ResultCard from '../../../components/gacha/ResultCard.vue';
+    import apiClient from '@/services/client';
+    import ResultCard from '@/components/gacha/ResultCard.vue';
 
     // Use async setup to fetch data. The parent's <Suspense> will handle the loading state.
     const { data } = await apiClient.get('/dashboard/summary/first-r3-pull');

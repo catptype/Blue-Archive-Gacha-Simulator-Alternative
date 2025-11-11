@@ -1,3 +1,41 @@
+<script setup lang="ts">
+  import { ref } from 'vue';
+  import apiClient from '@/services/client';
+  import PodiumDisplay from './PodiumDisplay.vue'; // Import the new component
+
+  interface TopStudent {
+    student: {
+      student_id: number;
+      student_name: string;
+      portrait_url: string;
+    };
+    count: number;
+  }
+
+  const topStudents = ref<TopStudent[]>([]);
+  const activeRarity = ref<number>(3);
+  const isLoading = ref(false);
+
+  const loadPodiumContent = async (rarity: number) => {
+    if (isLoading.value) return;
+
+    isLoading.value = true;
+    activeRarity.value = rarity;
+    try {
+      const { data } = await apiClient.get(`/dashboard/summary/top-students/${rarity}`);
+      topStudents.value = data;
+    } catch (error) {
+      console.error("Failed to load podium data:", error);
+      topStudents.value = [];
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  // Initial data load for the default (3-star) tab, which works with <Suspense>
+  await loadPodiumContent(3);
+</script>
+
 <template>
   <div class="relative flex h-full">
     <!-- Column 1: Vertical Rarity Tabs -->
@@ -43,41 +81,3 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-  import { ref } from 'vue';
-  import apiClient from '../../../services/client';
-  import PodiumDisplay from './PodiumDisplay.vue'; // Import the new component
-
-  interface TopStudent {
-    student: {
-      student_id: number;
-      student_name: string;
-      portrait_url: string;
-    };
-    count: number;
-  }
-
-  const topStudents = ref<TopStudent[]>([]);
-  const activeRarity = ref<number>(3);
-  const isLoading = ref(false);
-
-  const loadPodiumContent = async (rarity: number) => {
-    if (isLoading.value) return;
-
-    isLoading.value = true;
-    activeRarity.value = rarity;
-    try {
-      const { data } = await apiClient.get(`/dashboard/summary/top-students/${rarity}`);
-      topStudents.value = data;
-    } catch (error) {
-      console.error("Failed to load podium data:", error);
-      topStudents.value = [];
-    } finally {
-      isLoading.value = false;
-    }
-  };
-
-  // Initial data load for the default (3-star) tab, which works with <Suspense>
-  await loadPodiumContent(3);
-</script>

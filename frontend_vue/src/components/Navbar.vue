@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import logo from '../assets/logo.png';
-import { useAuthStore } from '../security/auth'; // Import the store
+import logo from '@/assets/logo.png';
+import { useAuthStore } from '@/security/auth'; // Import the store
 
 const openMenu = ref(false);
 const openDropdown = ref(false);
