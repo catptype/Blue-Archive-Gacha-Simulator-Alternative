@@ -113,6 +113,7 @@ class BannerDetailResponse(BannerResponse):
     r1_students: List[StudentResponse]
 
 
+
 class GachaResultStudent(StudentResponse):
     is_pickup: bool
     is_new: bool
@@ -176,6 +177,18 @@ class BannerLuckResponse(BaseModel):
     banner_rate: float
     luck_variance: float
     gaps: Optional[LuckGapsSchema] = None
+
+# --- The schema for a single row in the history table ---
+class GachaTransactionPaginatedResponse(GachaTransactionResponse):
+    banner: BannerResponse
+
+# --- The main paginated response schema ---
+class PaginatedHistoryResponse(BaseModel):
+    total_items: int
+    total_pages: int
+    current_page: int
+    limit: int
+    items: List[GachaTransactionPaginatedResponse]
 
 def create_student_response(student: Student, request: Request) -> StudentResponse:
     school_response = SchoolResponse.model_validate(student.school)

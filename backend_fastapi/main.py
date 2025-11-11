@@ -1,9 +1,10 @@
 import base64
 import hashlib
+import math
 import statistics
 
 from datetime import timedelta
-from fastapi import APIRouter, FastAPI, Depends, HTTPException, Request, status
+from fastapi import APIRouter, FastAPI, Depends, HTTPException, Request, status, Query
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
@@ -833,6 +834,62 @@ def get_collection_progression(
     cache.set(cache_key, data_to_cache, expire=3600)
 
     return response_data
+
+@app.get("/api/dashboard/history", response_model=schemas.PaginatedHistoryResponse)
+def get_user_history(
+    request: Request,
+    page: int = Query(1, ge=1, description="Page number"),
+    limit: int = Query(5, ge=1, le=100, description="Items per page"),
+    current_user: models.User = Depends(get_required_current_user),
+    db: Session = Depends(get_db)
+):
+    # 1. First, get the total count of transactions for this user (fast query)
+    total_items_query = db.query(func.count(models.GachaTransaction.transaction_id)).filter(
+        models.GachaTransaction.user_id_fk == current_user.user_id
+    )
+    total_items = total_items_query.scalar()
+    
+    if total_items == 0:
+        return schemas.PaginatedHistoryResponse(
+            total_items=0, total_pages=0, current_page=1, limit=limit, items=[]
+        )
+
+    # 2. Calculate total pages and offset
+    total_pages = math.ceil(total_items / limit)
+    offset = (page - 1) * limit
+
+    # 3. Fetch the items for the requested page
+    history_query = (
+        db.query(models.GachaTransaction)
+        .filter(models.GachaTransaction.user_id_fk == current_user.user_id)
+        .order_by(models.GachaTransaction.transaction_create_on.desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    history_items_orm = history_query.all()
+
+    # 4. Convert ORM objects to Pydantic schemas
+    history_items_response = []
+    for tx in history_items_orm:
+        student_resp = create_student_response(tx.student, request)
+        banner_resp = schemas.BannerResponse.model_validate(tx.banner)
+        banner_resp.image_url = str(request.url_for('serve_banner_image', banner_id=tx.banner.banner_id)) if tx.banner.banner_image else None
+        
+        history_items_response.append(schemas.GachaTransactionPaginatedResponse(
+            transaction_id=tx.transaction_id,
+            transaction_create_on=tx.transaction_create_on,
+            student=student_resp,
+            banner=banner_resp
+        ))
+        
+    # 5. Return the structured paginated response
+    return schemas.PaginatedHistoryResponse(
+        total_items=total_items,
+        total_pages=total_pages,
+        current_page=page,
+        limit=limit,
+        items=history_items_response
+    )
 
 # --- Image Serving Endpoints (No changes needed here) ---
 @app.get("/image/banner/{banner_id}", name="serve_banner_image")
