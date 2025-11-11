@@ -44,7 +44,7 @@
     <div class="order-1 flex flex-col items-center">
       <div class="w-[220px]">
         <!-- Conditionally render the ResultCard or a placeholder -->
-        <ResultCard v-if="podium[1]" :student="podium[1].student" :is-flipped="true" />
+        <ResultCard v-if="podium[1]" :student="podium[1].student" :is-flipped="true" :enable-effects="false" />
         <ResultCard v-else :student="placeholderStudent" :is-flipped="false" />
       </div>
       <div class="w-full h-24 rounded-t-md mt-2 bg-slate-600/50 flex items-center justify-center">
@@ -59,7 +59,7 @@
     <!-- 1st Place -->
     <div class="order-2 flex flex-col items-center">
       <div class="w-[220px]">
-        <ResultCard v-if="podium[0]" :student="podium[0].student" :is-flipped="true" />
+        <ResultCard v-if="podium[0]" :student="podium[0].student" :is-flipped="true" :enable-effects="false" />
         <ResultCard v-else :student="placeholderStudent" :is-flipped="false" />
       </div>
       <div class="w-full h-28 rounded-t-md mt-2 bg-slate-600/50 flex items-center justify-center">
@@ -74,7 +74,7 @@
     <!-- 3rd Place -->
     <div class="order-3 flex flex-col items-center">
       <div class="w-[220px]">
-        <ResultCard v-if="podium[2]" :student="podium[2].student" :is-flipped="true" />
+        <ResultCard v-if="podium[2]" :student="podium[2].student" :is-flipped="true" :enable-effects="false" />
         <ResultCard v-else :student="placeholderStudent" :is-flipped="false" />
       </div>
       <div class="w-full h-20 rounded-t-md mt-2 bg-slate-600/50 flex items-center justify-center">

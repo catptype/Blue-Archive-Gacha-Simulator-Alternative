@@ -796,7 +796,7 @@ def get_collection_progression(
 
     return response_data
 
-@app.get("/api/dashboard/history", response_model=schemas.PaginatedHistoryResponse)
+@app.get("/api/dashboard/history", response_model=schemas.HistoryResponse)
 def get_user_history(
     request: Request,
     page: int = Query(1, ge=1, description="Page number"),
@@ -811,7 +811,7 @@ def get_user_history(
     total_items = total_items_query.scalar()
     
     if total_items == 0:
-        return schemas.PaginatedHistoryResponse(
+        return schemas.HistoryResponse(
             total_items=0, total_pages=0, current_page=1, limit=limit, items=[]
         )
 
@@ -836,7 +836,7 @@ def get_user_history(
         banner_resp = schemas.BannerResponse.model_validate(tx.banner)
         banner_resp.image_url = str(request.url_for('serve_banner_image', banner_id=tx.banner.banner_id)) if tx.banner.banner_image else None
         
-        history_items_response.append(schemas.GachaTransactionPaginatedResponse(
+        history_items_response.append(schemas.TransactionSchema(
             transaction_id=tx.transaction_id,
             transaction_create_on=tx.transaction_create_on,
             student=student_resp,
@@ -844,13 +844,85 @@ def get_user_history(
         ))
         
     # 5. Return the structured paginated response
-    return schemas.PaginatedHistoryResponse(
+    return schemas.HistoryResponse(
         total_items=total_items,
         total_pages=total_pages,
         current_page=page,
         limit=limit,
         items=history_items_response
     )
+
+@app.get("/api/dashboard/collection", response_model=schemas.CollectionResponse)
+def get_user_collection(
+    request: Request,
+    current_user: models.User = Depends(get_required_current_user),
+    db: Session = Depends(get_db),
+    cache: Cache = Depends(get_cache)
+):
+    cache_key = f"dashboard:collection:{current_user.user_id}"
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        print(f"CACHE HIT for {cache_key}")
+        return cached_data
+
+    print(f"CACHE MISS for {cache_key}")
+
+    # --- START OF THE NEW, EFFICIENT QUERY ---
+
+    # Step 1: Create a subquery containing ONLY the student IDs this user owns.
+    # This is a very fast, small, temporary "virtual table".
+    owned_students_subquery = (
+        db.query(models.UserInventory.student_id_fk)
+        .filter(models.UserInventory.user_id_fk == current_user.user_id)
+        .subquery()
+    )
+
+    # Step 2: Query the main Student table and LEFT JOIN it to our subquery.
+    # The result of the check `owned_students_subquery.c.student_id_fk.isnot(None)`
+    # will be our `is_obtained` boolean flag.
+    all_students_with_status = (
+        db.query(
+            models.Student,
+            (owned_students_subquery.c.student_id_fk.isnot(None)).label("is_obtained")
+        )
+        .outerjoin( # This creates the LEFT OUTER JOIN
+            owned_students_subquery,
+            models.Student.student_id == owned_students_subquery.c.student_id_fk
+        )
+        .order_by(models.Student.student_rarity.desc(), models.Student.student_name.asc())
+        .all()
+    )
+
+    # --- END OF THE NEW QUERY ---
+    
+    # 3. Process the results. The result is a list of tuples: (Student, is_obtained_boolean)
+    collection_students: List[schemas.CollectionStudentSchema] = []
+    obtained_count = 0
+    for student_orm, is_obtained in all_students_with_status:
+        if is_obtained:
+            obtained_count += 1
+            
+        student_response = create_student_response(student_orm, request)
+        collection_student = schemas.CollectionStudentSchema(
+            **student_response.model_dump(),
+            is_obtained=is_obtained
+        )
+        collection_students.append(collection_student)
+
+    # 4. Calculate final stats
+    total_students = len(all_students_with_status)
+    completion_percentage = (obtained_count / total_students) * 100 if total_students > 0 else 0
+
+    response_data = schemas.CollectionResponse(
+        obtained_count=obtained_count,
+        total_students=total_students,
+        completion_percentage=round(completion_percentage, 2),
+        students=collection_students
+    )
+    
+    # Cache the result
+    cache.set(cache_key, response_data.model_dump(mode="json"), expire=3600)
+    return response_data
 
 # --- Image Serving Endpoints (No changes needed here) ---
 @app.get("/image/banner/{banner_id}", name="serve_banner_image")

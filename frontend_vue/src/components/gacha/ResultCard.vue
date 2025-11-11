@@ -26,10 +26,13 @@
 
     // const props = defineProps<{ student: Student }>();
     // const isFlipped = ref(false);
-    const props = defineProps<{ 
+    const props = withDefaults(defineProps<{ 
       student: Student;
       isFlipped: boolean; 
-    }>();
+      enableEffects?: boolean; // New optional prop
+    }>(), {
+      enableEffects: true, // Default to true
+    });
 
     // --- Computed Properties for Dynamic Styling ---
 
@@ -63,30 +66,19 @@
         'bg-blue-400': props.student.student_rarity === 1,
     }));
 
-    // --- Animation Control ---
-
-    // const reveal = () => { isFlipped.value = true; };
-
-    // Expose the reveal method so the parent component can call it
-    // defineExpose({ reveal });
 </script>
 
 <template>
-  <div class="student-card-flipper w-[220px] aspect-[3.5/5] cursor-pointer" style="perspective: 1000px;">
+  <div class="student-card-flipper w-[220px] aspect-[3.5/5]" :class="{ 'cursor-pointer': enableEffects }" style="perspective: 1000px;">
     <!-- This inner div is the part that actually performs the 3D transition. -->
     <div class="relative w-full h-full transition-transform duration-700 ease-in-out" :class="{ 'is-flipped': isFlipped }" style="transform-style: preserve-3d;">
         
-      <!-- =============================================================== -->
-      <!-- CARD BACK (Visible by default)                                  -->
-      <!-- =============================================================== -->
+      <!-- CARD BACK -->
       <div class="absolute w-full h-full rounded-lg shadow-2xl overflow-hidden" style="backface-visibility: hidden;">
-        <!-- The image source is now a computed property based on rarity -->
         <img :src="cardBackImage" class="w-full h-full object-cover">
       </div>
 
-      <!-- =============================================================== -->
-      <!-- CARD FRONT (Initially hidden on the back)                       -->
-      <!-- =============================================================== -->
+      <!-- CARD FRONT -->
       <div class="absolute w-full h-full" style="backface-visibility: hidden; transform: rotateY(180deg);">
         <!-- Main card structure with rarity-based border gradient -->
         <div class="relative w-full h-full rounded-lg shadow-2xl p-1" :class="rarityBorderClass">
@@ -130,7 +122,7 @@
         </div>
 
         <!-- 3-Star Special Effects -->
-        <template v-if="student.student_rarity === 3">
+        <template v-if="student.student_rarity === 3 && enableEffects">
           <div class="card-shine-overlay absolute inset-0 rounded-lg"></div>
           <div class="afterglow absolute inset-[-4px] rounded-lg pointer-events-none"></div>
           <div class="sparkle-overlay absolute inset-0">

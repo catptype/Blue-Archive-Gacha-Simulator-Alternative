@@ -104,23 +104,6 @@ class BannerDetailResponse(BannerResponse):
     r2_students: List[StudentResponse]
     r1_students: List[StudentResponse]
 
-
-
-#############################
-#    Achievement Schemas    #
-#############################
-class AchievementSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    achievement_id: int
-    achievement_name: str
-    achievement_description: str
-    achievement_category: str
-    achievement_key: str
-
-class AchievementResponse(AchievementSchema):
-    image_url: Optional[str] = None
-
 #############################
 #     Dashboard Schemas     #
 #############################
@@ -178,6 +161,51 @@ class LuckPerformanceResponse(BaseModel):
     gaps: Optional[LuckGapsSchema] = None
 
 #############################
+#      History Schemas      #
+#############################
+
+class TransactionSchema(FirstR3Response): # Reuse from FirstR3 because it similar to gacha transaction
+    banner: BannerResponse
+
+# --- The main paginated response schema ---
+class HistoryResponse(BaseModel):
+    total_items: int
+    total_pages: int
+    current_page: int
+    limit: int
+    items: List[TransactionSchema]
+
+#############################
+#     Collection Schemas    #
+#############################
+
+class CollectionStudentSchema(StudentResponse):
+    is_obtained: bool
+
+# --- Response
+class CollectionResponse(BaseModel):
+    obtained_count: int
+    total_students: int
+    completion_percentage: float
+    students: List[CollectionStudentSchema]
+
+#############################
+#    Achievement Schemas    #
+#############################
+class AchievementSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    achievement_id: int
+    achievement_name: str
+    achievement_description: str
+    achievement_category: str
+    achievement_key: str
+
+# --- Response
+class AchievementResponse(AchievementSchema):
+    image_url: Optional[str] = None
+
+#############################
 #       Mixing Schemas      #
 #############################
 
@@ -202,17 +230,7 @@ class GachaPullResponse(BaseModel):
 
 
 
-# --- The schema for a single row in the history table ---
-class GachaTransactionPaginatedResponse(FirstR3Response):
-    banner: BannerResponse
 
-# --- The main paginated response schema ---
-class PaginatedHistoryResponse(BaseModel):
-    total_items: int
-    total_pages: int
-    current_page: int
-    limit: int
-    items: List[GachaTransactionPaginatedResponse]
 
 def create_student_response(student: Student, request: Request) -> StudentResponse:
     school_response = SchoolResponse.model_validate(student.school)

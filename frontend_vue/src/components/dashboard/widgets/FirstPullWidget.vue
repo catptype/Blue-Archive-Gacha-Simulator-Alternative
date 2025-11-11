@@ -26,7 +26,7 @@
     <template v-if="data">
       <div >
         <!-- Reuse the ResultCard component for a consistent look -->
-        <ResultCard :student="data.student" :is-flipped="true" />
+        <ResultCard :student="data.student" :is-flipped="true" :enable-effects="false" />
       </div>
       <p class="text-sm text-slate-400 mt-2">
         Pulled on {{ formattedDate }}
