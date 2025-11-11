@@ -1,14 +1,14 @@
-# backend/schemas.py
+from datetime import datetime
 from decimal import Decimal
+from fastapi import Request
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, List, Dict
 
 from .models import Student
-from fastapi import Request
 
-from datetime import datetime
-
-# --- User Schemas ---
+#############################
+#       User Schemas        #
+#############################
 
 class UserBase(BaseModel):
     username: str
@@ -32,7 +32,9 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     username: Optional[str] = None
 
-# --- Student Schemas ---
+#############################
+#      Student Schemas      #
+#############################
 
 class VersionSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -46,10 +48,10 @@ class SchoolSchema(BaseModel):
     school_id: int
     school_name: str
 
+# --- Response
 class SchoolResponse(SchoolSchema):
     image_url: Optional[str] = None
 
-# This schema is used when reading a Student from the database
 class StudentSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     
@@ -60,7 +62,14 @@ class StudentSchema(BaseModel):
     version: VersionSchema
     school: SchoolResponse
 
-# --- Gacha Schemas ---
+# --- Response
+class StudentResponse(StudentSchema):
+    portrait_url: Optional[str] = None
+    artwork_url: Optional[str] = None
+
+#############################
+#       Gacha Schemas       #
+#############################
 
 class GachaPresetSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -80,7 +89,26 @@ class BannerSchema(BaseModel):
     banner_include_limited: bool
     preset: GachaPresetSchema
 
-# --- Achievement Schemas ---
+class GachaResultStudent(StudentResponse):
+    is_pickup: bool
+    is_new: bool
+
+# --- Response
+class BannerResponse(BannerSchema):
+    image_url: Optional[str] = None
+
+# --- Response
+class BannerDetailResponse(BannerResponse):
+    pickup_r3_students: List[StudentResponse]
+    nonpickup_r3_students: List[StudentResponse]
+    r2_students: List[StudentResponse]
+    r1_students: List[StudentResponse]
+
+
+
+#############################
+#    Achievement Schemas    #
+#############################
 class AchievementSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -90,86 +118,57 @@ class AchievementSchema(BaseModel):
     achievement_category: str
     achievement_key: str
 
+class AchievementResponse(AchievementSchema):
+    image_url: Optional[str] = None
+
+#############################
+#     Dashboard Schemas     #
+#############################
+
 class LuckGapsSchema(BaseModel):
     min: Optional[int] = None
     max: Optional[int] = None
     avg: Optional[float] = None
 
-
-
-# --- Response Schemas ---
-# These define the final JSON output, including dynamically generated fields.
-class StudentResponse(StudentSchema):
-    portrait_url: Optional[str] = None
-    artwork_url: Optional[str] = None
-
-class BannerResponse(BannerSchema):
-    image_url: Optional[str] = None # We will compute this URL
-
-class BannerDetailResponse(BannerResponse):
-    pickup_r3_students: List[StudentResponse]
-    nonpickup_r3_students: List[StudentResponse]
-    r2_students: List[StudentResponse]
-    r1_students: List[StudentResponse]
-
-
-
-class GachaResultStudent(StudentResponse):
-    is_pickup: bool
-    is_new: bool
-
-class AchievementResponse(AchievementSchema):
-    image_url: Optional[str] = None
-    
-class GachaPullResponse(BaseModel):
-    success: bool
-    results: List[GachaResultStudent]
-    unlocked_achievements: List[AchievementResponse]
-
-# --- Dashboard schemas ---
-
-
-
-# --- NEW: Schema for the Top Students Widget ---
-# This defines a single entry in the "Top Students" list.
-class TopStudentResponse(BaseModel):
-    student: StudentResponse # We reuse the existing detailed StudentResponse
-    count: int
-    first_obtained: datetime
-
-class GachaTransactionResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-    
-    transaction_id: int
-    transaction_create_on: datetime
-    student: StudentResponse
-
-class OverallRarityChartResponse(BaseModel):
+class OverallRaritySchema(BaseModel):
     r3_count: int
     r2_count: int
     r1_count: int
 
-# --- NEW: Schema for the KPI Widget ---
-class DashboardKpiResponse(OverallRarityChartResponse):
+# --- Response
+class DashboardKpiResponse(OverallRaritySchema):
     total_pulls: int
     total_pyroxene_spent: int
 
-class BannerBreakdownChartResponse(BaseModel):
-    # The keys of this dictionary will be the banner names
-    data: Dict[str, OverallRarityChartResponse]
+# --- Response
+class TopStudentResponse(BaseModel):
+    student: StudentResponse
+    count: int
+    first_obtained: datetime
 
+# --- Response
+class FirstR3Response(BaseModel):
+    transaction_id: int
+    transaction_create_on: datetime
+    student: StudentResponse
+
+# --- Response
 class CollectionProgressionResponse(BaseModel):
     rarity: int
     obtained: int
     total: int
 
+# --- Response
+class BannerBreakdownChartResponse(BaseModel):
+    data: Dict[str, OverallRaritySchema]
+
+# --- Response
 class MilestoneResponse(BaseModel):
-    student: StudentResponse # Reuse the detailed student response schema
+    student: StudentResponse 
     pull_number: int
 
-
-# --- NEW: The main schema for a single row in the performance table ---
-class BannerLuckResponse(BaseModel):
+# --- Response
+class LuckPerformanceResponse(BaseModel):
     banner_name: str
     total_pulls: int
     r3_count: int
@@ -178,8 +177,33 @@ class BannerLuckResponse(BaseModel):
     luck_variance: float
     gaps: Optional[LuckGapsSchema] = None
 
+#############################
+#       Mixing Schemas      #
+#############################
+
+# --- Response    
+class GachaPullResponse(BaseModel):
+    success: bool
+    results: List[GachaResultStudent]
+    unlocked_achievements: List[AchievementResponse]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # --- The schema for a single row in the history table ---
-class GachaTransactionPaginatedResponse(GachaTransactionResponse):
+class GachaTransactionPaginatedResponse(FirstR3Response):
     banner: BannerResponse
 
 # --- The main paginated response schema ---

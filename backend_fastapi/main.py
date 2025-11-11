@@ -494,7 +494,7 @@ def get_top_students_by_rarity(
 
 @app.get(
     "/api/dashboard/summary/first-r3-pull", 
-    response_model=Optional[schemas.GachaTransactionResponse] # The response can be null
+    response_model=Optional[schemas.FirstR3Response] # The response can be null
 )
 def get_first_r3_pull(
     request: Request,
@@ -532,7 +532,7 @@ def get_first_r3_pull(
 
     # Build the Pydantic response object
     student_response = create_student_response(first_r3_pull_orm.student, request)
-    response_data = schemas.GachaTransactionResponse(
+    response_data = schemas.FirstR3Response(
         transaction_id=first_r3_pull_orm.transaction_id,
         transaction_create_on=first_r3_pull_orm.transaction_create_on,
         student=student_response
@@ -540,45 +540,6 @@ def get_first_r3_pull(
     
     # Cache the successful result
     cache.set(cache_key, response_data.model_dump(mode="json"), expire=DEFAULT_TIMEOUT) # Cache forever
-
-    return response_data
-
-@app.get(
-    "/api/dashboard/summary/chart-overall-rarity", 
-    response_model=schemas.OverallRarityChartResponse
-)
-def get_chart_overall_rarity(
-    current_user: models.User = Depends(get_required_current_user),
-    db: Session = Depends(get_db),
-    cache: Cache = Depends(get_cache)
-):
-    cache_key = f"dashboard:chart_overall_rarity:{current_user.user_id}"
-    
-    cached_data = cache.get(cache_key)
-    if cached_data:
-        print(f"CACHE HIT for {cache_key}")
-        return cached_data
-
-    print(f"CACHE MISS for {cache_key}")
-    
-    # Efficiently query just the rarity of all students the user has pulled
-    rarity_pulls = db.query(models.Student.student_rarity).join(
-        models.GachaTransaction, models.GachaTransaction.student_id_fk == models.Student.student_id
-    ).filter(
-        models.GachaTransaction.user_id_fk == current_user.user_id
-    ).all()
-    
-    # The result is a list of tuples like [(3,), (2,), (2,)]. Use Counter to count them.
-    rarity_counter = Counter(r[0] for r in rarity_pulls)
-    
-    response_data = schemas.OverallRarityChartResponse(
-        r3_count=rarity_counter.get(3, 0),
-        r2_count=rarity_counter.get(2, 0),
-        r1_count=rarity_counter.get(1, 0),
-    )
-    
-    # Cache the result for 1 hour
-    cache.set(cache_key, response_data.model_dump(), expire=DEFAULT_TIMEOUT)
 
     return response_data
 
@@ -616,7 +577,7 @@ def get_chart_banner_breakdown(
     
     response_data = {}
     for banner_name, rarity_counter in pulls_by_banner.items():
-        response_data[banner_name] = schemas.OverallRarityChartResponse(
+        response_data[banner_name] = schemas.OverallRaritySchema(
             r3_count=rarity_counter.get(3, 0),
             r2_count=rarity_counter.get(2, 0),
             r1_count=rarity_counter.get(1, 0),
@@ -698,7 +659,7 @@ def get_milestone_timeline(
 
 @app.get(
     "/api/dashboard/summary/performance-table",
-    response_model=List[schemas.BannerLuckResponse]
+    response_model=List[schemas.LuckPerformanceResponse]
 )
 def get_performance_table(
     current_user: models.User = Depends(get_required_current_user),
@@ -730,7 +691,7 @@ def get_performance_table(
         .order_by(models.GachaBanner.banner_name)
     ).all()
 
-    banner_analysis: List[schemas.BannerLuckResponse] = []
+    banner_analysis: List[schemas.LuckPerformanceResponse] = []
     for banner_id, banner_name, banner_rate_decimal, total_pulls, r3_count in banner_stats_query:
         banner_rate = float(banner_rate_decimal)
         user_rate = (r3_count / total_pulls) * 100 if total_pulls > 0 else 0.0
@@ -762,7 +723,7 @@ def get_performance_table(
             )
 
         # 3. Assemble the Pydantic model for this row.
-        analysis_entry = schemas.BannerLuckResponse(
+        analysis_entry = schemas.LuckPerformanceResponse(
             banner_name=banner_name,
             total_pulls=total_pulls,
             r3_count=r3_count,
