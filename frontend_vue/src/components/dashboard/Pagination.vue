@@ -35,10 +35,12 @@
 </script>
 
 <template>
-  <div v-if="totalPages > 1" class="flex items-center justify-between text-sm text-slate-300">
+  <div
+    v-if="totalPages > 1"
+    class="flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-300"
+  >
     <!-- First & Previous -->
     <div class="flex items-center gap-2">
-      <!-- The :class binding now uses the computed property -->
       <button @click="changePage(1)" :disabled="currentPage === 1" :class="buttonClass(currentPage === 1)">
         &laquo; First
       </button>
