@@ -1,0 +1,85 @@
+<template>
+  <div class="relative w-full max-w-lg h-36">
+    <!-- Navigation Buttons -->
+    <button @click="goPrev" class="absolute top-1/2 -translate-y-1/2 left-0 md:-left-8 z-20 p-2">
+      <svg class="w-8 h-8 opacity-50 hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg>
+    </button>
+    <button @click="goNext" class="absolute top-1/2 -translate-y-1/2 right-0 md:-right-8 z-20 p-2">
+      <svg class="w-8 h-8 opacity-50 hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></svg>
+    </button>
+
+    <!-- Banner Images -->
+    <img
+      v-for="(banner, index) in banners"
+      :key="banner.banner_id"
+      :src="banner.image_url"
+      :style="getPosition(index)"
+      @click="emit('update:activeIndex', index)"
+      class="banner-image rounded-lg object-cover cursor-pointer"
+    />
+  </div>
+</template>
+
+<script setup lang="ts">
+interface Banner { banner_id: number; image_url: string; }
+
+const props = defineProps<{
+  banners: Banner[];
+  activeIndex: number;
+}>();
+
+const emit = defineEmits(['update:activeIndex']);
+
+// --- CORE LOGIC (Direct translation of your AlpineJS function) ---
+const getPosition = (index: number) => {
+  const total = props.banners.length;
+  if (total === 0) return {};
+  
+  let diff = index - props.activeIndex;
+
+  // Handle looping for seamless wrapping
+  if (diff > total / 2) { diff -= total; }
+  if (diff < -total / 2) { diff += total; }
+  
+  let scale = 0.9, zIndex = 1, filter = 'brightness(0.6)', opacity = 1;
+
+  if (diff === 0) { // Center banner
+    scale = 1.1;
+    zIndex = 10;
+    filter = 'brightness(1)';
+  } else if (Math.abs(diff) > 1) { // Banners far away
+    opacity = 0;
+  }
+  
+  const translateX = (diff * 60) - 50;
+
+  return {
+    transform: `translateX(${translateX}%) translateY(${diff === 0 ? '-15px' : '0'}) scale(${scale})`,
+    zIndex: zIndex,
+    filter: filter,
+    opacity: opacity,
+  };
+};
+
+const goNext = () => {
+  const total = props.banners.length;
+  if (total > 0) emit('update:activeIndex', (props.activeIndex + 1) % total);
+};
+
+const goPrev = () => {
+  const total = props.banners.length;
+  if (total > 0) emit('update:activeIndex', (props.activeIndex - 1 + total) % total);
+};
+</script>
+
+<style scoped>
+/* Scoped styles from your mockup */
+.banner-image {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 45%;
+  max-width: 192px;
+  transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+</style>
