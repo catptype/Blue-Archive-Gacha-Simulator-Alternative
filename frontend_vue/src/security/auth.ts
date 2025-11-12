@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import router from '../router';
-import apiClient from '../services/client'; 
+import router from '@/router';
+import apiClient from '@/services/client'; 
 
 export const useAuthStore = defineStore('auth', () => {
     const token = ref(localStorage.getItem('token') || null);

@@ -20,6 +20,7 @@ from .util.cache import get_cache, Cache
 from .util.database import engine, get_db
 from .util.schemas import create_student_response
 from .util.GachaEngine import GachaEngine
+from .util.AchievementEngine import AchievementEngine
 
 DEFAULT_TIMEOUT = 180
 
@@ -60,14 +61,23 @@ def _perform_pull(
     # Initialize variables for the response
     pickup_ids = {s.student_id for s in banner.pickup_students}
     final_results: List[schemas.GachaResultStudent] = []
+    unlocked_achievements: List[models.Achievement] = []
 
     # --- THIS IS THE KEY CHANGE ---
     # Only try to save transactions if a user object was provided.
     if current_user:
         print(f"User '{current_user.username}' is pulling. Processing inventory and transactions...")
 
-        # A) EFFICIENTLY PRE-FETCH the user's existing inventory for the pulled students.
-        # This avoids querying the database inside the loop (prevents N+1 problem).
+        # --- STEP 1: PREPARE FOR CHECKS ---
+        # Get the user's total pull count *before* this pull for milestone checks.
+        initial_pull_count = db.query(func.count(models.GachaTransaction.transaction_id)).filter(
+            models.GachaTransaction.user_id_fk == current_user.user_id
+        ).scalar() or 0
+
+        # Instantiate the achievement engine. It loads the user's existing unlocks.
+        ach_engine = AchievementEngine(user=current_user, db=db)
+
+        # Pre-fetch the user's existing inventory for the pulled students to check for "new".
         pulled_student_ids = [s.student_id for s in pulled_students_orm]
         user_inventory_query = db.query(models.UserInventory).filter(
             models.UserInventory.user_id_fk == current_user.user_id,
@@ -76,10 +86,10 @@ def _perform_pull(
         # Create a dictionary for fast lookups: {student_id: UserInventory_object}
         inventory_map = {item.student_id_fk: item for item in user_inventory_query}
 
-        # B) LOOP through the gacha results to process each one.
+        # --- STEP 2: PROCESS PULL RESULTS IN A LOOP ---
         for student in pulled_students_orm:
 
-            # i. Create a transaction record for every pull.
+            # A) Create a transaction record for every pull.
             new_transaction = models.GachaTransaction(
                 user_id_fk=current_user.user_id,
                 banner_id_fk=banner_id,
@@ -87,31 +97,23 @@ def _perform_pull(
             )
             db.add(new_transaction)
 
-            # ii. Check if this is a new student FOR THE USER.
-            # This is determined by looking at the inventory state *before* this pull started.
+            # B) Check if this student is new for the user's inventory.
             is_new = student.student_id not in inventory_map
 
-            # iii. Update or create the inventory entry.
+            # C) Update or create the inventory entry.
             inventory_item = inventory_map.get(student.student_id)
             if inventory_item:
-                # The user already has this student, so just increment the count.
                 inventory_item.inventory_num_obtained += 1
             else:
-                # This is the first time the user has ever obtained this student.
-                # Create a new inventory record.
                 new_inventory_item = models.UserInventory(
                     user_id_fk=current_user.user_id,
                     student_id_fk=student.student_id,
                     inventory_num_obtained=1
                 )
                 db.add(new_inventory_item)
-                # IMPORTANT: Add the newly created item to our map. This correctly
-                # handles the case where the user pulls the same *new* student
-                # multiple times in a single 10-pull. The first one will be marked
-                # as `is_new=True`, and the second one will be found here and incremented.
                 inventory_map[student.student_id] = new_inventory_item
             
-            # iv. Build the decorated result for the frontend response.
+            # D) Build the decorated result object for the frontend response.
             student_response = create_student_response(student, request)
             result_student = schemas.GachaResultStudent(
                 **student_response.model_dump(),
@@ -120,9 +122,25 @@ def _perform_pull(
             )
             final_results.append(result_student)
 
-        # C) COMMIT all changes (new transactions, new/updated inventory) at once.
+        # --- STEP 3: RUN PRE-COMMIT ACHIEVEMENT CHECKS ---
+        # These checks don't depend on the data being saved to the DB yet.
+        unlocked_achievements.extend(ach_engine.check_luck_achievements(pulled_students_orm))
+        unlocked_achievements.extend(ach_engine.check_milestone_achievements(initial_pull_count, amount))
+        
+        # --- STEP 4: COMMIT ALL DATABASE CHANGES ---
+        # This saves new transactions, new/updated inventory, and any newly unlocked achievements
+        # from the luck/milestone checks in a single atomic operation.
         db.commit()
 
+        # --- STEP 5: RUN POST-COMMIT ACHIEVEMENT CHECKS ---
+        # Collection achievements MUST be checked after the new inventory is committed.
+        newly_unlocked_collection = ach_engine.check_collection_achievements()
+        if newly_unlocked_collection:
+            unlocked_achievements.extend(newly_unlocked_collection)
+            # Commit again to save the new collection achievement unlocks.
+            db.commit()
+
+        # --- STEP 6: INVALIDATE ALL DASHBOARD CACHES FOR THIS USER ---
         cache_pattern = f"dashboard:*:{current_user.user_id}*"
         cache.delete_by_pattern(cache_pattern)
         
@@ -136,13 +154,18 @@ def _perform_pull(
                 is_new=False # Guests never have "new" students
             )
             final_results.append(result_student)
-    # --- END OF CHANGE ---
     
-    # 4. Return an instance of the main response schema
+    # --- Format the final response, including any unlocked achievements ---
+    achievements_response = []
+    for ach in unlocked_achievements:
+        ach_resp = schemas.AchievementResponse.model_validate(ach)
+        ach_resp.image_url = str(request.url_for('serve_achievement_image', achievement_id=ach.achievement_id)) if ach.achievement_image else None
+        achievements_response.append(ach_resp)
+
     return schemas.GachaPullResponse(
         success=True,
         results=final_results,
-        unlocked_achievements=[] # Mocked for now
+        unlocked_achievements=achievements_response # Mocked for now
     )
 
 # --- Authentication Endpoints ---

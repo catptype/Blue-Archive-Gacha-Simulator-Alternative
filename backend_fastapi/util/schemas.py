@@ -221,23 +221,6 @@ class GachaPullResponse(BaseModel):
     results: List[GachaResultStudent]
     unlocked_achievements: List[AchievementResponse]
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def create_student_response(student: Student, request: Request) -> StudentResponse:
     school_response = SchoolResponse.model_validate(student.school)
     school_response.school_id = student.school.school_id

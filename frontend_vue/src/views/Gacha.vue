@@ -1,17 +1,16 @@
 <script setup lang="ts">
     import { ref, computed, onMounted } from 'vue';
-    import Background from '../components/Background.vue';
-    import HeroPreview from '../components/gacha/HeroPreview.vue';
-    import BannerCarousel from '../components/gacha/BannerCarousel.vue';
-    import ActionPanel from '../components/gacha/ActionPanel.vue';
-    import GachaResults from '../components/gacha/GachaResults.vue';
-    import DetailsModal from '../components/gacha/DetailsModal.vue';
-    import apiClient from '../services/client'; 
+    import { useToastStore } from '@/stores/toast';
+    import Background from '@/components/Background.vue';
+    import HeroPreview from '@/components/gacha/HeroPreview.vue';
+    import BannerCarousel from '@/components/gacha/BannerCarousel.vue';
+    import ActionPanel from '@/components/gacha/ActionPanel.vue';
+    import GachaResults from '@/components/gacha/GachaResults.vue';
+    import DetailsModal from '@/components/gacha/DetailsModal.vue';
+    import apiClient from '@/services/client'; 
 
     interface Banner { banner_id: number; banner_name: string; image_url: string; }
     interface Student { student_id: number; student_rarity: number; }
-
-    // const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
     const banners = ref<Banner[]>([]);
     const activeIndex = ref(0);
@@ -26,23 +25,32 @@
         banners.value = response.data;
     });
 
+    const toastStore = useToastStore();
+
     const handlePull = async (amount: 1 | 10) => {
     if (!activeBanner.value) return;
     
     const bannerId = activeBanner.value.banner_id;
     
     const pullType = amount === 10 ? 'pull_ten' : 'pull_single';
-    // const apiUrl = `${API_BASE_URL}/gacha/${bannerId}/${pullType}`;
 
     try {
-      // The rest of the logic is the same.
-      // const response = await axios.post(apiUrl);
       const response = await apiClient.post(`/gacha/${bannerId}/${pullType}`); 
       gachaResults.value = response.data.results;
       isResultsModalVisible.value = true;
+
+      const unlockedAchievements = response.data.unlocked_achievements;
+      if (unlockedAchievements && unlockedAchievements.length > 0) {
+        // Loop through the unlocked achievements and show a toast for each one.
+        unlockedAchievements.forEach((ach: any, index: number) => {
+          // Stagger the notifications so they appear one after another.
+          setTimeout(() => {
+            toastStore.addToast(ach);
+          }, index * 500); // 500ms delay between each toast
+        });
+      }
     } catch (error) {
       console.error("Gacha pull failed:", error);
-      // You could add user-facing error handling here
     }
   };
 </script>
