@@ -924,7 +924,99 @@ def get_user_collection(
     cache.set(cache_key, response_data.model_dump(mode="json"), expire=3600)
     return response_data
 
+@app.get("/api/dashboard/achievements", response_model=List[schemas.UserAchievementResponse])
+def get_user_achievements(
+    request: Request,
+    current_user: models.User = Depends(get_required_current_user),
+    db: Session = Depends(get_db),
+    cache: Cache = Depends(get_cache)
+):
+    cache_key = f"dashboard:achievements:{current_user.user_id}"
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        print(f"CACHE HIT for {cache_key}")
+        return cached_data
+    
+    print(f"CACHE MISS for {cache_key}")
+
+    # Use a LEFT JOIN to fetch all achievements and augment them with unlock data
+    # for the current user in a single, efficient query.
+    achievements_with_status = (
+        db.query(
+            models.Achievement,
+            models.UnlockAchievement.unlock_on
+        )
+        .outerjoin(
+            models.UnlockAchievement,
+            (models.Achievement.achievement_id == models.UnlockAchievement.achievement_id_fk) &
+            (models.UnlockAchievement.user_id_fk == current_user.user_id)
+        )
+        .order_by(models.Achievement.achievement_category, models.Achievement.achievement_name)
+        .all()
+    )
+
+    # Process the query result into the response schema
+    response_data = []
+    for ach_orm, unlock_on in achievements_with_status:
+        achievement_data = schemas.AchievementResponse.model_validate(ach_orm)
+        achievement_data.image_url = str(request.url_for('serve_achievement_image', achievement_id=ach_orm.achievement_id)) if ach_orm.achievement_image else None
+        
+        response_data.append(schemas.UserAchievementResponse(
+            **achievement_data.model_dump(),
+            is_unlocked=unlock_on is not None,
+            unlocked_on=unlock_on
+        ))
+
+    # Cache the result. This should be invalidated when a new achievement is unlocked.
+    cache.set(cache_key, [item.model_dump(mode="json") for item in response_data], expire=3600)
+    return response_data
+
 # --- Image Serving Endpoints (No changes needed here) ---
+@app.get("/image/achievement/{achievement_id}", name="serve_achievement_image")
+def serve_achievement_image(achievement_id: int, request: Request, db: Session = Depends(get_db), cache: Cache = Depends(get_cache)):
+
+    cache_key = f"image:achievement:{achievement_id}"
+
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        print(f"CACHE HIT for {cache_key}")
+        image_bytes = base64.b64decode(cached_data['image_b64'])
+        etag = cached_data['etag']
+    else:
+        # 3. If cache miss, query the database
+        print(f"CACHE MISS for {cache_key}")
+        achievement = db.query(models.Achievement).filter(models.Achievement.achievement_id == achievement_id).first()
+        if not achievement or not achievement.achievement_image:
+            raise HTTPException(status_code=404, detail="Achievement image not found")
+
+        image_bytes = achievement.achievement_image
+
+        etag = hashlib.sha1(image_bytes).hexdigest()
+        image_b64_string = base64.b64encode(image_bytes).decode("utf-8")
+
+        data_to_cache = {
+            "etag": etag,
+            "image_b64": image_b64_string
+        }
+        # Store in the application cache for 1 hour (3600 seconds)
+        cache.set(cache_key, data_to_cache, expire=DEFAULT_TIMEOUT)
+    
+    # 5. Check the browser's cache using the ETag
+    # The browser sends this header if it has a cached version.
+    if request.headers.get("if-none-match") == etag:
+        print(f"CACHE HIT (Browser - 304) for {cache_key}")
+        # A 304 response tells the browser to use its local copy.
+        return Response(status_code=304)
+
+    # 6. If it's a new request or the ETag doesn't match, send the full response
+    # and include headers that tell the browser to cache the image.
+    headers = {
+        "Cache-Control": "public, max-age=86400",  # Cache for 1 day
+        "ETag": etag
+    }
+    return Response(content=image_bytes, media_type="image/png", headers=headers)
+
+
 @app.get("/image/banner/{banner_id}", name="serve_banner_image")
 def serve_banner_image(banner_id: int, request: Request, db: Session = Depends(get_db), cache: Cache = Depends(get_cache)):
 

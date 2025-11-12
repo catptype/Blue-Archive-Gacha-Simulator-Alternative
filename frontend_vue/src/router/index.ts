@@ -1,14 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import HomeView from '../views/Home.vue';
-import StudentView from '../views/Student.vue';
-import GachaView from '../views/Gacha.vue';
-import LoginView from '../views/Login.vue';
-import RegisterView from '../views/Register.vue';
-import DashboardView from '../views/Dashboard.vue';
-import SummaryTab from '../components/dashboard/SummaryTab.vue';
-import HistoryTab from '../components/dashboard/HistoryTab.vue';
-import CollectionTab from '../components/dashboard/CollectionTab.vue';
-import AchievementsTab from '../components/dashboard/AchievementsTab.vue';
+import HomeView from '@/views/Home.vue';
+import StudentView from '@/views/Student.vue';
+import GachaView from '@/views/Gacha.vue';
+import LoginView from '@/views/Login.vue';
+import RegisterView from '@/views/Register.vue';
+import DashboardView from '@/views/Dashboard.vue';
+import SummaryTab from '@/components/dashboard/SummaryTab.vue';
+import HistoryTab from '@/components/dashboard/HistoryTab.vue';
+import CollectionTab from '@/components/dashboard/CollectionTab.vue';
+import AchievementsTab from '@/components/dashboard/AchievementsTab.vue';
 
 const routes = [
   {

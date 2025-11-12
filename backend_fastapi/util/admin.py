@@ -173,6 +173,12 @@ class AchievementAdmin(ModelView, model=models.Achievement):
     icon = "fa-solid fa-trophy"
     column_list = ["achievement_id", "achievement_category", "achievement_name", "achievement_description", "achievement_key"]
 
+class UserAchievementAdmin(ModelView, model=models.UnlockAchievement):
+    name = "Unlocked Achievement"
+    name_plural = "Unlocked Achievements"
+    icon = "fa-solid fa-lock-open"
+    column_list = ["unlock_id", "unlock_on", "user", "achievement"]
+
 class UserInventoryAdmin(ModelView, model=models.UserInventory):
     name = "Inventory"
     name_plural = "Inventories"
@@ -238,5 +244,6 @@ def init_admin(app: FastAPI):
     admin.add_view(GachaPresetAdmin)
     admin.add_view(GachaBannerAdmin)
     admin.add_view(AchievementAdmin)
+    admin.add_view(UserAchievementAdmin)
     admin.add_view(UserInventoryAdmin)
     admin.add_view(GachaTransactionAdmin)

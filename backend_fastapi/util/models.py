@@ -166,6 +166,9 @@ class Achievement(Base):
     achievement_category = Column(String(20), default='MILESTONE')
     achievement_key = Column(String(50), unique=True, nullable=False)
 
+    def __str__(self) -> str:
+        return f"{self.achievement_name}"
+
 class UnlockAchievement(Base):
     __tablename__ = 'unlock_achievement_table'
     unlock_id = Column(Integer, primary_key=True, index=True)
