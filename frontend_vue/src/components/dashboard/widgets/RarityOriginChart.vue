@@ -6,15 +6,9 @@
     const { data: apiData } = await apiClient.get('/dashboard/summary/chart-banner-breakdown');
 
     // 2. Transform the data into the structure ApexCharts needs for a stacked bar chart
-    const { chartSeries, chartCategories } = computed(() => {
+    const chartSeries = computed(() => {
         const banners = Object.keys(apiData.data);
-        if (banners.length === 0) {
-            return { chartSeries: [], chartCategories: [] };
-        }
-
-        // The 'series' for a stacked bar is an array of objects.
-        // Each object represents a banner and its data points correspond to the categories.
-        const series = banners.map(bannerName => ({
+        return banners.map(bannerName => ({
             name: bannerName,
             data: [
                 apiData.data[bannerName].r3_count,
@@ -22,14 +16,10 @@
                 apiData.data[bannerName].r1_count,
             ]
         }));
-    
-        // The 'categories' are the labels for the X-axis.
-        const categories = ['★★★', '★★', '★'];
+    });
 
-        return { chartSeries: series, chartCategories: categories };
-    }).value;
-
-    const hasData = computed(() => chartSeries.length > 0);
+    const chartCategories = computed(() => ['★★★', '★★', '★']);
+    const hasData = computed(() => chartSeries.value.length > 0);
 
     // 3. Configure the chart options for a horizontal stacked bar chart
     const chartOptions = ref({
@@ -48,10 +38,11 @@
                 // We access the original raw number from the series data.
                 // `opts.seriesIndex` is the index of the banner (e.g., 0 for "Bunny Banner").
                 // `opts.dataPointIndex` is the index of the rarity (e.g., 0 for R3).
-                const rawValue = chartSeries[opts.seriesIndex].data[opts.dataPointIndex];
-                
+                const rawValue = chartSeries.value[opts.seriesIndex].data[opts.dataPointIndex];
+
                 // Don't show a label for zero values to keep the chart clean.
                 return rawValue > 0 ? rawValue : '';
+
             },
             // Add styling for better contrast.
             style: { 
@@ -73,7 +64,7 @@
             bar: {  horizontal: true, barHeight: '80%' },
         },
         xaxis: {
-            categories: chartCategories,
+            categories: chartCategories.value,
             labels: { 
                 style: { colors: '#94a3b8' }, 
                 formatter: function (val) { return val + "%";} 
