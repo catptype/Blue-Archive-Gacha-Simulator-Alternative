@@ -5,30 +5,25 @@ import ResultCard from './ResultCard.vue';
 const props = defineProps<{ results: any[] }>();
 const emit = defineEmits(['close']);
 
-const mobileCurrentIndex = ref(0);
 const flippedStates = ref<boolean[]>(props.results.map(() => false));
 
-// --- NEW: State for tracking screen size ---
-const isDesktop = ref(window.innerWidth >= 1280); // 1280px is Tailwind's 'xl' breakpoint
-
-// --- NEW: Function to update isDesktop on resize ---
-const handleResize = () => {
-  isDesktop.value = window.innerWidth >= 1280;
-};
-
-// --- NEW: Lifecycle hooks to add/remove the event listener ---
-onMounted(() => {
-  window.addEventListener('resize', handleResize);
-});
-onUnmounted(() => {
-  window.removeEventListener('resize', handleResize);
+// --- NEW COMPUTED PROPERTY TO TRACK REVEAL STATE ---
+// This will be true only when every value in the flippedStates array is true.
+const allCardsRevealed = computed(() => {
+  // For a single pull, it's "revealed" as soon as it's flipped.
+  if (flippedStates.value.length === 0) return false;
+  return flippedStates.value.every(state => state === true);
 });
 
-// --- Mobile Slider Logic (unchanged) ---
-const sliderTrackStyle = computed(() => ({
-  transform: `translateX(-${mobileCurrentIndex.value * 100}%)`,
-}));
+// --- The rest of the script is unchanged ---
+const resultCards = ref<InstanceType<typeof ResultCard>[]>([]);
+const mobileCurrentIndex = ref(0);
+const isDesktop = ref(window.innerWidth >= 1280);
+const handleResize = () => { isDesktop.value = window.innerWidth >= 1280; };
+onMounted(() => { window.addEventListener('resize', handleResize); });
+onUnmounted(() => { window.removeEventListener('resize', handleResize); });
 
+const sliderTrackStyle = computed(() => ({ transform: `translateX(-${mobileCurrentIndex.value * 100}%)` }));
 const navigateMobile = (direction: 1 | -1) => {
   const newIndex = mobileCurrentIndex.value + direction;
   if (newIndex >= 0 && newIndex < props.results.length) {
@@ -36,7 +31,6 @@ const navigateMobile = (direction: 1 | -1) => {
   }
 };
 
-// --- Reveal Animation Logic (now works correctly for both views) ---
 const revealCard = (index: number) => {
   flippedStates.value[index] = true;
 };
@@ -47,27 +41,26 @@ const revealAll = () => {
     .map((_, index) => index)
     .sort((a, b) => props.results[b].student_rarity - props.results[a].student_rarity);
   
-  // Update the state array with a delay
   sortedIndices.forEach((cardIndex, revealIndex) => {
     setTimeout(() => {
-      flippedStates.value[cardIndex] = true;
+      // We now call revealCard to ensure the state is updated correctly
+      revealCard(cardIndex);
     }, revealIndex * 100);
   });
 };
 </script>
 
+
+
+
 <template>
   <Transition name="modal-fade" appear>
     <div class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
       <div class="relative w-full max-w-7xl h-[90vh] bg-slate-800/80 border border-slate-600 rounded-lg shadow-2xl flex flex-col">
-        <button @click="emit('close')" class="absolute top-2 right-2 text-slate-400 hover:text-white z-20 text-4xl leading-none">&times;</button>
         
         <!-- Header -->
         <div class="flex-shrink-0 p-4 border-b border-slate-600 flex justify-between items-center">
           <h2 class="text-2xl font-bold text-cyan-300">Gacha Results</h2>
-          <button v-if="results.length > 1" @click="revealAll" class="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-white font-semibold rounded-lg transition-colors">
-            Reveal All
-          </button>
         </div>
 
         <div class="flex-grow p-4 overflow-hidden" style="perspective: 1000px;">
@@ -112,19 +105,51 @@ const revealAll = () => {
               </div>
             </template>
           </div>
+        
         </div>
+
+        <div class="flex-shrink-0 p-4 border-t border-slate-700 flex justify-center items-center">
+          <Transition name="fade" mode="out-in">
+            <button
+              v-if="!allCardsRevealed"
+              @click="revealAll"
+              class="px-6 py-3 bg-slate-600 hover:bg-slate-500 text-white font-semibold rounded-lg transition-colors text-lg"
+            >
+              Reveal All
+            </button>
+            <button
+              v-else-if="allCardsRevealed"
+              @click="emit('close')"
+              class="px-6 py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-lg transition-colors text-lg"
+            >
+              Close
+            </button>
+          </Transition>
+        </div>
+
       </div>
     </div>
   </Transition>
 </template>
 
 <style scoped>
-  .modal-fade-enter-active,
-  .modal-fade-leave-active {
-    transition: opacity 0.3s ease;
-  }
-  .modal-fade-enter-from,
-  .modal-fade-leave-to {
-    opacity: 0;
-  }
+/* Modal fade styles are unchanged */
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+}
+
+/* Add a transition for the button swap */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
 </style>
