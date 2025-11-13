@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useToastStore } from '@/stores/toast';
 import apiClient from '@/services/client';
 
 // Import all necessary components
 import SlidingBannerCarousel from '@/components/gacha/SlidingBannerCarousel.vue';
 import DetailsModal from '@/components/gacha/DetailsModal.vue';
 import GachaResults from '@/components/gacha/GachaResults.vue';
-import { useToastStore } from '@/stores/toast';
+import planaMov from '@/assets/plana-gacha.mov';
 
 interface Banner { banner_id: number; banner_name: string; image_url: string; }
 interface Student { /* ... */ }
@@ -47,17 +48,17 @@ const handlePull = async (amount: 1 | 10) => {
 <template>
   <div class="relative w-full h-screen overflow-hidden text-gray-200">
     <!-- Background -->
-    <div class="absolute inset-0">
+    <div class="absolute inset-0 z-0">
       <video autoplay muted loop class="hero-bg-video">
-        <source src="@/assets/plana-gacha.mov" type="video/mp4">
+        <source :src="planaMov" type="video/mp4">
       </video>
-      <div class="absolute inset-0 bg-black/40"></div>
+      <div class="absolute inset-0 bg-black/50"></div>
     </div>
     
     <!-- Main UI Container -->
     <div class="relative w-full h-full flex flex-col justify-end items-center">
       <!-- Banner Carousel -->
-      <div class="w-full max-w-[80%] h-36 -mb-12 border">
+      <div class="w-full max-w-[80%] h-36 -mb-12">
         <SlidingBannerCarousel
           v-if="banners.length > 0"
           :banners="banners"

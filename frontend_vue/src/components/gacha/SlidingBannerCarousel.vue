@@ -22,7 +22,7 @@ const getPosition = (index: number) => {
   // Define default values
   let scale = 0.8;
   let zIndex = 1;
-  let filter = 'brightness(0.4)';
+  let filter = 'brightness(0.3)';
   let opacity = 1;
   let pointerEvents: 'auto' | 'none' = 'auto'; // Default to clickable
 
@@ -35,10 +35,10 @@ const getPosition = (index: number) => {
     pointerEvents = 'none';
   }
   
-  const translateX = (diff * 80) - 50;
+  const translateX = (diff * 100) - 50;
 
   return {
-    transform: `translateX(${translateX}%) translateY(${diff === 0 ? '-50px' : '0'}) scale(${scale})`,
+    transform: `translateX(${translateX}%) translateY(${diff === 0 ? '-70px' : '0'}) scale(${scale})`,
     zIndex: zIndex,
     filter: filter,
     opacity: opacity,
@@ -60,11 +60,11 @@ const goPrev = () => {
 <template>
   <div class="relative w-full max-w-[80%] h-36 mx-auto">
     <!-- Navigation Buttons -->
-    <button @click="goPrev" class="absolute top-1/2 -translate-y-1/2 left-0 md:-left-8 z-20 p-2">
-      <svg class="w-8 h-8 opacity-50 hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg>
+    <button @click="goPrev" class="absolute rounded-full bg-cyan-600/80 top-1/2 -translate-y-1/2 -left-8 z-20 p-2">
+      <svg class="w-8 h-8 opacity-80 hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg>
     </button>
-    <button @click="goNext" class="absolute top-1/2 -translate-y-1/2 right-0 md:-right-8 z-20 p-2">
-      <svg class="w-8 h-8 opacity-50 hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></svg>
+    <button @click="goNext" class="absolute rounded-full bg-cyan-600/80 top-1/2 -translate-y-1/2 -right-8 z-20 p-2">
+      <svg class="w-8 h-8 opacity-80 hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></svg>
     </button>
 
     <!-- Banner Images -->
