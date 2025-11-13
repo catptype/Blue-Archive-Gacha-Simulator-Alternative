@@ -55,14 +55,12 @@ const handlePull = async (amount: 1 | 10) => {
     </div>
     
     <!-- Top left details button -->
-    <button @click="isDetailsModalVisible = true" class="absolute top-4 left-4 md:top-6 md:left-6 text-base md:text-lg border-b-2 border-transparent hover:border-blue-400 transition-colors z-30">
-      DETAILS
-    </button>
+    
 
     <!-- Main UI Container -->
     <div class="relative w-full h-full flex flex-col justify-end items-center">
       <!-- Banner Carousel -->
-      <div class="w-full max-w-lg h-36 mb-4">
+      <div class="w-full max-w-lg h-05 mb-4">
         <SlidingBannerCarousel
           v-if="banners.length > 0"
           :banners="banners"
@@ -73,6 +71,9 @@ const handlePull = async (amount: 1 | 10) => {
       <!-- Central Core -->
       <div class="h-1/3 md:h-1/4 w-full flex justify-center">
         <div class="central-core h-full flex justify-center items-center gap-4 md:gap-8 pt-4">
+          <button @click="isDetailsModalVisible = true" class="pull-btn w-32 h-14 md:w-40 md:h-16 text-lg md:text-xl text-blue-300 rounded-lg">
+            DETAILS
+          </button>
           <button @click="handlePull(1)" class="pull-btn w-32 h-14 md:w-40 md:h-16 text-lg md:text-xl text-blue-300 rounded-lg">
             PULL x1
           </button>
