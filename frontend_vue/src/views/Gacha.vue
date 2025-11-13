@@ -62,7 +62,7 @@ const handlePull = async (amount: 1 | 10) => {
         <div 
           :key="activeBanner ? activeBanner.banner_name : 'loading'"
           v-if="activeBanner"
-          class="text-center my-auto"
+          class="text-center mb-20 opacity-80"
         >
           <h2 class="text-3xl font-bold tracking-wider text-white" style="text-shadow: 2px 2px 8px rgba(0,0,0,0.7);">
             {{ activeBanner.banner_name }}
@@ -79,8 +79,6 @@ const handlePull = async (amount: 1 | 10) => {
         />
       </div>
 
-      
-      
       <!-- Central Core -->
       <div class="h-1/4 w-full flex justify-center">
         <div class="w-full border border-slate-700 bg-slate-900/50 backdrop-blur-lg rounded-tl-full rounded-tr-full h-full grid grid-cols-1 md:grid-cols-2 p-10 md:p-20 gap-4">
