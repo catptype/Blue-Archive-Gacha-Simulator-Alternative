@@ -33,14 +33,22 @@ A high-performance, asynchronous Python web framework ideal for building robust 
 
 #### Tech Stack
 
-| Category | Technology |
-| :--- | :--- |
-| **Framework** | FastAPI |
-| **ORM** | SQLAlchemy |
-| **Database** | SQLite |
-| **Admin Panel**| SQLAdmin |
-| **Auth** | JWT with `python-jose` |
-| **Validation** | Pydantic |
+This implementation uses a carefully selected set of libraries to provide a feature-rich and performant backend experience.
+
+| Category | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Framework** | FastAPI | Core asynchronous web framework for building the API endpoints. |
+| **Database / ORM** | SQLAlchemy | The primary Object-Relational Mapper for all database interactions. |
+| | SQLite | The file-based database used for development and easy setup. |
+| **Authentication** | `bcrypt` | For securely hashing and verifying user passwords. |
+| | `python-jose` | For creating, signing, and decoding JSON Web Tokens (JWT) for sessions. |
+| **Admin Panel** | SQLAdmin | Provides a secure, auto-generated web UI for database management. |
+| **Data Validation** | Pydantic | Used for all data validation, serialization, and defining API schemas. |
+| **Caching** | Redis | The production-ready cache client for high performance. |
+| | In-Memory | A simple dictionary-based cache for development (no Redis needed). |
+| **Dev Server** | Uvicorn | The high-performance ASGI server used for local development (`--reload`). |
+| **Prod Server** | Gunicorn | The battle-tested process manager used to run and scale Uvicorn workers in production. |
+| **Utilities** | Pytz | For handling timezone conversions in the admin panel. |
 
 #### Key Features
 
@@ -48,6 +56,7 @@ A high-performance, asynchronous Python web framework ideal for building robust 
 *   **Data Validation:** Uses Pydantic for strict, type-hinted data validation and serialization, creating a reliable API contract.
 *   **Automatic Docs:** Generates interactive OpenAPI (Swagger UI) and ReDoc documentation automatically.
 *   **Secure Admin Panel:** Integrates SQLAdmin to provide a secure, superuser-only interface for database management, mimicking the Django Admin.
+*   **Swappable Caching Layer:** Features a flexible caching system that uses a simple in-memory cache during development but can be switched to a high-performance Redis cache in production via a single environment variable (`CACHE_TYPE`).
 
 #### Getting Started (FastAPI)
 
@@ -70,14 +79,16 @@ A progressive, component-based JavaScript framework for building modern, reactiv
 
 #### Tech Stack
 
-| Category | Technology |
-| :--- | :--- |
-| **Framework** | Vue.js 3 (with Composition API) |
-| **Build Tool** | Vite |
-| **Language** | TypeScript |
-| **State Mngmt**| Pinia |
-| **Styling** | Tailwind CSS |
-| **Data Viz** | ApexCharts |
+| Category        | Technology                                   |
+| :-------------- | :------------------------------------------- |
+| **Framework**   | Vue.js 3 (with Composition API)              |
+| **Build Tool**  | Vite                                         |
+| **Language**    | TypeScript                                   |
+| **Routing**     | Vue Router                                   |
+| **State Mngmt** | Pinia                                        |
+| **Styling**     | Tailwind CSS                                 |
+| **API Client**  | Axios                                        |
+| **Data Viz**    | ApexCharts                                   |
 
 #### Key Features
 
