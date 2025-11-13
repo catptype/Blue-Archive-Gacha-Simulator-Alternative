@@ -12,81 +12,96 @@ This project was originally developed as a full-stack application using Django a
 
 **[➡️ View the Original Django Version Here](https://github.com/catptype/Blue-Archive-Gacha-Simulator-V2)**
 
----
+## 🏛️ Architectural Philosophy
 
-## 🧪 Implementation 1: FastAPI + Vue.js
+All modern implementations in this repository follow a **decoupled, API-driven architecture**.
 
-This version refactors the application into a modern decoupled architecture, with a dedicated backend API serving a dynamic Single Page Application (SPA) frontend.
+*   **Backend's Role:** To provide a stateless, JSON-based API. It is responsible for business logic, database interaction, and authentication.
+*   **Frontend's Role:** To act as a pure consumer of the API. It is a standalone Single Page Application (SPA) responsible for all UI, rendering, and client-side state management.
 
-### 🛠️ Tech Stack
-
-*   **Backend:** FastAPI, Python, SQLAlchemy, SQLAdmin, JWT (for authentication)
-*   **Frontend:** Vue.js, TypeScript, Tailwind CSS
-*   **Database:** SQLite
-*   **Data Visualization:** ApexCharts
-
-### ✨ Key Architectural Differences from the Django Version
-
-This implementation isn't just a change of frameworks; it's a fundamental shift in architecture.
-
-*   **Decoupled Architecture:** Unlike the original monolithic Django app, this version separates concerns completely. The FastAPI server exposes a RESTful API, and the Vue.js frontend acts as a pure consumer of that API.
-*   **Asynchronous Backend:** Leverages FastAPI's asynchronous capabilities for high-performance API endpoints, which is a key area of exploration compared to Django's traditional synchronous request/response cycle.
-*   **Client-Side State Management:** All UI state, user data, and gacha results are managed directly within the Vue.js application (using tools like Pinia or Vue's built-in reactivity), creating a fluid user experience without full page reloads.
-*   **Static Site Serving:** The frontend is a standalone static application that can be served from any simple web server or CDN, communicating with the backend API independently.
-
-### 📸 Screenshots
-
-The user interface and core features are designed to replicate the original project. For screenshots of the UI, please refer to the [original repository's README](https://github.com/catptype/Blue-Archive-Gacha-Simulator-V2#screenshots).
+This separation allows any implemented frontend to work with any implemented backend, providing a flexible platform for comparison.
 
 ---
 
-## 🚀 Getting Started
+## ⚙️ Implemented Backends
 
-To run this project, you will need to run two separate processes in two terminals: one for the backend API and one for the frontend application.
+This section details the available backend API servers.
 
-### 1. Backend Setup (FastAPI)
+### 🐍 Backend 1: FastAPI
 
-1.  **Navigate to the backend directory** from the project root:
-    ```sh
-    cd backend_fastapi
-    ```
-2.  **Install Python dependencies:**
-    ```sh
-    pip install -r requirements.txt
-    ```
-3.  **Initialize the database and create an admin user.** Run these commands from the project's *root* directory:
-    ```sh
-    # Create the database and tables
-    python -m backend_fastapi.create_db
+A high-performance, asynchronous Python web framework ideal for building robust APIs.
 
-    # Create a superuser (replace with your desired credentials)
-    python -m backend_fastapi.create_superuser your_username your_password
-    ```
-4.  **Run the development server:**
-    ```sh
-    uvicorn backend_fastapi.main:app --reload
-    ```
-The API will be available at `http://localhost:8000`.
+#### Tech Stack
 
-### 2. Frontend Setup (Vue.js)
+| Category | Technology |
+| :--- | :--- |
+| **Framework** | FastAPI |
+| **ORM** | SQLAlchemy |
+| **Database** | SQLite |
+| **Admin Panel**| SQLAdmin |
+| **Auth** | JWT with `python-jose` |
+| **Validation** | Pydantic |
 
-1.  **Navigate to the frontend directory** from the project root:
-    ```sh
-    cd frontend_vue
-    ```
-2.  **Install Node.js dependencies:**
-    ```sh
-    npm install
-    npm run dev
-    ```
-The application will be available at `http://localhost:5173/` (or whichever port Vite specifies).
+#### Key Features
+
+*   **Asynchronous by Design:** Leverages Python's `async` and `await` for non-blocking, high-performance I/O.
+*   **Data Validation:** Uses Pydantic for strict, type-hinted data validation and serialization, creating a reliable API contract.
+*   **Automatic Docs:** Generates interactive OpenAPI (Swagger UI) and ReDoc documentation automatically.
+*   **Secure Admin Panel:** Integrates SQLAdmin to provide a secure, superuser-only interface for database management, mimicking the Django Admin.
+
+#### Getting Started (FastAPI)
+
+1.  Navigate to the backend directory: `cd backend_fastapi`
+2.  Set up and activate a Python virtual environment (e.g., Conda).
+3.  Install dependencies: `pip install -r requirements.txt`
+4.  Initialize the database (from the project **root**): `python -m backend_fastapi.create_db`
+5.  Create a superuser (from the project **root**): `python -m backend_fastapi.create_superuser <username> <password>`
+6.  Run the server: `uvicorn backend_fastapi.main:app --reload`
 
 ---
 
-## 📄 Resources
+## 🎨 Implemented Frontends
 
-The visual assets and fonts used in this project were sourced from the following excellent community resources.
+This section details the available frontend SPA clients.
 
-*   [Student Images Asset](https://bluearchive.wiki/wiki/Characters): Source for student character portraits and artworks.
-*   [Web Logo Generator](https://tmp.nulla.top/ba-logo/): A tool for generating web logos related to Blue Archive.
-*   [RoGSanSrfStd-Bd Font](https://www.ffonts.net/RoGSanSrfStd-Bd.font): The font used in the project for a specific style or branding.
+### 🖼️ Frontend 1: Vue.js
+
+A progressive, component-based JavaScript framework for building modern, reactive user interfaces.
+
+#### Tech Stack
+
+| Category | Technology |
+| :--- | :--- |
+| **Framework** | Vue.js 3 (with Composition API) |
+| **Build Tool** | Vite |
+| **Language** | TypeScript |
+| **State Mngmt**| Pinia |
+| **Styling** | Tailwind CSS |
+| **Data Viz** | ApexCharts |
+
+#### Key Features
+
+*   **Component-Based:** The entire UI is broken down into small, reusable, and self-contained `.vue` components.
+*   **Declarative & Reactive:** Manages UI state with the Composition API. The DOM automatically "reacts" to data changes, eliminating manual DOM manipulation.
+*   **Centralized State:** Uses Pinia to globally manage application-wide state, such as user authentication and toast notifications.
+*   **Fast Development:** Leverages Vite for an extremely fast development server with Hot Module Replacement (HMR).
+
+#### Getting Started (Vue.js)
+
+1.  Navigate to the frontend directory: `cd frontend_vue`
+2.  Create a local environment file (`.env.development`) and add the backend API URL:
+    ```
+    VITE_API_BASE_URL=http://127.0.0.1:8000
+    ```
+3.  Install dependencies: `npm install`
+4.  Run the development server: `npm run dev`
+
+---
+
+## 🚀 Running the Project
+
+To run the application, you must have **one backend** and **one frontend** running simultaneously in two separate terminals.
+
+1.  **Terminal 1 (Backend):** Follow the "Getting Started" steps for your chosen backend (e.g., FastAPI).
+2.  **Terminal 2 (Frontend):** Follow the "Getting Started" steps for your chosen frontend (e.g., Vue.js).
+3.  **Access:** Open your browser to the URL provided by the frontend's development server (typically `http://localhost:5173`).
