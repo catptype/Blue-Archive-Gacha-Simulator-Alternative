@@ -74,7 +74,7 @@ const goPrev = () => {
       :src="banner.image_url"
       :style="getPosition(index)"
       @click="emit('update:activeIndex', index)"
-      class="banner-image rounded-lg object-cover cursor-pointer"
+      class="banner-image object-cover cursor-pointer"
     />
   </div>
 </template>
@@ -91,5 +91,16 @@ const goPrev = () => {
   max-width: 400px;
   min-width: 300px;
   transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+  -webkit-mask-image: linear-gradient(to bottom, 
+    transparent 1%, 
+    black 10%, 
+    black 100%
+  );
+  mask-image: linear-gradient(to bottom, 
+    transparent 1%, 
+    black 10%, 
+    black 100%
+  );
 }
 </style>
