@@ -622,10 +622,11 @@ def get_milestone_timeline(
 ):
     cache_key = f"dashboard:milestones:{current_user.user_id}"
     cached_data = cache.get(cache_key)
-    if cached_data:
+    if cached_data is not None: # More robust check for any cached data
         print(f"CACHE HIT for {cache_key}")
-        return None if cached_data == "NONE" else cached_data
-
+        # If the cached value is our special string, return an empty list.
+        # Otherwise, return the cached data itself.
+        return [] if cached_data == "NONE" else cached_data
     print(f"CACHE MISS for {cache_key}")
     
     # --- START OF THE NEW, EFFICIENT QUERY ---
