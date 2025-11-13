@@ -22,9 +22,9 @@ async function fetchSchools() {
   try {
     const response = await apiClient.get('/schools/'); 
     schools.value = response.data;
-    // Automatically select the first school on load
-    if (schools.value.length > 0) {
-      handleSchoolSelect(schools.value[0]);
+    const firstSchool = schools.value[0];
+    if (firstSchool) {
+      handleSchoolSelect(firstSchool);
     }
   } catch (error) { console.error('Failed to fetch schools:', error); }
   finally { isLoadingSchools.value = false; }
@@ -73,7 +73,6 @@ onMounted(fetchSchools);
       <!-- Right Column -->
       <Transition name="fade" mode="out-in">
         <StudentCarousel
-          :key="selectedSchoolId"
           :students="students"
           :is-loading="isLoadingStudents"
           :is-sidebar-expanded="isSidebarExpanded"

@@ -66,7 +66,7 @@ const getChartOptions = (item: ProgressionEntry) => {
             fontSize: '18px',
             color: '#94a3b8', // slate-400
             offsetY: 8,
-            formatter: (val: number) => `${item.obtained} / ${item.total}`,
+            formatter: () => `${item.obtained} / ${item.total}`,
           },
         },
       },

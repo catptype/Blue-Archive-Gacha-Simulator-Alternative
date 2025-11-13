@@ -7,8 +7,8 @@ from typing import List, Dict, Any
 
 # Important: This script assumes it is run from the `backend` directory.
 # It uses relative paths to find the database and data files.
-from backend.util.database import SessionLocal, engine
-from .util.database import Base, SessionLocal
+# from backend.util.database import SessionLocal, engine
+from .util.database import Base, SessionLocal, engine
 from .util.models import (
     Version, School, ImageAsset, Student, GachaPreset, GachaBanner, User, Role, Achievement
 )

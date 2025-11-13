@@ -16,7 +16,6 @@ const allCardsRevealed = computed(() => {
 });
 
 // --- The rest of the script is unchanged ---
-const resultCards = ref<InstanceType<typeof ResultCard>[]>([]);
 const mobileCurrentIndex = ref(0);
 const isDesktop = ref(window.innerWidth >= 1280);
 const handleResize = () => { isDesktop.value = window.innerWidth >= 1280; };
@@ -72,7 +71,7 @@ const revealAll = () => {
                 v-for="(student, index) in results"
                 :key="student.student_id + '-' + index"
                 :student="student"
-                :is-flipped="flippedStates[index]"  
+                :is-flipped="flippedStates[index] ?? false"  
                 @click="revealCard(index)"
                 :class="{ 'xl:col-start-3': results.length === 1 }"
               />
@@ -86,7 +85,7 @@ const revealAll = () => {
                 <div class="w-64">
                   <ResultCard 
                     :student="student"
-                    :is-flipped="flippedStates[index]" 
+                    :is-flipped="flippedStates[index] ?? false" 
                     @click="revealCard(index)" 
                   />
                 </div>

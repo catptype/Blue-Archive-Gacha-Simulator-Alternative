@@ -1,0 +1,41 @@
+services:
+  # The Backend FastAPI Service
+  redis:
+    image: redis:latest
+    container_name: redis_cache
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend_fastapi
+    image: fastapi_image
+    container_name: fastapi
+    volumes:
+      # - gacha-db:/app/backend_fastapi/db.sqlite3
+      - ./production/db.sqlite3:/app/db.sqlite3
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+    environment:
+      - SECRET_KEY=your_super_secret_random_string_here
+      - CACHE_TYPE=redis
+      - REDIS_URL=redis://redis:6379
+      - DISPLAY_TIMEZONE=Asia/Bangkok
+
+  # The Frontend Vue Service
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend_vue
+      args:
+        VITE_API_BASE_URL: http://localhost:8000/api
+    image: vue_image
+    container_name: vue
+    ports:
+      - "5173:80" # Map host port 5173 to the container's Apache port 80
+    depends_on:
+      - backend

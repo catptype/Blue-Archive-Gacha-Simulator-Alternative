@@ -36,7 +36,7 @@ const groupedAchievements = computed(() => {
       
       <!-- Category Header with a clean bottom border -->
       <h2 class="text-2xl font-bold text-slate-300 capitalize pb-2 mb-4 border-b border-slate-600">
-        {{ category.toLowerCase() }}
+        {{ String(category).toLowerCase() }}
       </h2>
 
       <!-- 

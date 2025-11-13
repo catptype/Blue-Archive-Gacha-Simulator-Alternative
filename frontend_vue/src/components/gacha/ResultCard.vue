@@ -1,5 +1,5 @@
 <script setup lang="ts">
-    import { ref, computed } from 'vue';
+    import { computed } from 'vue';
     import gachaR3Image from '@/assets/student_card/gacha_r3.png';
     import gachaR2Image from '@/assets/student_card/gacha_r2.png';
     import gachaR1Image from '@/assets/student_card/gacha_r1.png';

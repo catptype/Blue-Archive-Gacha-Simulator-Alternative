@@ -4,6 +4,29 @@ import apiClient from '@/services/client';
 import PortraitCard from './PortraitCard.vue';
 import starYellowImage from '@/assets/student_card/star_yellow.png';
 
+interface Version {
+  version_id: number;
+  version_name: string;
+}
+
+interface School {
+  school_id: number;
+  school_name: string;
+  image_url: string;
+}
+
+interface StudentCollection {
+  student_id: number;
+  student_name: string;
+  student_rarity: number;
+  student_is_limited: boolean;
+  version: Version;
+  school: School;
+  portrait_url: string;
+  artwork_url: string;
+  is_obtained: boolean;
+}
+
 // Use async setup for clean data fetching
 const { data: collection } = await apiClient.get('/dashboard/collection');
 
@@ -13,16 +36,16 @@ const activeFilter = ref<'all' | 'obtained' | 'not-obtained'>('all');
 // --- Computed Properties for Filtering and Grouping ---
 const filteredStudents = computed(() => {
   if (activeFilter.value === 'obtained') {
-    return collection.students.filter(s => s.is_obtained);
+    return collection.students.filter((s: StudentCollection) => s.is_obtained);
   }
   if (activeFilter.value === 'not-obtained') {
-    return collection.students.filter(s => !s.is_obtained);
+    return collection.students.filter((s: StudentCollection) => !s.is_obtained);
   }
   return collection.students; // 'all'
 });
 
 const groupedStudents = computed(() => {
-  const groups: { [key: number]: any[] } = { 3: [], 2: [], 1: [] };
+  const groups: { [key: number]: StudentCollection[] } = { 3: [], 2: [], 1: [] };
   for (const student of filteredStudents.value) {
     groups[student.student_rarity]?.push(student);
   }
@@ -72,7 +95,7 @@ const getFilterButtonClass = (filter: string) => {
     <!-- =============================================================== -->
     <!-- Widgets for each rarity -->
     <div v-for="rarity in [3, 2, 1]" :key="rarity">
-      <div v-if="groupedStudents[rarity].length > 0" class="p-4 bg-slate-700/50 rounded-lg">
+      <div v-if="groupedStudents[rarity] && groupedStudents[rarity].length > 0" class="p-4 bg-slate-700/50 rounded-lg">
         <h3 class="text-2xl font-bold mb-4 flex items-center">
           <img v-for="i in rarity" :key="i" :src="starYellowImage" alt="star" class="w-8 h-8">
         </h3>

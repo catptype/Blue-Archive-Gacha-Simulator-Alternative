@@ -32,18 +32,19 @@
         },
         dataLabels: {
             enabled: true,
-            // The formatter function is the key to showing raw numbers.
-            formatter: function(val, opts) {
-                // `val` is the calculated percentage. We ignore it.
-                // We access the original raw number from the series data.
-                // `opts.seriesIndex` is the index of the banner (e.g., 0 for "Bunny Banner").
-                // `opts.dataPointIndex` is the index of the rarity (e.g., 0 for R3).
-                const rawValue = chartSeries.value[opts.seriesIndex].data[opts.dataPointIndex];
-
-                // Don't show a label for zero values to keep the chart clean.
+            formatter: function(_val: number, opts: { seriesIndex: number, dataPointIndex: number }) {
+                // 1. Guard against a potential out-of-bounds index
+                const seriesItem = chartSeries.value[opts.seriesIndex];
+                if (!seriesItem) {
+                    return ''; // Or handle as an error
+                }
+                
+                // 2. Now that we know seriesItem exists, we can safely access its data
+                const rawValue = seriesItem.data[opts.dataPointIndex];
+                
                 return rawValue > 0 ? rawValue : '';
-
             },
+
             // Add styling for better contrast.
             style: { 
                 fontSize: '16px',
@@ -67,14 +68,14 @@
             categories: chartCategories.value,
             labels: { 
                 style: { colors: '#94a3b8' }, 
-                formatter: function (val) { return val + "%";} 
+                formatter: function (val: string) { return val + "%"; } 
             }
         },
         yaxis: {
             labels: { style: { fontSize: '16px', colors: '#94a3b8' } }
         },
         tooltip: {
-            y: { formatter: (val) => `${val} pulls`}
+            y: { formatter: (val: number) => `${val} pulls`}
         },
         fill: { opacity: 1 },
         legend: {

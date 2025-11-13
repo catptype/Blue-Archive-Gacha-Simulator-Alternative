@@ -1,7 +1,8 @@
 <script setup lang="ts">
     import { ref } from 'vue';
     import { useRouter } from 'vue-router';
-    import apiClient from '../services/client'; 
+    import apiClient from '../services/client';
+    import axios from 'axios';
 
     const username = ref('');
     const password = ref('');
@@ -39,7 +40,8 @@
             router.push('/login');
 
         } catch (err: any) {
-            if (apiClient.isAxiosError(err) && err.response) {
+            // if (apiClient.isAxiosError(err) && err.response) {
+            if (axios.isAxiosError(err) && err.response) {
                 error.value = err.response.data.detail || 'An unexpected error occurred.';
             } else {
                 error.value = 'Registration failed. Please try again later.';

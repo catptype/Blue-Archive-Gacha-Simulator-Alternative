@@ -1,0 +1,30 @@
+# --- Stage 1: Build the Vue Application ---
+FROM node:20-alpine AS builder
+
+# Set the working directory
+WORKDIR /app
+
+# Copy package.json and package-lock.json to leverage caching
+COPY frontend_vue/package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy the rest of the frontend source code
+COPY frontend_vue/ .
+
+# Declare a build-time argument for the API URL
+ARG VITE_API_BASE_URL
+
+# Set the environment variable for the build command
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
+# Build the application for production
+RUN npm run build
+
+# --- Stage 2: Serve the Static Files ---
+# Use a lightweight Apache server image
+FROM httpd:2.4-alpine
+
+# Copy the built files from the 'builder' stage into the Apache public directory
+COPY --from=builder /app/dist /usr/local/apache2/htdocs/

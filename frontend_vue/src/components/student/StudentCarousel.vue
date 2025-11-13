@@ -1,60 +1,3 @@
-<template>
-  <div class="h-full relative overflow-hidden">
-    <!-- Loading Spinner -->
-    <div v-if="isLoading" class="w-full h-full flex items-center justify-center">
-      <svg class="animate-spin h-10 w-10 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-    </div>
-
-    <!-- Carousel -->
-    <div v-else-if="students.length > 0" class="character-group w-full h-full" ref="carouselGroup">
-      <div
-        class="slider-container absolute top-0 left-0 w-full h-full flex items-center"
-        :style="sliderStyle"
-        @transitionend="onTransitionEnd"
-        ref="slider"
-      >
-        <div
-          v-for="(student, index) in displayStudents"
-          :key="index"
-          class="character-card flex-shrink-0 w-[300px] h-[85%] mx-4"
-          :class="{ 'transition-all duration-500 ease-in-out': useTransition }"
-          :style="getCardStyle(index)"
-        >
-          <div class="relative w-full h-full group">
-            <img :src="student.portrait_url" :alt="student.student_name" class="w-full h-full object-cover rounded-lg">
-            <div
-              class="character-name absolute bottom-[20px] left-[70px]"
-              :class="[getCardNameStyle(index), { 'transition-all duration-500 ease-in-out': useTransition }]"
-            >
-              <h2 
-                class="text-5xl font-black text-white uppercase tracking-widest origin-bottom-left transform -rotate-90"
-                style="text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.7);">
-                {{ student.student_name }}
-              </h2>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Navigation -->
-      <button @click="navigate(-1)" class="nav-arrow nav-left absolute left-6 top-1/2 -translate-y-1/2 bg-black/40 p-3 rounded-full hover:bg-sky-500/50 transition-colors z-40">
-        <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-      </button>
-      <button @click="navigate(1)" class="nav-arrow nav-right absolute right-6 top-1/2 -translate-y-1/2 bg-black/40 p-3 rounded-full hover:bg-sky-500/50 transition-colors z-40">
-        <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-      </button>
-    </div>
-    
-    <!-- No Students Message -->
-    <div v-else class="w-full h-full flex items-center justify-center">
-      <p class="text-xl text-slate-400">No students found for this school.</p>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 
@@ -205,3 +148,60 @@ onMounted(() => window.addEventListener('resize', recenterInstantly));
 onUnmounted(() => window.removeEventListener('resize', recenterInstantly));
 
 </script>
+
+<template>
+  <div class="h-full relative overflow-hidden">
+    <!-- Loading Spinner -->
+    <div v-if="isLoading" class="w-full h-full flex items-center justify-center">
+      <svg class="animate-spin h-10 w-10 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+    </div>
+
+    <!-- Carousel -->
+    <div v-else-if="students.length > 0" class="character-group w-full h-full" ref="carouselGroup">
+      <div
+        class="slider-container absolute top-0 left-0 w-full h-full flex items-center"
+        :style="sliderStyle"
+        @transitionend="onTransitionEnd"
+        ref="slider"
+      >
+        <div
+          v-for="(student, index) in displayStudents"
+          :key="index"
+          class="character-card flex-shrink-0 w-[300px] h-[85%] mx-4"
+          :class="{ 'transition-all duration-500 ease-in-out': useTransition }"
+          :style="getCardStyle(index)"
+        >
+          <div class="relative w-full h-full group">
+            <img :src="student.portrait_url" :alt="student.student_name" class="w-full h-full object-cover rounded-lg">
+            <div
+              class="character-name absolute bottom-[20px] left-[70px]"
+              :class="[getCardNameStyle(index), { 'transition-all duration-500 ease-in-out': useTransition }]"
+            >
+              <h2 
+                class="text-5xl font-black text-white uppercase tracking-widest origin-bottom-left transform -rotate-90"
+                style="text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.7);">
+                {{ student.student_name }}
+              </h2>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <button @click="navigate(-1)" class="nav-arrow nav-left absolute left-6 top-1/2 -translate-y-1/2 bg-black/40 p-3 rounded-full hover:bg-sky-500/50 transition-colors z-40">
+        <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+      </button>
+      <button @click="navigate(1)" class="nav-arrow nav-right absolute right-6 top-1/2 -translate-y-1/2 bg-black/40 p-3 rounded-full hover:bg-sky-500/50 transition-colors z-40">
+        <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+      </button>
+    </div>
+    
+    <!-- No Students Message -->
+    <div v-else class="w-full h-full flex items-center justify-center">
+      <p class="text-xl text-slate-400">No students found for this school.</p>
+    </div>
+  </div>
+</template>
