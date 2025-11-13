@@ -35,7 +35,7 @@ const getPosition = (index: number) => {
     pointerEvents = 'none';
   }
   
-  const translateX = (diff * 70) - 50;
+  const translateX = (diff * 80) - 50;
 
   return {
     transform: `translateX(${translateX}%) translateY(${diff === 0 ? '-50px' : '0'}) scale(${scale})`,
@@ -58,7 +58,7 @@ const goPrev = () => {
 </script>
 
 <template>
-  <div class="relative w-full max-w-lg h-36">
+  <div class="relative w-full max-w-[80%] h-36 mx-auto">
     <!-- Navigation Buttons -->
     <button @click="goPrev" class="absolute top-1/2 -translate-y-1/2 left-0 md:-left-8 z-20 p-2">
       <svg class="w-8 h-8 opacity-50 hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg>
@@ -87,8 +87,9 @@ const goPrev = () => {
   position: absolute;
   top: 0;
   left: 50%;
-  width: 45%;
-  max-width: 250px;
+  width: 40%;
+  max-width: 400px;
+  min-width: 300px;
   transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 </style>

@@ -54,13 +54,10 @@ const handlePull = async (amount: 1 | 10) => {
       <div class="absolute inset-0 bg-black/40"></div>
     </div>
     
-    <!-- Top left details button -->
-    
-
     <!-- Main UI Container -->
     <div class="relative w-full h-full flex flex-col justify-end items-center">
       <!-- Banner Carousel -->
-      <div class="w-full max-w-lg h-05 mb-4">
+      <div class="w-full max-w-[80%] h-36 -mb-12 border">
         <SlidingBannerCarousel
           v-if="banners.length > 0"
           :banners="banners"
@@ -69,19 +66,20 @@ const handlePull = async (amount: 1 | 10) => {
       </div>
       
       <!-- Central Core -->
-      <div class="h-1/3 md:h-1/4 w-full flex justify-center">
-        <div class="central-core h-full flex justify-center items-center gap-4 md:gap-8 pt-4">
-          <button @click="isDetailsModalVisible = true" class="pull-btn w-32 h-14 md:w-40 md:h-16 text-lg md:text-xl text-blue-300 rounded-lg">
+      <div class="h-1/4 w-full flex justify-center">
+        <div class="central-core h-full grid grid-cols-1 md:grid-cols-2 p-10 md:p-20 gap-4">
+          <button @click="isDetailsModalVisible = true" class="pull-btn md:col-span-2 w-40 h-14 text-lg text-blue-300 rounded-lg justify-self-center">
             DETAILS
           </button>
-          <button @click="handlePull(1)" class="pull-btn w-32 h-14 md:w-40 md:h-16 text-lg md:text-xl text-blue-300 rounded-lg">
+          <button @click="handlePull(1)" class="pull-btn w-40 h-14 text-lg text-blue-300 rounded-lg md:justify-self-end justify-self-center">
             PULL x1
           </button>
-          <button @click="handlePull(10)" class="pull-btn w-32 h-14 md:w-40 md:h-16 text-lg md:text-xl text-blue-300 rounded-lg">
+          <button @click="handlePull(10)" class="pull-btn w-40 h-14 text-lg text-blue-300 rounded-lg md:justify-self-start justify-self-center">
             PULL x10
           </button>
         </div>
       </div>
+      
     </div>
 
     <!-- Modals (These remain unchanged, but are controlled from the new UI) -->
