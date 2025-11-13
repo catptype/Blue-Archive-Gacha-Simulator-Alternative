@@ -39,13 +39,13 @@ This implementation uses a carefully selected set of libraries to provide a feat
 | :--- | :--- | :--- |
 | **Framework** | FastAPI | Core asynchronous web framework for building the API endpoints. |
 | **Database / ORM** | SQLAlchemy | The primary Object-Relational Mapper for all database interactions. |
-| | SQLite | The file-based database used for development and easy setup. |
+| ^^ | SQLite | The file-based database used for development and easy setup. |
 | **Authentication** | `bcrypt` | For securely hashing and verifying user passwords. |
-| | `python-jose` | For creating, signing, and decoding JSON Web Tokens (JWT) for sessions. |
+| ^^ | `python-jose` | For creating, signing, and decoding JSON Web Tokens (JWT) for sessions. |
 | **Admin Panel** | SQLAdmin | Provides a secure, auto-generated web UI for database management. |
 | **Data Validation** | Pydantic | Used for all data validation, serialization, and defining API schemas. |
 | **Caching** | Redis | The production-ready cache client for high performance. |
-| | In-Memory | A simple dictionary-based cache for development (no Redis needed). |
+| ^^ | In-Memory | A simple dictionary-based cache for development (no Redis needed). |
 | **Dev Server** | Uvicorn | The high-performance ASGI server used for local development (`--reload`). |
 | **Prod Server** | Gunicorn | The battle-tested process manager used to run and scale Uvicorn workers in production. |
 | **Utilities** | Pytz | For handling timezone conversions in the admin panel. |
