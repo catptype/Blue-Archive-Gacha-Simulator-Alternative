@@ -4,18 +4,18 @@ services:
   # ===============================================================
 
   # --- OPTION 1: PostgreSQL (Recommended) ---
-  # db:
-  #   image: postgres:15-alpine
-  #   container_name: postgres_db
-  #   restart: always
-  #   volumes:
-  #     - postgres-data:/var/lib/postgresql/data
-  #   environment:
-  #     - POSTGRES_USER=gacha_user
-  #     - POSTGRES_PASSWORD=a_secure_password_here
-  #     - POSTGRES_DB=gacha_db
-  #   ports:
-  #     - "5432:5432"
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    restart: always
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=gacha_user
+      - POSTGRES_PASSWORD=a_secure_password_here
+      - POSTGRES_DB=gacha_db
+    ports:
+      - "5432:5432"
 
   # --- OPTION 2: MySQL ---
   # db:
@@ -33,19 +33,19 @@ services:
   #     - "3306:3306"
 
   # --- OPTION 3: MariaDB (A drop-in replacement for MySQL) ---
-  db:
-    image: mariadb:10.11
-    container_name: mariadb_db
-    restart: always
-    volumes:
-      - mariadb-data:/var/lib/mysql
-    environment:
-      - MARIADB_USER=gacha_user
-      - MARIADB_PASSWORD=a_secure_password_here
-      - MARIADB_DATABASE=gacha_db
-      - MARIADB_ROOT_PASSWORD=a_very_strong_root_password
-    ports:
-      - "3307:3306" # Use host port 3307 to avoid conflict with a local MySQL install
+  # db:
+  #   image: mariadb:10.11
+  #   container_name: mariadb_db
+  #   restart: always
+  #   volumes:
+  #     - mariadb-data:/var/lib/mysql
+  #   environment:
+  #     - MARIADB_USER=gacha_user
+  #     - MARIADB_PASSWORD=a_secure_password_here
+  #     - MARIADB_DATABASE=gacha_db
+  #     - MARIADB_ROOT_PASSWORD=a_very_strong_root_password
+  #   ports:
+  #     - "3307:3306" # Use host port 3307 to avoid conflict with a local MySQL install
   redis:
     image: redis:latest
     container_name: redis_cache
@@ -76,13 +76,13 @@ services:
       # --- IMPORTANT: Set the DATABASE_URL to match your chosen database ---
       
       # For PostgreSQL:
-      # - DATABASE_URL=postgresql+psycopg2://gacha_user:a_secure_password_here@db:5432/gacha_db
+      - DATABASE_URL=postgresql+psycopg2://gacha_user:a_secure_password_here@db:5432/gacha_db
       
       # For MySQL (uncomment this line and comment out the Postgres one):
       # - DATABASE_URL=mysql+mysqldb://gacha_user:a_secure_password_here@db:3306/gacha_db
       
       # For MariaDB (uncomment this line and comment out the others):
-      - DATABASE_URL=mysql+mysqldb://gacha_user:a_secure_password_here@db:3306/gacha_db
+      # - DATABASE_URL=mysql+mysqldb://gacha_user:a_secure_password_here@db:3306/gacha_db
 
   frontend:
     build:
@@ -101,6 +101,6 @@ services:
 # DATA VOLUMES (UNCOMMENT FOR YOUR CHOSEN DATABASE)
 # ===============================================================
 volumes:
-  # postgres-data:
+  postgres-data:
   # mysql-data:
-  mariadb-data:
+  # mariadb-data:
