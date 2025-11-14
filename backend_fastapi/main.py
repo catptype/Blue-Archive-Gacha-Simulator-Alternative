@@ -1,5 +1,6 @@
 import base64
 import hashlib
+import logging
 import math
 import statistics
 
@@ -13,6 +14,7 @@ from typing import Optional, List
 from sqlalchemy import func, desc, case
 from collections import Counter, defaultdict
 
+from .log import LOGGING_CONFIG
 from .util import auth, models, schemas
 from .util.admin import init_admin
 from .util.auth import get_optional_current_user, get_required_current_user
@@ -21,6 +23,10 @@ from .util.database import engine, get_db
 from .util.schemas import create_student_response
 from .util.GachaEngine import GachaEngine
 from .util.AchievementEngine import AchievementEngine
+
+# `__name__` will automatically create a logger named "backend.main"
+logging.config.dictConfig(LOGGING_CONFIG)
+LOGGER = logging.getLogger(__name__)
 
 DEFAULT_TIMEOUT = 180
 
@@ -66,7 +72,7 @@ def _perform_pull(
     # --- THIS IS THE KEY CHANGE ---
     # Only try to save transactions if a user object was provided.
     if current_user:
-        print(f"User '{current_user.username}' is pulling. Processing inventory and transactions...")
+        LOGGER.debug(f"User '{current_user.username}' is pulling. Processing inventory and transactions...")
 
         # --- STEP 1: PREPARE FOR CHECKS ---
         # Get the user's total pull count *before* this pull for milestone checks.
@@ -145,7 +151,7 @@ def _perform_pull(
         cache.delete_by_pattern(cache_pattern)
         
     else:
-        print("Guest is pulling. Skipping transaction history.")
+        LOGGER.debug("Guest is pulling. Skipping transaction history.")
         for student in pulled_students_orm:
             student_response = create_student_response(student, request)
             result_student = schemas.GachaResultStudent(
@@ -226,7 +232,7 @@ def clear_all_caches(cache: Cache = Depends(get_cache)):
     cache_key_list = ["all_schools"]
     for key in cache_key_list:
         cache.delete(key)
-        print(f"CACHE CLEARED for {key}")
+        LOGGER.debug(f"CACHE CLEARED for {key}")
     return None
 
 # --- API Endpoints ---
@@ -237,10 +243,10 @@ def get_banners(request: Request, db: Session = Depends(get_db), cache: Cache = 
 
     response_banners = cache.get(cache_key)
     if response_banners:
-        print(f"CACHE HIT ({cache_key})")
+        LOGGER.debug(f"CACHE HIT ({cache_key})")
         return response_banners
 
-    print(f"CACHE MISS ({cache_key})")
+    LOGGER.debug(f"CACHE MISS ({cache_key})")
     db_banners = db.query(models.GachaBanner).all()
 
     response_banners = []
@@ -262,10 +268,10 @@ def get_schools(request: Request, db: Session = Depends(get_db), cache: Cache = 
 
     response_schools = cache.get(cache_key)
     if response_schools:
-        print(f"CACHE HIT ({cache_key})")
+        LOGGER.debug(f"CACHE HIT ({cache_key})")
         return response_schools
     
-    print(f"CACHE MISS ({cache_key})")
+    LOGGER.debug(f"CACHE MISS ({cache_key})")
     db_schools = db.query(models.School).all()
     
     response_schools = []
@@ -451,12 +457,12 @@ def get_top_students_by_rarity(
     # 3. Try to get the data from the cache first
     cached_data = cache.get(cache_key)
     if cached_data:
-        print(f"CACHE HIT for {cache_key}")
+        LOGGER.debug(f"CACHE HIT for {cache_key}")
         # The data in the cache is already a JSON-serializable list of dicts.
         # FastAPI will automatically validate it against the response_model.
         return cached_data
     
-    print(f"CACHE MISS for {cache_key}")
+    LOGGER.debug(f"CACHE MISS for {cache_key}")
     
      # --- START OF THE NEW, EFFICIENT QUERY ---
 
@@ -532,11 +538,11 @@ def get_first_r3_pull(
     
     cached_data = cache.get(cache_key)
     if cached_data:
-        print(f"CACHE HIT for {cache_key}")
+        LOGGER.debug(f"CACHE HIT for {cache_key}")
         # The special value "NONE" indicates a cached "not found" result
         return None if cached_data == "NONE" else cached_data
 
-    print(f"CACHE MISS for {cache_key}")
+    LOGGER.debug(f"CACHE MISS for {cache_key}")
     first_r3_pull_orm = (
         db.query(models.GachaTransaction)
         .join(models.Student)
@@ -578,10 +584,10 @@ def get_chart_banner_breakdown(
     cache_key = f"dashboard:chart_banner_breakdown:{current_user.user_id}"
     cached_data = cache.get(cache_key)
     if cached_data:
-        print(f"CACHE HIT for {cache_key}")
+        LOGGER.debug(f"CACHE HIT for {cache_key}")
         return cached_data
 
-    print(f"CACHE MISS for {cache_key}")
+    LOGGER.debug(f"CACHE MISS for {cache_key}")
     
     # Efficiently fetch all pulls with banner name and student rarity
     pulls = db.query(
@@ -623,11 +629,11 @@ def get_milestone_timeline(
     cache_key = f"dashboard:milestones:{current_user.user_id}"
     cached_data = cache.get(cache_key)
     if cached_data is not None: # More robust check for any cached data
-        print(f"CACHE HIT for {cache_key}")
+        LOGGER.debug(f"CACHE HIT for {cache_key}")
         # If the cached value is our special string, return an empty list.
         # Otherwise, return the cached data itself.
         return [] if cached_data == "NONE" else cached_data
-    print(f"CACHE MISS for {cache_key}")
+    LOGGER.debug(f"CACHE MISS for {cache_key}")
     
     # --- START OF THE NEW, EFFICIENT QUERY ---
 
@@ -693,10 +699,10 @@ def get_performance_table(
     cache_key = f"dashboard:performance_table:{current_user.user_id}"
     cached_data = cache.get(cache_key)
     if cached_data:
-        print(f"CACHE HIT for {cache_key}")
+        LOGGER.debug(f"CACHE HIT for {cache_key}")
         return cached_data
 
-    print(f"CACHE MISS for {cache_key}")
+    LOGGER.debug(f"CACHE MISS for {cache_key}")
 
     # 1. Perform an efficient aggregation query to get stats for ALL banners at once.
     banner_stats_query = (
@@ -775,10 +781,10 @@ def get_collection_progression(
     cache_key = f"dashboard:collection_progression:{current_user.user_id}"
     cached_data = cache.get(cache_key)
     if cached_data:
-        print(f"CACHE HIT for {cache_key}")
+        LOGGER.debug(f"CACHE HIT for {cache_key}")
         return cached_data
 
-    print(f"CACHE MISS for {cache_key}")
+    LOGGER.debug(f"CACHE MISS for {cache_key}")
 
     # Query 1: Get the total number of students for each rarity.
     # This is the same for all users, so it's very fast.
@@ -886,10 +892,10 @@ def get_user_collection(
     cache_key = f"dashboard:collection:{current_user.user_id}"
     cached_data = cache.get(cache_key)
     if cached_data:
-        print(f"CACHE HIT for {cache_key}")
+        LOGGER.debug(f"CACHE HIT for {cache_key}")
         return cached_data
 
-    print(f"CACHE MISS for {cache_key}")
+    LOGGER.debug(f"CACHE MISS for {cache_key}")
 
     # --- START OF THE NEW, EFFICIENT QUERY ---
 
@@ -958,10 +964,10 @@ def get_user_achievements(
     cache_key = f"dashboard:achievements:{current_user.user_id}"
     cached_data = cache.get(cache_key)
     if cached_data:
-        print(f"CACHE HIT for {cache_key}")
+        LOGGER.debug(f"CACHE HIT for {cache_key}")
         return cached_data
     
-    print(f"CACHE MISS for {cache_key}")
+    LOGGER.debug(f"CACHE MISS for {cache_key}")
 
     # Use a LEFT JOIN to fetch all achievements and augment them with unlock data
     # for the current user in a single, efficient query.
@@ -1003,12 +1009,12 @@ def serve_achievement_image(achievement_id: int, request: Request, db: Session =
 
     cached_data = cache.get(cache_key)
     if cached_data:
-        print(f"CACHE HIT for {cache_key}")
+        LOGGER.debug(f"CACHE HIT for {cache_key}")
         image_bytes = base64.b64decode(cached_data['image_b64'])
         etag = cached_data['etag']
     else:
         # 3. If cache miss, query the database
-        print(f"CACHE MISS for {cache_key}")
+        LOGGER.debug(f"CACHE MISS for {cache_key}")
         achievement = db.query(models.Achievement).filter(models.Achievement.achievement_id == achievement_id).first()
         if not achievement or not achievement.achievement_image:
             raise HTTPException(status_code=404, detail="Achievement image not found")
@@ -1028,7 +1034,7 @@ def serve_achievement_image(achievement_id: int, request: Request, db: Session =
     # 5. Check the browser's cache using the ETag
     # The browser sends this header if it has a cached version.
     if request.headers.get("if-none-match") == etag:
-        print(f"CACHE HIT (Browser - 304) for {cache_key}")
+        LOGGER.debug(f"CACHE HIT (Browser - 304) for {cache_key}")
         # A 304 response tells the browser to use its local copy.
         return Response(status_code=304)
 
@@ -1048,12 +1054,12 @@ def serve_banner_image(banner_id: int, request: Request, db: Session = Depends(g
 
     cached_data = cache.get(cache_key)
     if cached_data:
-        print(f"CACHE HIT for {cache_key}")
+        LOGGER.debug(f"CACHE HIT for {cache_key}")
         image_bytes = base64.b64decode(cached_data['image_b64'])
         etag = cached_data['etag']
     else:
         # 3. If cache miss, query the database
-        print(f"CACHE MISS for {cache_key}")
+        LOGGER.debug(f"CACHE MISS for {cache_key}")
         banner = db.query(models.GachaBanner).filter(models.GachaBanner.banner_id == banner_id).first()
         if not banner or not banner.banner_image:
             raise HTTPException(status_code=404, detail="School image not found")
@@ -1073,7 +1079,7 @@ def serve_banner_image(banner_id: int, request: Request, db: Session = Depends(g
     # 5. Check the browser's cache using the ETag
     # The browser sends this header if it has a cached version.
     if request.headers.get("if-none-match") == etag:
-        print(f"CACHE HIT (Browser - 304) for {cache_key}")
+        LOGGER.debug(f"CACHE HIT (Browser - 304) for {cache_key}")
         # A 304 response tells the browser to use its local copy.
         return Response(status_code=304)
 
@@ -1092,12 +1098,12 @@ def serve_school_image(school_id: int, request: Request, db: Session = Depends(g
 
     cached_data = cache.get(cache_key)
     if cached_data:
-        print(f"CACHE HIT for {cache_key}")
+        LOGGER.debug(f"CACHE HIT for {cache_key}")
         image_bytes = base64.b64decode(cached_data['image_b64'])
         etag = cached_data['etag']
     else:
         # 3. If cache miss, query the database
-        print(f"CACHE MISS for {cache_key}")
+        LOGGER.debug(f"CACHE MISS for {cache_key}")
     
         school = db.query(models.School).filter(models.School.school_id == school_id).first()
         if not school or not school.school_image:
@@ -1119,7 +1125,7 @@ def serve_school_image(school_id: int, request: Request, db: Session = Depends(g
     # 5. Check the browser's cache using the ETag
     # The browser sends this header if it has a cached version.
     if request.headers.get("if-none-match") == etag:
-        print(f"CACHE HIT (Browser - 304) for {cache_key}")
+        LOGGER.debug(f"CACHE HIT (Browser - 304) for {cache_key}")
         # A 304 response tells the browser to use its local copy.
         return Response(status_code=304)
 
@@ -1138,13 +1144,13 @@ def serve_student_image(student_id: int, image_type: str, request: Request, db: 
 
     cached_data = cache.get(cache_key)
     if cached_data:
-        print(f"CACHE HIT for {cache_key}")
+        LOGGER.debug(f"CACHE HIT for {cache_key}")
         # Data in cache is stored as a dictionary with etag and the b64 image
         image_bytes = base64.b64decode(cached_data['image_b64'])
         etag = cached_data['etag']
         filename = cached_data['filename']
     else:
-        print(f"CACHE MISS for {cache_key}")
+        LOGGER.debug(f"CACHE MISS for {cache_key}")
         student = db.query(models.Student).options(joinedload(models.Student.asset)).filter(models.Student.student_id == student_id).first()
 
         if not student or not student.asset:
@@ -1174,9 +1180,9 @@ def serve_student_image(student_id: int, image_type: str, request: Request, db: 
         cache.set(cache_key, data_to_cache, expire=DEFAULT_TIMEOUT)
     
     # 5. Check the browser cache using the ETag
-    print(request.headers.get("if-none-match"))
+    LOGGER.debug(request.headers.get("if-none-match"))
     if request.headers.get("if-none-match") == etag:
-        print(f"CACHE HIT (Browser - 304) for {cache_key}")
+        LOGGER.debug(f"CACHE HIT (Browser - 304) for {cache_key}")
         return Response(status_code=304)
 
     # 6. If it's a new request or the ETag doesn't match, send the full response

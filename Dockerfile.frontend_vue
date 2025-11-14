@@ -22,9 +22,16 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 # Build the application for production
 RUN npm run build
 
-# --- Stage 2: Serve the Static Files ---
-# Use a lightweight Apache server image
-FROM httpd:2.4-alpine
+# --- Stage 2: Serve the Static Files with Nginx (The New Part) ---
+# Use a secure, unprivileged, and lightweight Nginx image.
+FROM nginx:1.25-alpine-slim
 
-# Copy the built files from the 'builder' stage into the Apache public directory
-COPY --from=builder /app/dist /usr/local/apache2/htdocs/
+# Copy the built Vue app files from the 'builder' stage into Nginx's public HTML directory.
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copy our custom Nginx configuration file into the container.
+# This file tells Nginx how to handle SPA routing.
+COPY frontend_vue/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Expose port 80, which is the port Nginx listens on by default.
+EXPOSE 80
