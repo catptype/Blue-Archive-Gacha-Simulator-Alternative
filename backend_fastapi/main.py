@@ -9,6 +9,7 @@ from fastapi import APIRouter, FastAPI, Depends, HTTPException, Request, status,
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
+from logging.config import dictConfig
 from sqlalchemy.orm import Session, joinedload, selectinload
 from typing import Optional, List
 from sqlalchemy import func, desc, case
@@ -25,7 +26,7 @@ from .util.GachaEngine import GachaEngine
 from .util.AchievementEngine import AchievementEngine
 
 # `__name__` will automatically create a logger named "backend.main"
-logging.config.dictConfig(LOGGING_CONFIG)
+dictConfig(LOGGING_CONFIG)
 LOGGER = logging.getLogger(__name__)
 
 DEFAULT_TIMEOUT = 180
