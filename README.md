@@ -111,8 +111,8 @@ This project is fully configured for a containerized production deployment using
 
 ### 1. Configure Your Deployment
 
-The `docker compose.yml` file is a template that allows you to choose your database. By default, it is set to use **PostgreSQL**. To switch to MySQL or MariaDB:
-1.  **Comment/Uncomment** the desired database service block in `docker compose.yml`.
+The [`docker-compose.yml`](docker-compose.yml) file is a template that allows you to choose your database. By default, it is set to use **PostgreSQL**. To switch to MySQL or MariaDB:
+1.  **Comment/Uncomment** the desired database service block in `docker-compose.yml`.
 2.  **Update the `DATABASE_URL`** in the `backend` service's `environment` section to match your choice.
 3.  **Update the volumes** at the bottom of the file to match your choice.
 4.  Ensure the correct database driver (`psycopg2-binary` or `mysqlclient`) is installed in the `Dockerfile.backend_fastapi`.
