@@ -1,5 +1,51 @@
 services:
-  # The Backend FastAPI Service
+  # ===============================================================
+  # CHOOSE YOUR DATABASE (UNCOMMENT ONE OF THE FOLLOWING BLOCKS)
+  # ===============================================================
+
+  # --- OPTION 1: PostgreSQL (Recommended) ---
+  db:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    restart: always
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=gacha_user
+      - POSTGRES_PASSWORD=a_secure_password_here
+      - POSTGRES_DB=gacha_db
+    ports:
+      - "5432:5432"
+
+  # --- OPTION 2: MySQL ---
+  # db:
+  #   image: mysql:8.0
+  #   container_name: mysql_db
+  #   restart: always
+  #   volumes:
+  #     - mysql-data:/var/lib/mysql
+  #   environment:
+  #     - MYSQL_USER=gacha_user
+  #     - MYSQL_PASSWORD=a_secure_password_here
+  #     - MYSQL_DATABASE=gacha_db
+  #     - MYSQL_ROOT_PASSWORD=a_very_strong_root_password
+  #   ports:
+  #     - "3306:3306"
+
+  # --- OPTION 3: MariaDB (A drop-in replacement for MySQL) ---
+  # db:
+  #   image: mariadb:10.11
+  #   container_name: mariadb_db
+  #   restart: always
+  #   volumes:
+  #     - mariadb-data:/var/lib/mysql
+  #   environment:
+  #     - MARIADB_USER=gacha_user
+  #     - MARIADB_PASSWORD=a_secure_password_here
+  #     - MARIADB_DATABASE=gacha_db
+  #     - MARIADB_ROOT_PASSWORD=a_very_strong_root_password
+  #   ports:
+  #     - "3307:3306" # Use host port 3307 to avoid conflict with a local MySQL install
   redis:
     image: redis:latest
     container_name: redis_cache
@@ -13,20 +59,31 @@ services:
       dockerfile: Dockerfile.backend_fastapi
     image: fastapi_image
     container_name: fastapi
-    volumes:
-      # - gacha-db:/app/backend_fastapi/db.sqlite3
-      - ./production/db.sqlite3:/app/db.sqlite3
+    # User for test only
+    # volumes:
+    #   - ./production/db.sqlite3:/app/db.sqlite3 
     ports:
       - "8000:8000"
     depends_on:
       - redis
+      - db
     environment:
       - SECRET_KEY=your_super_secret_random_string_here
       - CACHE_TYPE=redis
       - REDIS_URL=redis://redis:6379
       - DISPLAY_TIMEZONE=Asia/Bangkok
 
-  # The Frontend Vue Service
+      # --- IMPORTANT: Set the DATABASE_URL to match your chosen database ---
+      
+      # For PostgreSQL:
+      - DATABASE_URL=postgresql+psycopg2://gacha_user:a_secure_password_here@db:5432/gacha_db
+      
+      # For MySQL (uncomment this line and comment out the Postgres one):
+      # - DATABASE_URL=mysql+mysqlclient://gacha_user:a_secure_password_here@db:3306/gacha_db
+      
+      # For MariaDB (uncomment this line and comment out the others):
+      # - DATABASE_URL=mysql+mysqlclient://gacha_user:a_secure_password_here@db:3306/gacha_db
+
   frontend:
     build:
       context: .
@@ -39,3 +96,11 @@ services:
       - "5173:80" # Map host port 5173 to the container's Apache port 80
     depends_on:
       - backend
+
+# ===============================================================
+# DATA VOLUMES (UNCOMMENT FOR YOUR CHOSEN DATABASE)
+# ===============================================================
+volumes:
+  postgres-data:
+  # mysql-data:
+  # mariadb-data:
