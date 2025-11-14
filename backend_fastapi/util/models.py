@@ -3,6 +3,7 @@ from sqlalchemy import (
     Column, Integer, String, Boolean, ForeignKey, LargeBinary, Numeric, DateTime, Table, UniqueConstraint, Text
 )
 from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.mysql import LONGBLOB
 from .database import Base
 
 # ==============================================================================
@@ -38,7 +39,7 @@ banner_exclude_association = Table('banner_exclude_association', Base.metadata,
 class Role(Base):
     __tablename__ = 'role_table'
     role_id = Column(Integer, primary_key=True, index=True)
-    role_name = Column(String, unique=True, nullable=False)
+    role_name = Column(String(20), unique=True, nullable=False)
 
     def __str__(self) -> str:
         return self.role_name
@@ -46,8 +47,8 @@ class Role(Base):
 class User(Base):
     __tablename__ = 'user_table'
     user_id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
+    username = Column(String(20), unique=True, index=True, nullable=False)
+    hashed_password = Column(String(255), nullable=False)
     role_id_fk = Column(Integer, ForeignKey('role_table.role_id'), nullable=False)
     role = relationship("Role")
 
@@ -62,7 +63,7 @@ class User(Base):
 class Version(Base):
     __tablename__ = 'student_version_table'
     version_id = Column(Integer, primary_key=True, index=True)
-    version_name = Column(String, unique=True, nullable=False)
+    version_name = Column(String(20), unique=True, nullable=False)
 
     def __str__(self) -> str:
         return self.version_name
@@ -70,8 +71,8 @@ class Version(Base):
 class School(Base):
     __tablename__ = 'student_school_table'
     school_id = Column(Integer, primary_key=True, index=True)
-    school_name = Column(String, unique=True, nullable=False)
-    school_image = Column(LargeBinary, nullable=True)
+    school_name = Column(String(20), unique=True, nullable=False)
+    school_image = Column(LargeBinary().with_variant(LONGBLOB, "mysql", "mariadb"), nullable=True)
 
     def __str__(self) -> str:
         return self.school_name
@@ -79,14 +80,14 @@ class School(Base):
 class ImageAsset(Base):
     __tablename__ = 'image_asset_table'
     asset_id = Column(Integer, primary_key=True, index=True)
-    asset_portrait_data = Column(LargeBinary, nullable=True)
-    asset_artwork_data = Column(LargeBinary, nullable=True)
+    asset_portrait_data = Column(LargeBinary().with_variant(LONGBLOB, "mysql", "mariadb"), nullable=True)
+    asset_artwork_data = Column(LargeBinary().with_variant(LONGBLOB, "mysql", "mariadb"), nullable=True)
     asset_pair_hash = Column(String(64), unique=True, nullable=False)
 
 class Student(Base):
     __tablename__ = 'student_table'
     student_id = Column(Integer, primary_key=True, index=True)
-    student_name = Column(String, nullable=False)
+    student_name = Column(String(20), nullable=False)
     student_rarity = Column(Integer, nullable=False)
     student_is_limited = Column(Boolean, default=False)
     version_id_fk = Column(Integer, ForeignKey('student_version_table.version_id'))
@@ -106,7 +107,7 @@ class Student(Base):
 class GachaPreset(Base):
     __tablename__ = 'gacha_preset_table'
     preset_id = Column(Integer, primary_key=True, index=True)
-    preset_name = Column(String, unique=True, nullable=False)
+    preset_name = Column(String(20), unique=True, nullable=False)
     preset_pickup_rate = Column(Numeric(4, 1), nullable=False)
     preset_r3_rate = Column(Numeric(4, 1), nullable=False)
     preset_r2_rate = Column(Numeric(4, 1), nullable=False)
@@ -118,8 +119,8 @@ class GachaPreset(Base):
 class GachaBanner(Base):
     __tablename__ = 'gacha_banner_table'
     banner_id = Column(Integer, primary_key=True, index=True)
-    banner_image = Column(LargeBinary, nullable=True)
-    banner_name = Column(String, unique=True, nullable=False)
+    banner_image = Column(LargeBinary().with_variant(LONGBLOB, "mysql", "mariadb"), nullable=True)
+    banner_name = Column(String(20), unique=True, nullable=False)
     banner_include_limited = Column(Boolean, default=False)
     preset_id_fk = Column(Integer, ForeignKey('gacha_preset_table.preset_id'), nullable=True)
     
@@ -160,9 +161,9 @@ class UserInventory(Base):
 class Achievement(Base):
     __tablename__ = 'achievement_table'
     achievement_id = Column(Integer, primary_key=True, index=True)
-    achievement_name = Column(String, unique=True, nullable=False)
+    achievement_name = Column(String(255), unique=True, nullable=False)
     achievement_description = Column(Text, nullable=True)
-    achievement_image = Column(LargeBinary, nullable=True)
+    achievement_image = Column(LargeBinary().with_variant(LONGBLOB, "mysql", "mariadb"), nullable=True)
     achievement_category = Column(String(20), default='MILESTONE')
     achievement_key = Column(String(50), unique=True, nullable=False)
 

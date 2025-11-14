@@ -79,14 +79,30 @@ class StudentAdmin(ModelView, model=models.Student):
     name = "Student"
     name_plural = "Students"
     icon = "fa-solid fa-graduation-cap"
-    column_list = ["student_id", "student_name", "version", "student_rarity", "school"]
+    column_list = ["student_id", "Portrait", "student_name", "version", "student_rarity", "school"]
     column_searchable_list = [models.Student.student_name, "school.school_name", "version.version_name"]
+
+    @staticmethod
+    def _format_portrait(model, _, size: int = 40) -> Markup:
+        if model and model.asset:
+            html_string = (
+                f'<a href="/admin/student/details/{model.student_id}" title="{model}">'
+                f'  <img src="/image/student/{model.student_id}/portrait" width="{size}" style="border-radius: 4px; margin: 2px;">'
+                f'</a>'
+            )
+            return Markup(html_string)
+        return ""
+    
+    column_formatters = {
+        "Portrait": lambda model, _: StudentAdmin._format_portrait(model, _, size=40),
+    }
 
 class VersionAdmin(ModelView, model=models.Version):
     name = "Version"
     name_plural = "Versions"
     icon = "fa-solid fa-shirt"
     column_list = ["version_id", "version_name"]
+    column_searchable_list = ["version_name"]
 
 class SchoolAdmin(ModelView, model=models.School):
     name = "School"
@@ -171,7 +187,22 @@ class AchievementAdmin(ModelView, model=models.Achievement):
     name = "Achievement"
     name_plural = "Achievements"
     icon = "fa-solid fa-trophy"
-    column_list = ["achievement_id", "achievement_category", "achievement_name", "achievement_description", "achievement_key"]
+    column_list = ["achievement_id", "Icon", "achievement_category", "achievement_name", "achievement_description", "achievement_key"]
+
+    @staticmethod
+    def _format_icon(model, _, size: int = 100) -> Markup:
+        if model and model.achievement_image:
+            html_string = (
+                f'<a href="/admin/achievement/details/{model.achievement_id}" title="{model}">'
+                f'  <img src="/image/achievement/{model.achievement_id}" width="{size}" style="border-radius: 4px; margin: 2px;">'
+                f'</a>'
+            )
+            return Markup(html_string)
+        return ""
+    
+    column_formatters = {
+        "Icon": lambda model, _: AchievementAdmin._format_icon(model, _, size=100),
+    }
 
 class UserAchievementAdmin(ModelView, model=models.UnlockAchievement):
     name = "Unlocked Achievement"
@@ -184,6 +215,7 @@ class UserInventoryAdmin(ModelView, model=models.UserInventory):
     name_plural = "Inventories"
     icon = "fa-solid fa-box-archive"
     column_list = ["inventory_id", "user", "Portrait", "student", "inventory_num_obtained", "inventory_first_obtained_on", "First obtain (local time)"]
+    column_searchable_list = ["user.username"]
 
     @staticmethod
     def _format_portrait(model, _, size: int = 40) -> Markup:

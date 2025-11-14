@@ -748,6 +748,7 @@ def get_performance_table(
     for banner_id, banner_name, banner_rate_decimal, total_pulls, r3_count in banner_stats_query:
         banner_rate = float(banner_rate_decimal)
         user_rate = (r3_count / total_pulls) * 100 if total_pulls > 0 else 0.0
+        luck_variance = float(user_rate) - banner_rate # solve datatype problem if use mysql for 'decimal.Decimal' and 'float'
 
         gaps_data = None
         # 2. Only perform the expensive gap analysis if there are enough 3-stars.
@@ -782,7 +783,7 @@ def get_performance_table(
             r3_count=r3_count,
             user_rate=round(user_rate, 2),
             banner_rate=banner_rate,
-            luck_variance=round(user_rate - banner_rate, 2),
+            luck_variance=round(luck_variance, 2),
             gaps=gaps_data
         )
         banner_analysis.append(analysis_entry)

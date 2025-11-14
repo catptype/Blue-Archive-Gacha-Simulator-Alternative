@@ -6,6 +6,7 @@ README.md
 *.log
 *.yml
 *.env
+*.sqlite3
 __pycache__/
 myenv/
 production/
