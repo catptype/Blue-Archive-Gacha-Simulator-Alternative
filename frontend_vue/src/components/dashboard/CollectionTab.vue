@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import apiClient from '@/services/client';
 import PortraitCard from './PortraitCard.vue';
 import starYellowImage from '@/assets/student_card/star_yellow.png';
@@ -28,20 +28,51 @@ interface StudentCollection {
 }
 
 // Use async setup for clean data fetching
-const { data: collection } = await apiClient.get('/dashboard/collection');
+// const { data: collection } = await apiClient.get('/dashboard/collection');
+
+// --- 2. ADD MANUAL STATE MANAGEMENT (like HistoryTab) ---
+const isLoading = ref(true);
+const error = ref('');
+const collection = ref<any>(null); // Start as null
+
+// --- 3. USE onMounted TO FETCH DATA ---
+onMounted(async () => {
+  isLoading.value = true;
+  error.value = '';
+  try {
+    const response = await apiClient.get('/dashboard/collection');
+    collection.value = response.data;
+  } catch (err) {
+    error.value = 'Failed to load collection data.';
+    console.error(err);
+  } finally {
+    isLoading.value = false;
+  }
+});
 
 // --- State Management ---
 const activeFilter = ref<'all' | 'obtained' | 'not-obtained'>('all');
 
 // --- Computed Properties for Filtering and Grouping ---
+// const filteredStudents = computed(() => {
+//   if (activeFilter.value === 'obtained') {
+//     return collection.students.filter((s: StudentCollection) => s.is_obtained);
+//   }
+//   if (activeFilter.value === 'not-obtained') {
+//     return collection.students.filter((s: StudentCollection) => !s.is_obtained);
+//   }
+//   return collection.students; // 'all'
+// });
+
 const filteredStudents = computed(() => {
+  if (!collection.value) return []; // Guard against null
   if (activeFilter.value === 'obtained') {
-    return collection.students.filter((s: StudentCollection) => s.is_obtained);
+    return collection.value.students.filter((s: StudentCollection) => s.is_obtained);
   }
   if (activeFilter.value === 'not-obtained') {
-    return collection.students.filter((s: StudentCollection) => !s.is_obtained);
+    return collection.value.students.filter((s: StudentCollection) => !s.is_obtained);
   }
-  return collection.students; // 'all'
+  return collection.value.students;
 });
 
 const groupedStudents = computed(() => {
@@ -63,7 +94,12 @@ const getFilterButtonClass = (filter: string) => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-6">
+  <div v-if="isLoading" class="flex h-full items-center justify-center">
+    <svg class="animate-spin h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+  </div>
+  <div v-else-if="error" class="text-red-400 p-4">{{ error }}</div>
+
+  <div v-else-if="collection" class="flex flex-col gap-6">
     <!-- =============================================================== -->
     <!-- WIDGET 1: HEADER CARD                                           -->
     <!-- Contains the stats and filter controls in a single card.        -->

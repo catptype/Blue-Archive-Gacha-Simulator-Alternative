@@ -1,16 +1,32 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'; // <-- Make sure 'ref' is imported
+import { ref, computed, onMounted } from 'vue'; // <-- Make sure 'ref' is imported
 import apiClient from '@/services/client';
 import AchievementCard from './AchievementCard.vue';
 
 // --- THIS IS THE CORRECTED PART ---
 
 // 1. Create a reactive reference to hold the data. Initialize with an empty array.
-const allAchievements = ref<any[]>([]);
+const isLoading = ref(true);
+const error = ref('');
+const allAchievements = ref<any[]>([]); // Start with an empty array
 
 // 2. Fetch the data and assign it to the .value of the ref.
-const { data } = await apiClient.get('/dashboard/achievements');
-allAchievements.value = data;
+// const { data } = await apiClient.get('/dashboard/achievements');
+// allAchievements.value = data;
+
+onMounted(async () => {
+  isLoading.value = true;
+  error.value = '';
+  try {
+    const { data } = await apiClient.get('/dashboard/achievements');
+    allAchievements.value = data;
+  } catch (err) {
+    error.value = 'Failed to load achievements.';
+    console.error(err);
+  } finally {
+    isLoading.value = false;
+  }
+});
 
 // 3. The computed property now correctly accesses allAchievements.value
 const groupedAchievements = computed(() => {
@@ -31,7 +47,15 @@ const groupedAchievements = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-8">
+  <!-- Loading State -->
+  <div v-if="isLoading" class="flex h-full items-center justify-center">
+    <svg class="animate-spin h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+  </div>
+  
+  <!-- Error State -->
+  <div v-else-if="error" class="text-red-400 p-4">{{ error }}</div>
+  <!-- Content -->
+  <div v-else-if="groupedAchievements" class="flex flex-col gap-8">
     <div v-for="(achievements, category) in groupedAchievements" :key="category">
       
       <!-- Category Header with a clean bottom border -->
