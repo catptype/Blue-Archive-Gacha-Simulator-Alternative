@@ -920,6 +920,11 @@ def get_user_collection(
             owned_students_subquery,
             models.Student.student_id == owned_students_subquery.c.student_id_fk
         )
+        .options(
+            joinedload(models.Student.school),
+            joinedload(models.Student.version),
+            joinedload(models.Student.asset) # Good practice to be explicit
+        )
         .order_by(models.Student.student_rarity.desc(), models.Student.student_name.asc())
         .all()
     )
