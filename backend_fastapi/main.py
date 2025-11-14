@@ -5,7 +5,7 @@ import math
 import statistics
 
 from datetime import timedelta
-from fastapi import APIRouter, FastAPI, Depends, HTTPException, Request, status, Query
+from fastapi import FastAPI, Depends, HTTPException, Request, status, Query
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
@@ -20,7 +20,7 @@ from .util import auth, models, schemas
 from .util.admin import init_admin
 from .util.auth import get_optional_current_user, get_required_current_user
 from .util.cache import get_cache, Cache
-from .util.database import engine, get_db
+from .util.database import get_db
 from .util.schemas import create_student_response
 from .util.GachaEngine import GachaEngine
 from .util.AchievementEngine import AchievementEngine
@@ -649,11 +649,12 @@ def get_milestone_timeline(
         .subquery()
     )
 
+    # Step 2: Find the milestone pulls. Instead of querying the full Student object,
     # Step 2: Query from the subquery to find the *first* (minimum) pull number
     # for each unique 3-star student.
     milestone_query_results = (
         db.query(
-            models.Student,
+            models.Student.student_id,
             func.min(numbered_pulls_subquery.c.pull_number).label("first_pull_number")
         )
         .join(
@@ -666,22 +667,43 @@ def get_milestone_timeline(
         .all()
     )
 
-    # --- END OF THE NEW QUERY ---
-
     if not milestone_query_results:
         cache.set(cache_key, "NONE", expire=DEFAULT_TIMEOUT)
         return []
+    
+    # Step 3: Now that we have the small list of milestone student IDs, fetch their
+    # full ORM objects in a second, simple query. This query WILL correctly use `lazy='joined'`.
+    milestone_student_ids = [item[0] for item in milestone_query_results]
+    students_orm = db.query(models.Student).filter(models.Student.student_id.in_(milestone_student_ids)).all()
+    
+    # Create a lookup map for easy access
+    student_map = {s.student_id: s for s in students_orm}
+
+    # --- END OF THE NEW QUERY ---
+
+    # 4. Process the results by combining the two query results.
+    milestone_pulls: List[schemas.MilestoneResponse] = []
+    for student_id, pull_number in milestone_query_results:
+        student_orm = student_map.get(student_id)
+        if student_orm:
+            student_response = create_student_response(student_orm, request)
+            milestone_entry = schemas.MilestoneResponse(
+                student=student_response,
+                pull_number=pull_number
+            )
+            milestone_pulls.append(milestone_entry)
+
 
     # 3. Process the small, final result set into the response schema.
     # The result is a list of tuples: (Student_object, pull_number)
-    milestone_pulls: List[schemas.MilestoneResponse] = []
-    for student_orm, pull_number in milestone_query_results:
-        student_response = create_student_response(student_orm, request)
-        milestone_entry = schemas.MilestoneResponse(
-            student=student_response,
-            pull_number=pull_number
-        )
-        milestone_pulls.append(milestone_entry)
+    # milestone_pulls: List[schemas.MilestoneResponse] = []
+    # for student_orm, pull_number in milestone_query_results:
+    #     student_response = create_student_response(student_orm, request)
+    #     milestone_entry = schemas.MilestoneResponse(
+    #         student=student_response,
+    #         pull_number=pull_number
+    #     )
+    #     milestone_pulls.append(milestone_entry)
     
     data_to_cache = [entry.model_dump(mode="json") for entry in milestone_pulls]
     cache.set(cache_key, data_to_cache, expire=DEFAULT_TIMEOUT)
