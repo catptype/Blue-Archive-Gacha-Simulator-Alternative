@@ -80,7 +80,7 @@ const handlePull = async (amount: 1 | 10) => {
       </div>
 
       <!-- Central Core -->
-      <div class="h-1/4 w-full flex justify-center">
+      <div class="h-auto w-full flex justify-center">
         <div class="w-full border border-slate-700 bg-slate-900/50 backdrop-blur-lg rounded-tl-full rounded-tr-full h-full grid grid-cols-1 md:grid-cols-2 p-10 md:p-20 gap-4">
           <button @click="isDetailsModalVisible = true" class="md:col-span-2 w-40 h-14 bg-cyan-600 hover:bg-cyan-500 text-lg text-white rounded-lg justify-self-center">
             DETAILS
