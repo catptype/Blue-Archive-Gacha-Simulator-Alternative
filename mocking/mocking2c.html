@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S-Rank Gacha System // LANDSCAPE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <script src="//unpkg.com/alpinejs" defer></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Rajdhani', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            gold: '#FFE55C', // Brighter gold
+                            cyan: '#4DF0FF',
+                            dark: '#08080A',
+                            accent: '#FF2A6D' // Cyberpunk pink for accents
+                        }
+                    },
+                    boxShadow: {
+                        'neon': '0 0 10px rgba(77, 240, 255, 0.5), 0 0 20px rgba(77, 240, 255, 0.3)',
+                        'gold': '0 0 15px rgba(255, 229, 92, 0.4)'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { background-color: #050505; color: white; overflow: hidden; }
+        
+        .bg-hex-grid {
+            background-color: #050505;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%231a1a1a' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        /* 3D Container */
+        .perspective-container {
+            perspective: 1200px; /* Increased perspective for wider cards */
+            transform-style: preserve-3d;
+        }
+
+        /* The Banner Card */
+        .landscape-card {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            margin: auto;
+            /* Default Desktop Size */
+            width: 750px; 
+            height: 420px;
+            /* Mobile Size handled via transform scale in JS or media queries */
+            border-radius: 4px; /* Sharper corners for modern look */
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            background: #151515;
+            overflow: hidden;
+            /* Cyberpunk border */
+            clip-path: polygon(
+                0 0, 
+                100% 0, 
+                100% 85%, 
+                95% 100%, 
+                0 100%
+            );
+        }
+
+        /* Shine effect on active card */
+        .shine-bar {
+            position: absolute;
+            top: 0; left: -100%;
+            width: 50%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.2), transparent);
+            transform: skewX(-25deg);
+            pointer-events: none;
+        }
+        .active-card .shine-bar {
+            animation: shine 3s infinite;
+        }
+
+        @keyframes shine {
+            0% { left: -100%; }
+            20% { left: 200%; }
+            100% { left: 200%; }
+        }
+
+        /* Button Polygon Shape */
+        .btn-poly {
+            clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+        }
+        
+        [x-cloak] { display: none; }
+    </style>
+</head>
+<body x-data="gachaSystem()" class="w-full h-screen flex flex-col relative font-sans selection:bg-brand-cyan selection:text-black">
+
+    <!-- BACKGROUND -->
+    <div class="absolute inset-0 z-0 bg-hex-grid">
+        <div class="absolute inset-0 bg-gradient-to-t from-brand-dark via-transparent to-brand-dark/80"></div>
+        <!-- Vignette -->
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#000000_100%)] opacity-80"></div>
+    </div>
+
+    <!-- TOP UI -->
+    <div class="relative z-20 flex justify-between items-center px-8 py-6">
+        <!-- Back / Home -->
+        <div class="flex items-center gap-4 text-gray-400 hover:text-white cursor-pointer transition">
+            <div class="border border-white/20 p-2 rounded bg-black/50 backdrop-blur">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            </div>
+            <span class="tracking-[0.2em] text-sm font-bold">BRIDGE</span>
+        </div>
+
+        <!-- Currency -->
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-3 bg-black/60 backdrop-blur border border-white/10 px-4 py-1.5 rounded-l-xl rounded-tr-xl">
+                <img src="https://placehold.co/40x40/FFD700/FFFFFF?text=$" class="w-6 h-6 rounded-full border border-yellow-500">
+                <span class="font-bold text-lg">14,250</span>
+                <span class="text-xs text-gray-500 bg-black px-1 rounded">CREDIT</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CAROUSEL AREA -->
+    <div class="relative flex-1 perspective-container flex items-center justify-center z-10 overflow-hidden">
+        
+        <!-- Left Text Info (Overlays logic) -->
+        <div class="absolute left-6 md:left-16 top-1/2 -translate-y-1/2 z-30 max-w-sm pointer-events-none md:pointer-events-auto">
+            <template x-for="(banner, index) in banners" :key="'info-'+banner.id">
+                <div x-show="currentIndex === index" 
+                     x-transition:enter="transition ease-out duration-500 delay-100"
+                     x-transition:enter-start="opacity-0 translate-y-10"
+                     x-transition:enter-end="opacity-100 translate-y-0"
+                     x-transition:leave="transition ease-in duration-200 absolute top-0"
+                     x-transition:leave-start="opacity-100"
+                     x-transition:leave-end="opacity-0 -translate-y-5"
+                >
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="h-px w-8 bg-brand-cyan"></div>
+                        <span class="text-brand-cyan font-bold tracking-widest text-sm" x-text="banner.type"></span>
+                    </div>
+                    <h1 class="text-6xl font-black italic uppercase leading-[0.85] mb-4 text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 filter drop-shadow-lg" x-text="banner.name"></h1>
+                    
+                    <!-- Element & Path Tags -->
+                    <div class="flex gap-2 mb-6">
+                        <span class="px-3 py-1 bg-white/10 border border-white/20 text-xs font-bold tracking-wider rounded uppercase backdrop-blur-md" x-text="banner.element"></span>
+                        <span class="px-3 py-1 bg-brand-cyan/20 border border-brand-cyan/50 text-brand-cyan text-xs font-bold tracking-wider rounded uppercase backdrop-blur-md" x-text="banner.role"></span>
+                    </div>
+
+                    <p class="text-gray-300 text-sm leading-relaxed border-l-2 border-white/20 pl-4 bg-black/40 p-2 backdrop-blur-sm rounded-r" x-text="banner.desc"></p>
+                </div>
+            </template>
+        </div>
+
+        <!-- The Cards -->
+        <div class="relative w-full h-full flex items-center justify-center">
+            <template x-for="(banner, index) in banners" :key="banner.id">
+                <div 
+                    @click="currentIndex = index"
+                    class="landscape-card cursor-pointer group"
+                    :class="currentIndex === index ? 'active-card' : ''"
+                    :style="getCardStyle(index)"
+                >
+                    <!-- Image -->
+                    <img :src="banner.src" class="w-full h-full object-cover transition-transform duration-700"
+                         :class="currentIndex === index ? 'scale-100' : 'scale-110 grayscale-[70%]'">
+                    
+                    <!-- Inner Gradient Overlay -->
+                    <div class="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-transparent"></div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-80"></div>
+
+                    <!-- Inner Card UI (Looks like part of the banner art) -->
+                    <div class="absolute top-4 left-4 flex gap-2">
+                         <div class="bg-brand-accent text-white text-[10px] font-bold px-2 py-0.5 rounded-sm shadow-lg tracking-wider">
+                             EVENT WARP
+                         </div>
+                    </div>
+
+                    <!-- 5 Star Probability Badge (Right Side) -->
+                    <div class="absolute bottom-6 right-6 flex flex-col items-end opacity-0 transition-opacity duration-300 delay-200"
+                         :class="currentIndex === index ? 'opacity-100' : 'opacity-0'">
+                         <img :src="banner.icon" class="w-16 h-16 border-2 border-brand-gold rounded mb-2 bg-black/50 backdrop-blur">
+                         <div class="text-brand-gold font-bold text-xl italic tracking-tighter">UP RATE</div>
+                         <div class="text-[10px] text-gray-400 tracking-widest">50% PROBABILITY</div>
+                    </div>
+
+                    <!-- Shine Animation Container -->
+                    <div class="shine-bar"></div>
+                    
+                    <!-- Selected Border -->
+                    <div class="absolute inset-0 border-[3px] border-brand-cyan opacity-0 transition-opacity duration-300 pointer-events-none"
+                         :class="currentIndex === index ? 'opacity-100' : 'opacity-0'"></div>
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- BOTTOM ACTIONS -->
+    <div class="relative z-30 w-full px-6 md:px-12 pb-8 pt-4 flex flex-col md:flex-row justify-between items-end bg-gradient-to-t from-black via-brand-dark/90 to-transparent">
+        
+        <!-- Pity Counter -->
+        <div class="mb-4 md:mb-0">
+            <div class="text-xs text-gray-500 tracking-[0.2em] mb-1">GUARANTEE COUNT</div>
+            <div class="flex items-end gap-2">
+                <span class="text-4xl font-bold text-white">45</span>
+                <span class="text-xl text-gray-600 mb-1">/ 90</span>
+            </div>
+            <!-- Progress Bar -->
+            <div class="w-48 h-1.5 bg-gray-800 mt-2 rounded-full overflow-hidden">
+                <div class="h-full bg-brand-cyan shadow-[0_0_10px_#4DF0FF]" style="width: 50%"></div>
+            </div>
+        </div>
+
+        <!-- Pull Buttons -->
+        <div class="flex items-center gap-4 md:gap-6">
+            <!-- Nav Arrows (Integrated near buttons) -->
+            <div class="flex mr-4 gap-1">
+                <button @click="goPrev()" class="w-12 h-12 flex items-center justify-center border border-white/10 bg-white/5 hover:bg-brand-cyan hover:text-black hover:border-brand-cyan transition rounded-l-lg clip-path-left">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+                <button @click="goNext()" class="w-12 h-12 flex items-center justify-center border border-white/10 bg-white/5 hover:bg-brand-cyan hover:text-black hover:border-brand-cyan transition rounded-r-lg clip-path-right">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+            </div>
+
+            <button class="btn-poly w-40 h-16 bg-[#2A2A2A] hover:bg-[#333] border-b-2 border-gray-600 text-gray-200 transition-all active:scale-95 flex flex-col items-center justify-center group">
+                <span class="text-xs font-bold tracking-widest text-gray-500 group-hover:text-white">WARP x1</span>
+                <div class="flex items-center gap-1.5 mt-0.5">
+                    <img src="https://placehold.co/20x20/4DF0FF/000000?text=+" class="w-4 h-4 rounded-full">
+                    <span class="text-lg font-bold">160</span>
+                </div>
+            </button>
+
+            <button class="btn-poly w-52 h-16 bg-gradient-to-r from-brand-gold to-yellow-500 text-black hover:brightness-110 transition-all active:scale-95 flex flex-col items-center justify-center shadow-gold relative overflow-hidden group">
+                <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 skew-y-12"></div>
+                <span class="text-xs font-black tracking-widest opacity-70 relative z-10">WARP x10</span>
+                <div class="flex items-center gap-1.5 mt-0.5 relative z-10">
+                    <img src="https://placehold.co/20x20/4DF0FF/000000?text=+" class="w-5 h-5 rounded-full border border-black">
+                    <span class="text-2xl font-black">1600</span>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- LOGIC -->
+    <script>
+        function gachaSystem() {
+            return {
+                currentIndex: 0,
+                banners: [
+                    { 
+                        id: 1, 
+                        type: 'CHARACTER EVENT',
+                        name: 'ACHERON', 
+                        element: 'LIGHTNING', 
+                        role: 'NIHILITY',
+                        desc: 'A drifter claiming to be a Galaxy Ranger. Her true name is unknown, and she walks the cosmos alone with a long sword.',
+                        src: 'https://placehold.co/1280x720/1a1a2e/4DF0FF?text=Character+Art+1',
+                        icon: 'https://placehold.co/100x100/4DF0FF/000000?text=Face'
+                    },
+                    { 
+                        id: 2, 
+                        type: 'LIGHT CONE EVENT',
+                        name: 'ALONG THE PASSING SHORE', 
+                        element: 'WEAPON', 
+                        role: 'NIHILITY',
+                        desc: 'Increases the wearer\'s Critical Damage by 36%. When the wearer hits an enemy target, inflicts Mirage Fizzle.',
+                        src: 'https://placehold.co/1280x720/2e1a1a/FFE55C?text=Weapon+Art+2',
+                        icon: 'https://placehold.co/100x100/FFE55C/000000?text=Cone'
+                    },
+                    { 
+                        id: 3, 
+                        type: 'CHARACTER EVENT',
+                        name: 'AVENTURINE', 
+                        element: 'IMAGINARY', 
+                        role: 'PRESERVATION',
+                        desc: 'A senior manager in the IPC Strategic Investment Department. He possesses an air of frivolity and doesn\'t shy away from risks.',
+                        src: 'https://placehold.co/1280x720/1a2e24/5cff8a?text=Character+Art+3',
+                        icon: 'https://placehold.co/100x100/5cff8a/000000?text=Face'
+                    },
+                    { 
+                        id: 4, 
+                        type: 'STANDARD WARP',
+                        name: 'STELLAR WARP', 
+                        element: 'ALL', 
+                        role: 'STANDARD',
+                        desc: 'Permanent banner. Every 300 warps allows you to choose a standard 5-star character of your choice.',
+                        src: 'https://placehold.co/1280x720/0a0a0a/ffffff?text=Standard+Banner',
+                        icon: 'https://placehold.co/100x100/ffffff/000000?text=Std'
+                    }
+                ],
+                
+                goNext() { 
+                    this.currentIndex = (this.currentIndex + 1) % this.banners.length; 
+                },
+                
+                goPrev() { 
+                    this.currentIndex = (this.currentIndex - 1 + this.banners.length) % this.banners.length; 
+                },
+
+                // LANDSCAPE SPECIFIC 3D LOGIC
+                getCardStyle(index) {
+                    const total = this.banners.length;
+                    let diff = index - this.currentIndex;
+
+                    // Wrap around
+                    if (diff > total / 2) diff -= total;
+                    if (diff < -total / 2) diff += total;
+
+                    const isActive = diff === 0;
+                    
+                    // Math for Landscape Aspect Ratio
+                    // Since cards are wide (750px), we need larger offsets
+                    
+                    // xOffset: 
+                    // 0 = Center
+                    // +/- 1 = +/- 15% (Tight overlap) or 50% (Spread out)?
+                    // Modern styling usually stacks them behind heavily.
+                    let xOffset = diff * 65; // 65% width offset
+                    
+                    // Limit xOffset for distant cards to prevent them flying off screen
+                    if (Math.abs(diff) > 2) xOffset = diff * 40; 
+
+                    // Z-Depth: Push inactive cards WAY back
+                    const zOffset = isActive ? 0 : -400 - (Math.abs(diff) * 100); 
+                    
+                    // Rotation: Subtle rotation for landscape
+                    const rotateY = isActive ? 0 : (diff > 0 ? -25 : 25); 
+                    
+                    const scale = isActive ? 1 : 0.85;
+                    const opacity = Math.abs(diff) >= 2 ? 0 : (isActive ? 1 : 0.4);
+                    const blur = isActive ? 0 : 4;
+
+                    return {
+                        transform: `translateX(${xOffset}%) translateZ(${zOffset}px) rotateY(${rotateY}deg) scale(${scale})`,
+                        zIndex: isActive ? 50 : (50 - Math.abs(diff)),
+                        opacity: opacity,
+                        filter: `blur(${blur}px) brightness(${isActive ? 1 : 0.5})`,
+                    };
+                }
+            }
+        }
+    </script>
+</body>
+</html>
