@@ -16,12 +16,12 @@ from sqlalchemy import func, desc, case
 from collections import Counter, defaultdict
 
 from .log import LOGGING_CONFIG
-from .util import auth, models, schemas
+from .util import auth, models
 from .util.admin import init_admin
 from .util.auth import get_optional_current_user, get_required_current_user
 from .util.cache import get_cache, Cache
 from .util.database import get_db
-from .util.schemas import create_student_response
+from .util.schemas.schemas import create_student_response, schemas
 from .util.GachaEngine import GachaEngine
 from .util.AchievementEngine import AchievementEngine
 
