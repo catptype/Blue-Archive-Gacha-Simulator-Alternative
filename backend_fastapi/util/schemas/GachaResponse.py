@@ -8,12 +8,12 @@ from .StudentResponse import StudentResponse
 class GachaPresetSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     
-    preset_id: int
-    preset_name: str
-    preset_pickup_rate: Decimal
-    preset_r3_rate: Decimal
-    preset_r2_rate: Decimal
-    preset_r1_rate: Decimal
+    id: int
+    name: str
+    pickup_rate: Decimal
+    r3_rate: Decimal
+    r2_rate: Decimal
+    r1_rate: Decimal
 
 class GachaResultStudent(StudentResponse):
     is_pickup: bool

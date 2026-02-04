@@ -50,11 +50,11 @@
         class="flex items-center justify-between p-2 rounded-lg hover:bg-slate-700/50"
       >
         <div class="flex items-center gap-3">
-          <img :src="student.portrait_url" class="w-16 h-16 rounded-md object-cover">
+          <img :src="student.portrait_url" :alt="`${student.name} (${student.version.name})`" class="w-16 h-16 rounded-md object-cover">
           <div>
-            <span class="font-semibold text-lg">{{ student.student_name }}</span>
-            <span v-if="student.version.version_name !== 'Original'" class="ml-2 font-semibold text-sm text-slate-400">
-              ({{ student.version.version_name }})
+            <span class="font-semibold text-lg">{{ student.name }}</span>
+            <span v-if="student.version.name !== 'Original'" class="ml-2 font-semibold text-sm text-slate-400">
+              ({{ student.version.name }})
             </span>
           </div>
         </div>

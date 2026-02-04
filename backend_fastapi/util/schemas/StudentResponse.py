@@ -32,10 +32,10 @@ def create_student_response(student: Student, request: Request) -> StudentRespon
         school_response.image_url = str(request.url_for('serve_school_image', school_id=student.school.id))
 
     student_response = StudentResponse(
-        student_id=student.id,
-        student_name=student.name,
-        student_rarity=student.rarity,
-        student_is_limited=student.is_limited,
+        id=student.id,
+        name=student.name,
+        rarity=student.rarity,
+        is_limited=student.is_limited,
         version=VersionSchema.model_validate(student.version),
         school=school_response
     )

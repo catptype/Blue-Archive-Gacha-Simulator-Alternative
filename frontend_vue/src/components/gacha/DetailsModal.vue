@@ -26,20 +26,20 @@
     // --- Computed properties to calculate individual rates ---
     const pickupRatePerStudent = computed(() => {
         if (!bannerData.value || bannerData.value.pickup_r3_students.length === 0) return 0;
-        return Number(bannerData.value.preset.preset_pickup_rate) / bannerData.value.pickup_r3_students.length;
+        return Number(bannerData.value.preset.pickup_rate) / bannerData.value.pickup_r3_students.length;
     });
     const nonPickupR3RatePerStudent = computed(() => {
         if (!bannerData.value || bannerData.value.nonpickup_r3_students.length === 0) return 0;
-            const nonPickupRate = Number(bannerData.value.preset.preset_r3_rate) - Number(bannerData.value.preset.preset_pickup_rate);
+            const nonPickupRate = Number(bannerData.value.preset.r3_rate) - Number(bannerData.value.preset.pickup_rate);
         return nonPickupRate / bannerData.value.nonpickup_r3_students.length;
     });
     const r2RatePerStudent = computed(() => {
         if (!bannerData.value || bannerData.value.r2_students.length === 0) return 0;
-        return Number(bannerData.value.preset.preset_r2_rate) / bannerData.value.r2_students.length;
+        return Number(bannerData.value.preset.r2_rate) / bannerData.value.r2_students.length;
     });
     const r1RatePerStudent = computed(() => {
         if (!bannerData.value || bannerData.value.r1_students.length === 0) return 0;
-        return Number(bannerData.value.preset.preset_r1_rate) / bannerData.value.r1_students.length;
+        return Number(bannerData.value.preset.r1_rate) / bannerData.value.r1_students.length;
     });
 </script>
 
@@ -63,7 +63,7 @@
         <template v-else-if="bannerData">
           <!-- Header -->
           <div class="flex-shrink-0 p-4 border-b border-slate-600">
-            <h2 class="text-2xl font-bold text-cyan-300">Banner Details: {{ bannerData.banner_name }}</h2>
+            <h2 class="text-2xl font-bold text-cyan-300">Banner Details: {{ bannerData.name }}</h2>
           </div>
 
           <!-- View Switcher -->
@@ -81,10 +81,10 @@
 
           <!-- Scrollable Content -->
           <div class="flex-grow p-4 overflow-y-auto">
-            <StudentPoolSection v-if="bannerData.pickup_r3_students.length > 0" title="Pickup Students" :totalRate="Number(bannerData.preset.preset_pickup_rate)" :students="bannerData.pickup_r3_students" :viewMode="viewMode" :individualRate="pickupRatePerStudent" :is-pickup="true" />
-            <StudentPoolSection v-if="bannerData.nonpickup_r3_students.length > 0" title="Available ★★★ Pool" :totalRate="Number(bannerData.preset.preset_r3_rate) - Number(bannerData.preset.preset_pickup_rate)" :students="bannerData.nonpickup_r3_students" :viewMode="viewMode" :individualRate="nonPickupR3RatePerStudent" :is-pickup="false" />
-            <StudentPoolSection v-if="bannerData.r2_students.length > 0" title="Available ★★ Pool" :totalRate="Number(bannerData.preset.preset_r2_rate)" :students="bannerData.r2_students" :viewMode="viewMode" :individualRate="r2RatePerStudent" :is-pickup="false" />
-            <StudentPoolSection v-if="bannerData.r1_students.length > 0" title="Available ★ Pool" :totalRate="Number(bannerData.preset.preset_r1_rate)" :students="bannerData.r1_students" :viewMode="viewMode" :individualRate="r1RatePerStudent" :is-pickup="false" />
+            <StudentPoolSection v-if="bannerData.pickup_r3_students.length > 0" title="Pickup Students" :totalRate="Number(bannerData.preset.pickup_rate)" :students="bannerData.pickup_r3_students" :viewMode="viewMode" :individualRate="pickupRatePerStudent" :is-pickup="true" />
+            <StudentPoolSection v-if="bannerData.nonpickup_r3_students.length > 0" title="Available ★★★ Pool" :totalRate="Number(bannerData.preset.r3_rate) - Number(bannerData.preset.pickup_rate)" :students="bannerData.nonpickup_r3_students" :viewMode="viewMode" :individualRate="nonPickupR3RatePerStudent" :is-pickup="false" />
+            <StudentPoolSection v-if="bannerData.r2_students.length > 0" title="Available ★★ Pool" :totalRate="Number(bannerData.preset.r2_rate)" :students="bannerData.r2_students" :viewMode="viewMode" :individualRate="r2RatePerStudent" :is-pickup="false" />
+            <StudentPoolSection v-if="bannerData.r1_students.length > 0" title="Available ★ Pool" :totalRate="Number(bannerData.preset.r1_rate)" :students="bannerData.r1_students" :viewMode="viewMode" :individualRate="r1RatePerStudent" :is-pickup="false" />
           </div>
         </template>
       </div>

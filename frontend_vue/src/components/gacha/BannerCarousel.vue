@@ -1,6 +1,6 @@
 <script setup lang="ts">
     import { ref, onMounted, onUnmounted } from 'vue';
-    interface Banner { banner_id: number; image_url: string; }
+    interface Banner { id: number; name: string; image_url: string; }
 
     const props = defineProps<{ banners: Banner[]; activeIndex: number; }>();
     const emit = defineEmits(['update:activeIndex']);
@@ -34,13 +34,13 @@
   <div class="relative row-span-2 w-full h-full overflow-hidden">
     <div
       v-for="(banner, index) in banners"
-      :key="banner.banner_id"
+      :key="banner.id"
       class="banner-card absolute top-1/2 left-1/2 h-full w-full transition-all duration-500 ease-in-out rounded-lg overflow-hidden cursor-pointer"
       :style="getCardStyle(index)"
       @click="emit('update:activeIndex', index)"
     >
       <div class="card-image-wrapper w-full h-full" :class="{ 'grayscale': index !== activeIndex }">
-        <img :src="banner.image_url" class="w-full h-full object-contain">
+        <img :src="banner.image_url" :alt="banner.name" class="w-full h-full object-contain">
       </div>
     </div>
     

@@ -13,11 +13,11 @@ class UserCreate(UserBase):
 
 class RoleSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    role_name: str
+    name: str
 
 class UserSchema(UserBase):
     model_config = ConfigDict(from_attributes=True)
-    user_id: int
+    id: int
     role: RoleSchema
 
 class Token(BaseModel):

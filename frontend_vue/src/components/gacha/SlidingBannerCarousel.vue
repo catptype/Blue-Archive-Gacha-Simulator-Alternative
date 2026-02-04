@@ -1,5 +1,5 @@
 <script setup lang="ts">
-interface Banner { banner_id: number; image_url: string; }
+interface Banner { id: number; name: string; image_url: string; }
 
 const props = defineProps<{
   banners: Banner[];
@@ -70,8 +70,9 @@ const goPrev = () => {
     <!-- Banner Images -->
     <img
       v-for="(banner, index) in banners"
-      :key="banner.banner_id"
+      :key="banner.id"
       :src="banner.image_url"
+      :alt="banner.name"
       :style="getPosition(index)"
       @click="emit('update:activeIndex', index)"
       class="banner-image object-cover cursor-pointer"

@@ -9,7 +9,7 @@ import DetailsModal from '@/components/gacha/DetailsModal.vue';
 import GachaResults from '@/components/gacha/GachaResults.vue';
 import planaMov from '@/assets/plana-gacha.mov';
 
-interface Banner { banner_id: number; banner_name: string; image_url: string; }
+interface Banner { id: number; name: string; image_url: string; }
 interface Student { /* ... */ }
 
 const banners = ref<Banner[]>([]);
@@ -28,7 +28,7 @@ onMounted(async () => {
 
 const handlePull = async (amount: 1 | 10) => {
   if (!activeBanner.value) return;
-  const bannerId = activeBanner.value.banner_id;
+  const bannerId = activeBanner.value.id;
   const pullType = amount === 10 ? 'pull_ten' : 'pull_single';
   try {
     const { data } = await apiClient.post(`/gacha/${bannerId}/${pullType}`);
@@ -60,12 +60,12 @@ const handlePull = async (amount: 1 | 10) => {
       
       <Transition name="fade" mode="out-in">
         <div 
-          :key="activeBanner ? activeBanner.banner_name : 'loading'"
+          :key="activeBanner ? activeBanner.name : 'loading'"
           v-if="activeBanner"
           class="text-center mb-20 opacity-80"
         >
           <h2 class="text-3xl font-bold tracking-wider text-white" style="text-shadow: 2px 2px 8px rgba(0,0,0,0.7);">
-            {{ activeBanner.banner_name }}
+            {{ activeBanner.name }}
           </h2>
         </div>
       </Transition>
@@ -99,7 +99,7 @@ const handlePull = async (amount: 1 | 10) => {
     <!-- Modals (These remain unchanged, but are controlled from the new UI) -->
     <DetailsModal
       v-if="isDetailsModalVisible && activeBanner"
-      :banner-id="activeBanner.banner_id"
+      :banner-id="activeBanner.id"
       @close="isDetailsModalVisible = false"
     />
     <GachaResults

@@ -17,35 +17,35 @@ class GachaEngine:
 
         # --- 1. Calculate rates from the preset ---
         self.rates = {
-            "r3": banner.preset.preset_r3_rate,
-            "r2": banner.preset.preset_r2_rate,
-            "r1": banner.preset.preset_r1_rate
+            "r3": banner.preset.r3_rate,
+            "r2": banner.preset.r2_rate,
+            "r1": banner.preset.r1_rate
         }
         # This is the rate for non-pickup 3-stars
-        self.non_pickup_r3_rate = self.rates["r3"] - banner.preset.preset_pickup_rate
+        self.non_pickup_r3_rate = self.rates["r3"] - banner.preset.pickup_rate
 
         # --- 2. Build the student pools using SQLAlchemy ---
         # Get IDs needed for filtering
-        pickup_ids = {s.student_id for s in banner.pickup_students}
-        excluded_ids = {s.student_id for s in banner.excluded_students}
-        included_version_ids = {v.version_id for v in banner.included_versions}
+        pickup_ids = {s.id for s in banner.pickup_students}
+        excluded_ids = {s.id for s in banner.excluded_students}
+        included_version_ids = {v.id for v in banner.included_versions}
 
         # Build the base query for the general pool
         base_pool_query = db.query(models.Student).filter(
-            models.Student.version_id_fk.in_(included_version_ids),
-            models.Student.student_id.not_in(pickup_ids | excluded_ids)
+            models.Student.version_id.in_(included_version_ids),
+            models.Student.id.not_in(pickup_ids | excluded_ids)
         )
-        if not banner.banner_include_limited:
-            base_pool_query = base_pool_query.filter(models.Student.student_is_limited == False)
+        if not banner.include_limited:
+            base_pool_query = base_pool_query.filter(models.Student.is_limited == False)
 
         # Execute query once and partition in Python for efficiency
         all_pool_students = base_pool_query.all()
 
         self.pools = {
             "pickup": banner.pickup_students,
-            "r3": [s for s in all_pool_students if s.student_rarity == 3],
-            "r2": [s for s in all_pool_students if s.student_rarity == 2],
-            "r1": [s for s in all_pool_students if s.student_rarity == 1],
+            "r3": [s for s in all_pool_students if s.rarity == 3],
+            "r2": [s for s in all_pool_students if s.rarity == 2],
+            "r1": [s for s in all_pool_students if s.rarity == 1],
         }
 
         # --- 3. Calculate rates and weights for the guaranteed pull ---
@@ -56,7 +56,7 @@ class GachaEngine:
 
         # --- 4. Pre-calculate weights for each pool ---
         self.weights = {
-            "pickup": [banner.preset.preset_pickup_rate / len(self.pools["pickup"])] * len(self.pools["pickup"]) if self.pools["pickup"] else [],
+            "pickup": [banner.preset.pickup_rate / len(self.pools["pickup"])] * len(self.pools["pickup"]) if self.pools["pickup"] else [],
             "r3": [self.non_pickup_r3_rate / len(self.pools["r3"])] * len(self.pools["r3"]) if self.pools["r3"] else [],
             "r2": [self.rates["r2"] / len(self.pools["r2"])] * len(self.pools["r2"]) if self.pools["r2"] else [],
             "r1": [self.rates["r1"] / len(self.pools["r1"])] * len(self.pools["r1"]) if self.pools["r1"] else [],

@@ -92,7 +92,7 @@ def get_required_current_user(
         # This will now correctly propagate the error for invalid/expired tokens
         raise credentials_exception
 
-    user = db.query(models.User).filter(models.User.username == username).first()
+    user = db.query(models.User).filter_by(username=username).first()
     if user is None:
         raise credentials_exception
     return user

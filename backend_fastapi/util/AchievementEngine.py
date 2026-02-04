@@ -26,10 +26,10 @@ class AchievementEngine:
         self.db = db
         # Fetch all unlocked achievement keys for this user just once.
         self.unlocked_keys: Set[str] = {
-            item[0] for item in db.query(models.Achievement.achievement_key).join(
+            item[0] for item in db.query(models.Achievement.key).join(
                 models.UnlockAchievement, 
-                models.UnlockAchievement.achievement_id_fk == models.Achievement.achievement_id
-            ).filter(models.UnlockAchievement.user_id_fk == self.user.user_id).all()
+                models.UnlockAchievement.achievement_id == models.Achievement.id
+            ).filter(models.UnlockAchievement.user_id == self.user.id).all()
         }
 
     def _award(self, unlock_key: str) -> Optional[models.Achievement]:
@@ -37,18 +37,18 @@ class AchievementEngine:
         if unlock_key in self.unlocked_keys:
             return None
 
-        achievement_to_award = self.db.query(models.Achievement).filter_by(achievement_key=unlock_key).first()
+        achievement_to_award = self.db.query(models.Achievement).filter_by(key=unlock_key).first()
         if not achievement_to_award:
             print(f"ERROR: Achievement with key '{unlock_key}' not found in DB.")
             return None
         
         new_unlock = models.UnlockAchievement(
-            user_id_fk=self.user.user_id,
-            achievement_id_fk=achievement_to_award.achievement_id
+            user_id=self.user.id,
+            achievement_id=achievement_to_award.id
         )
         self.db.add(new_unlock)
         self.unlocked_keys.add(unlock_key) # Update in-memory set
-        print(f"ACHIEVEMENT UNLOCKED for {self.user.username}: {achievement_to_award.achievement_name}")
+        print(f"ACHIEVEMENT UNLOCKED for {self.user.username}: {achievement_to_award.name}")
         return achievement_to_award
 
     # --- "RULE" METHODS ---
@@ -56,7 +56,7 @@ class AchievementEngine:
     def check_luck_achievements(self, pulled_students: List[models.Student]) -> List[models.Achievement]:
         """Checks for achievements related to a single gacha pull (e.g., multi-3-star)."""
         newly_unlocked = []
-        r3_count = sum(1 for student in pulled_students if student.student_rarity == 3)
+        r3_count = sum(1 for student in pulled_students if student.rarity == 3)
         
         if r3_count >= 2:
             if ach := self._award('LUCK_DOUBLE_R3'):
@@ -73,11 +73,11 @@ class AchievementEngine:
         newly_unlocked = []
         
         # Get the user's full collection for checking
-        owned_students_query = self.db.query(models.Student.student_name, models.Version.version_name).join(
-            models.UserInventory, models.UserInventory.student_id_fk == models.Student.student_id
+        owned_students_query = self.db.query(models.Student.name, models.Version.name).join(
+            models.UserInventory, models.UserInventory.student_id == models.Student.id
         ).join(
-            models.Version, models.Student.version_id_fk == models.Version.version_id
-        ).filter(models.UserInventory.user_id_fk == self.user.user_id).all()
+            models.Version, models.Student.version_id == models.Version.id
+        ).filter(models.UserInventory.user_id == self.user.id).all()
         
         user_owned_set = {f"{name}|{version}" for name, version in owned_students_query}
 

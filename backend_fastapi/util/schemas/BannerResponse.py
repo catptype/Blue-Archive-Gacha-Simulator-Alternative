@@ -8,9 +8,9 @@ from .StudentResponse import StudentResponse
 class BannerSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    banner_id: int
-    banner_name: str
-    banner_include_limited: bool
+    id: int
+    name: str
+    include_limited: bool
     preset: GachaPresetSchema
 
 class BannerResponse(BannerSchema):
