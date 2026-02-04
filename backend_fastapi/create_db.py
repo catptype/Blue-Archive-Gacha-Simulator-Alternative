@@ -46,9 +46,8 @@ def seed_versions(db: Session):
     print("Seeding Versions...")
 
     # --- Phase 1: Handle the "Original" version special case ---
-    original_in_db = db.query(Version).filter_by(name="Original").first()
-    
-    if not original_in_db:
+    original_is_exist = db.query(Version.id).filter_by(name="Original").first()
+    if not original_is_exist:
         print("  - Adding special case: Original (ensuring ID 1)")
         original_version = Version(name="Original")
         db.add(original_version)
@@ -197,7 +196,7 @@ def seed_banners(db: Session):
         banner_limited = banner_data['limited']
         banner_image_data = banner_data['image_base64']
 
-        exists = db.query(GachaBanner).filter_by(name=banner_name).first()
+        exists = db.query(GachaBanner.id).filter_by(name=banner_name).first()
 
         if not exists:
             # Find related preset
@@ -241,22 +240,26 @@ def seed_achievements(db: Session):
             continue
 
         # Check if an achievement with this unique key already exists
-        exists = db.query(Achievement).filter_by(achievement_key=key).first()
+        exists = db.query(Achievement.id).filter_by(key=key).first()
         if not exists:
+
+            category = ach_data.get('category', 'MILESTONE')
+            name = ach_data.get('name', 'Unnamed Achievement')
+            description = ach_data.get('description')
             # Decode the image if it exists
             image_b64 = ach_data.get('image_base64')
             image_bytes = base64.b64decode(image_b64) if image_b64 else None
 
             # Create the new Achievement instance
             new_achievement = Achievement(
-                achievement_key=key,
-                achievement_category=ach_data.get('category', 'MILESTONE'), # Use default if missing
-                achievement_name=ach_data.get('name', 'Unnamed Achievement'),
-                achievement_description=ach_data.get('description'),
-                achievement_image=image_bytes
+                key=key,
+                category=category,
+                name=name,
+                description=description,
+                image_data=image_bytes
             )
             db.add(new_achievement)
-            print(f"  - Added Achievement: {new_achievement.achievement_name}")
+            print(f"  - Added Achievement: {name}")
             
     db.commit()
 
@@ -270,13 +273,13 @@ def main():
 
     # Use a session that is automatically closed
     with SessionLocal() as db:
-        seed_roles(db: Session)
-        seed_versions(db: Session)
-        seed_schools(db: Session)
-        seed_students(db: Session)
-        seed_presets(db: Session)
-        seed_banners(db: Session)
-        seed_achievements(db: Session)
+        seed_roles(db)
+        seed_versions(db)
+        seed_schools(db)
+        seed_students(db)
+        seed_presets(db)
+        seed_banners(db)
+        seed_achievements(db)
     print("\nDatabase seeding complete!")
 
 if __name__ == "__main__":

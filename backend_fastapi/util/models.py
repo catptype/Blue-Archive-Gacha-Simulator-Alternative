@@ -163,7 +163,7 @@ class Achievement(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), unique=True, nullable=False)
     description = Column(Text, nullable=True)
-    image = Column(BLOB_TYPE, nullable=True)
+    image_data = Column(BLOB_TYPE, nullable=True)
     category = Column(String(20), default='MILESTONE')
     key = Column(String(50), unique=True, nullable=False)
 

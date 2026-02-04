@@ -28,7 +28,7 @@ def main():
 
         # --- START OF CHANGES ---
         # Find the role object in the database
-        role_obj = db.query(Role).filter(Role.role_name == args.role).first()
+        role_obj = db.query(Role).filter(Role.name == args.role).first()
         if not role_obj:
             print(f"Error: Role '{args.role}' does not exist in the database.")
             print("Please ensure roles are seeded correctly (e.g., 'member', 'superuser').")
@@ -40,7 +40,7 @@ def main():
         new_user = User(
             username=args.username,
             hashed_password=hashed_password,
-            role_id_fk=role_obj.role_id # <-- Use the foreign key ID
+            role_id=role_obj.id # <-- Use the foreign key ID
         )
 
         db.add(new_user)

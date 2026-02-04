@@ -2,8 +2,8 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 
 interface Student {
-  student_id: number;
-  student_name: string;
+  id: number;
+  name: string;
   portrait_url: string;
 }
 
@@ -175,7 +175,7 @@ onUnmounted(() => window.removeEventListener('resize', recenterInstantly));
           :style="getCardStyle(index)"
         >
           <div class="relative w-full h-full group">
-            <img :src="student.portrait_url" :alt="student.student_name" class="w-full h-full object-cover rounded-lg">
+            <img :src="student.portrait_url" :alt="student.name" class="w-full h-full object-cover rounded-lg">
             <div
               class="character-name absolute bottom-[20px] left-[70px]"
               :class="[getCardNameStyle(index), { 'transition-all duration-500 ease-in-out': useTransition }]"
@@ -183,7 +183,7 @@ onUnmounted(() => window.removeEventListener('resize', recenterInstantly));
               <h2 
                 class="text-5xl font-black text-white uppercase tracking-widest origin-bottom-left transform -rotate-90"
                 style="text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.7);">
-                {{ student.student_name }}
+                {{ student.name }}
               </h2>
             </div>
           </div>

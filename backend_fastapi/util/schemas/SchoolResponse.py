@@ -3,9 +3,8 @@ from typing import Optional
 
 class SchoolSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-
-    school_id: int
-    school_name: str
+    id: int
+    name: str
 
 # --- Response
 class SchoolResponse(SchoolSchema):

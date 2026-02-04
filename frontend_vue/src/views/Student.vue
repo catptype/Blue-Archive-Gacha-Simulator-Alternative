@@ -5,8 +5,8 @@ import SchoolList from '../components/student/SchoolFilter.vue';
 import StudentCarousel from '../components/student/StudentCarousel.vue';
 import apiClient from '../services/client'; 
 
-interface School { school_id: number; school_name: string; image_url: string; }
-interface Student { student_id: number; student_name: string; portrait_url: string; }
+interface School { id: number; name: string; image_url: string; }
+interface Student { id: number; name: string; portrait_url: string; }
 
 // --- State managed by the parent ---
 const schools = ref<School[]>([]);
@@ -31,12 +31,12 @@ async function fetchSchools() {
 }
 
 async function handleSchoolSelect(school: School) {
-  if (school.school_id === selectedSchoolId.value) return; // Don't reload if already selected
+  if (school.id === selectedSchoolId.value) return; // Don't reload if already selected
 
-  selectedSchoolId.value = school.school_id;
+  selectedSchoolId.value = school.id;
   isLoadingStudents.value = true;
   try {
-    const response = await apiClient.get(`/students/?school_id=${school.school_id}&version_id=1`);
+    const response = await apiClient.get(`/students/?school_id=${school.id}&version_id=1`);
     students.value = response.data;
   } catch (error) { console.error('Failed to fetch students:', error); }
   finally { isLoadingStudents.value = false; }

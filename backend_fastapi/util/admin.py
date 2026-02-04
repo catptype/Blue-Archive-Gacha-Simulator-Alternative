@@ -7,26 +7,22 @@ from markupsafe import Markup
 
 # Import your database engine and models
 from .database import engine, SessionLocal
-from . import models
-from .auth import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token # Import secrets from your auth module
+from .models import User, Role, Student, Version, School, GachaBanner, GachaPreset, GachaTransaction, Achievement, UnlockAchievement, UserInventory
+from .auth import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token, verify_password
 from .timezone import format_datetime_as_local
 from datetime import timedelta
 
 # --- 1. Define the Authentication Backend ---
 class AdminAuth(AuthenticationBackend):
     async def login(self, request: Request) -> bool:
+
         form = await request.form()
         username, password = form["username"], form["password"]
 
-        # This is where you would properly verify the password.
-        # We need to import the verify_password function.
-        from .auth import verify_password
-
         with SessionLocal() as db:
-            user = db.query(models.User).filter(models.User.username == username).first()
-            if user and verify_password(password, user.hashed_password) and user.role.role_name == "superuser":
+            user = db.query(User).filter_by(username=username).first()
+            if user and verify_password(password, user.hashed_password) and user.role.name == "superuser":
                 # Create a token for the session
-                # from .auth import create_access_token
                 expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
                 token = create_access_token(data={"sub": user.username}, expires_delta=expires)
                 request.session.update({"token": token})
@@ -50,9 +46,9 @@ class AdminAuth(AuthenticationBackend):
             
             # Check if the user is a superuser
             with SessionLocal() as db:
-                user = db.query(models.User).filter(models.User.username == username).first()
-                if user and user.role.role_name == "superuser":
-                    return True
+                user = db.query(User).filter_by(username=username).first()
+                if user:
+                    return user.role.name == "superuser"
         except Exception:
             return False
             
@@ -61,33 +57,44 @@ class AdminAuth(AuthenticationBackend):
 # --- 2. Define the Model Views ---
 # See icon at https://fontawesome.com/search?f=classic&s=solid&ic=free&o=r
 
-class RoleAdmin(ModelView, model=models.Role):
+class RoleAdmin(ModelView, model=Role):
     name = "Role"
     name_plural = "Roles"
     icon = "fa-solid fa-user-shield"
-    column_list = [models.Role.role_id, models.Role.role_name]
+    column_list = [Role.id, Role.name]
 
-class UserAdmin(ModelView, model=models.User):
+class UserAdmin(ModelView, model=User):
     name = "User"
     name_plural = "Users"
     icon = "fa-solid fa-users"
-    column_list = [models.User.user_id, models.User.username, models.User.role]
-    column_details_exclude_list = [models.User.hashed_password]
-    form_excluded_columns = [models.User.hashed_password]
+    column_list = [User.id, User.username, User.role]
+    column_details_exclude_list = [User.hashed_password]
+    form_excluded_columns = [User.hashed_password]
 
-class StudentAdmin(ModelView, model=models.Student):
+class StudentAdmin(ModelView, model=Student):
     name = "Student"
     name_plural = "Students"
     icon = "fa-solid fa-graduation-cap"
-    column_list = ["student_id", "Portrait", "student_name", "version", "student_rarity", "school"]
-    column_searchable_list = [models.Student.student_name, "school.school_name", "version.version_name"]
+    column_list = ["id", "Portrait", "name", "version", "rarity", "school"]
+    column_searchable_list = [Student.name, "school.name", "version.name"]
 
     @staticmethod
-    def _format_portrait(model, _, size: int = 40) -> Markup:
+    def _format_portrait(model: Student, _, size: int = 40) -> Markup:
         if model and model.asset:
             html_string = (
-                f'<a href="/admin/student/details/{model.student_id}" title="{model}">'
-                f'  <img src="/image/student/{model.student_id}/portrait" width="{size}" style="border-radius: 4px; margin: 2px;">'
+                f'<a href="/admin/student/details/{model.id}" title="{model}">'
+                f'  <img src="/image/student/{model.id}/portrait" width="{size}" style="border-radius: 4px; margin: 2px;">'
+                f'</a>'
+            )
+            return Markup(html_string)
+        return ""
+    
+    @staticmethod
+    def _format_artwork(model: Student, _, size: int = 40) -> Markup:
+        if model and model.asset:
+            html_string = (
+                f'<a href="/admin/student/details/{model.id}" title="{model}">'
+                f'  <img src="/image/student/{model.id}/artwork" width="{size}" style="border-radius: 4px; margin: 2px;">'
                 f'</a>'
             )
             return Markup(html_string)
@@ -97,48 +104,64 @@ class StudentAdmin(ModelView, model=models.Student):
         "Portrait": lambda model, _: StudentAdmin._format_portrait(model, _, size=40),
     }
 
-class VersionAdmin(ModelView, model=models.Version):
+    column_details_list = [
+        Student.id,
+        Student.name,
+        Student.version,
+        Student.school,
+        Student.rarity,
+        Student.is_limited,
+        "Portrait",
+        "Artwork"
+    ]
+
+    column_formatters_detail = {
+        "Portrait": lambda model, _: StudentAdmin._format_portrait(model, _, size=80),
+        "Artwork": lambda model, _: StudentAdmin._format_artwork(model, _, size=80),
+    }
+
+class VersionAdmin(ModelView, model=Version):
     name = "Version"
     name_plural = "Versions"
     icon = "fa-solid fa-shirt"
-    column_list = ["version_id", "version_name"]
-    column_searchable_list = ["version_name"]
+    column_list = ["id", "name"]
+    column_searchable_list = ["name"]
 
-class SchoolAdmin(ModelView, model=models.School):
+class SchoolAdmin(ModelView, model=School):
     name = "School"
     name_plural = "Schools"
     icon = "fa-solid fa-school"
-    column_list = ["school_id", "school_name"]
+    column_list = ["id", "name"]
 
-class GachaBannerAdmin(ModelView, model=models.GachaBanner):
+class GachaBannerAdmin(ModelView, model=GachaBanner):
     name = "Banner"
     name_plural = "Banners"
     icon = "fa-solid fa-bullhorn"
-    column_list = ["banner_id", "banner_image", "banner_name", "preset", "included_versions", "Pickups", "Excluded"]
+    column_list = ["id", "banner_image", "banner_name", "preset", "included_versions", "Pickups", "Excluded"]
 
     @staticmethod
-    def _format_pickups(model, _, size: int = 40) -> Markup:
+    def _format_pickups(model: GachaBanner, _, size: int = 40) -> Markup:
         """
         A reusable static method to generate the HTML for pickup student images.
         Takes an optional 'size' argument for flexibility.
         """
         html_string = ''.join(
-            f'<a href="/admin/student/details/{student.student_id}" title="{student}">'
-            f'  <img src="/image/student/{student.student_id}/portrait" width="{size}" style="border-radius: 4px; margin: 2px;">'
+            f'<a href="/admin/student/details/{student.id}" title="{student}">'
+            f'  <img src="/image/student/{student.id}/portrait" width="{size}" style="border-radius: 4px; margin: 2px;">'
             f'</a>'
             for student in model.pickup_students if student.asset
         )
         return Markup(html_string)
     
     @staticmethod
-    def _format_excluded(model, _, size: int = 40) -> Markup:
+    def _format_excluded(model: GachaBanner, _, size: int = 40) -> Markup:
         """
         A reusable static method to generate the HTML for pickup student images.
         Takes an optional 'size' argument for flexibility.
         """
         html_string = ''.join(
-            f'<a href="/admin/student/details/{student.student_id}" title="{student}">'
-            f'  <img src="/image/student/{student.student_id}/portrait" width="{size}" style="border-radius: 4px; margin: 2px;">'
+            f'<a href="/admin/student/details/{student.id}" title="{student}">'
+            f'  <img src="/image/student/{student.id}/portrait" width="{size}" style="border-radius: 4px; margin: 2px;">'
             f'</a>'
             for student in model.excluded_students if student.asset
         )
@@ -146,19 +169,19 @@ class GachaBannerAdmin(ModelView, model=models.GachaBanner):
 
     column_formatters = {
         "banner_image": lambda model, _: Markup(
-            f'<img src="/image/banner/{model.banner_id}" width="120">' # Assumes you create this endpoint
-        ) if model.banner_image else "",
+            f'<img src="/image/banner/{model.id}" width="120">' # Assumes you create this endpoint
+        ) if model.image_data else "",
 
         "Pickups": lambda model, _: GachaBannerAdmin._format_pickups(model, _, size=40),
         "Excludes": lambda model, _: GachaBannerAdmin._format_excluded(model, _, size=40),
     }
 
     column_details_list = [
-        models.GachaBanner.banner_id,
-        models.GachaBanner.banner_name,
-        models.GachaBanner.preset,
-        models.GachaBanner.banner_include_limited,
-        models.GachaBanner.included_versions,
+        GachaBanner.id,
+        GachaBanner.name,
+        GachaBanner.preset,
+        GachaBanner.include_limited,
+        GachaBanner.included_versions,
         "Pickups",
         "Excludes"
     ]
@@ -169,32 +192,32 @@ class GachaBannerAdmin(ModelView, model=models.GachaBanner):
     }
 
     form_columns = [
-        models.GachaBanner.banner_name,
-        models.GachaBanner.preset,
-        models.GachaBanner.banner_include_limited,
-        models.GachaBanner.included_versions,
-        models.GachaBanner.pickup_students,
-        models.GachaBanner.excluded_students,
+        GachaBanner.name,
+        GachaBanner.preset,
+        GachaBanner.include_limited,
+        GachaBanner.included_versions,
+        GachaBanner.pickup_students,
+        GachaBanner.excluded_students,
     ]
 
-class GachaPresetAdmin(ModelView, model=models.GachaPreset):
+class GachaPresetAdmin(ModelView, model=GachaPreset):
     name = "Preset"
     name_plural = "Presets"
     icon = "fa-solid fa-cogs"
-    column_list = ["preset_id", "preset_name", "preset_pickup_rate", "preset_r3_rate", "preset_r2_rate", "preset_r1_rate"]
+    column_list = ["id", "name", "pickup_rate", "r3_rate", "r2_rate", "r1_rate"]
 
-class AchievementAdmin(ModelView, model=models.Achievement):
+class AchievementAdmin(ModelView, model=Achievement):
     name = "Achievement"
     name_plural = "Achievements"
     icon = "fa-solid fa-trophy"
-    column_list = ["achievement_id", "Icon", "achievement_category", "achievement_name", "achievement_description", "achievement_key"]
+    column_list = ["id", "Icon", "category", "name", "description", "key"]
 
     @staticmethod
-    def _format_icon(model, _, size: int = 100) -> Markup:
-        if model and model.achievement_image:
+    def _format_icon(model: Achievement, _, size: int = 100) -> Markup:
+        if model and model.image_data:
             html_string = (
-                f'<a href="/admin/achievement/details/{model.achievement_id}" title="{model}">'
-                f'  <img src="/image/achievement/{model.achievement_id}" width="{size}" style="border-radius: 4px; margin: 2px;">'
+                f'<a href="/admin/achievement/details/{model.id}" title="{model}">'
+                f'  <img src="/image/achievement/{model.id}" width="{size}" style="border-radius: 4px; margin: 2px;">'
                 f'</a>'
             )
             return Markup(html_string)
@@ -204,13 +227,13 @@ class AchievementAdmin(ModelView, model=models.Achievement):
         "Icon": lambda model, _: AchievementAdmin._format_icon(model, _, size=100),
     }
 
-class UserAchievementAdmin(ModelView, model=models.UnlockAchievement):
+class UserAchievementAdmin(ModelView, model=UnlockAchievement):
     name = "Unlocked Achievement"
     name_plural = "Unlocked Achievements"
     icon = "fa-solid fa-lock-open"
     column_list = ["unlock_id", "unlock_on", "user", "achievement"]
 
-class UserInventoryAdmin(ModelView, model=models.UserInventory):
+class UserInventoryAdmin(ModelView, model=UserInventory):
     name = "Inventory"
     name_plural = "Inventories"
     icon = "fa-solid fa-box-archive"
@@ -218,12 +241,12 @@ class UserInventoryAdmin(ModelView, model=models.UserInventory):
     column_searchable_list = ["user.username"]
 
     @staticmethod
-    def _format_portrait(model, _, size: int = 40) -> Markup:
+    def _format_portrait(model: UserInventory, _, size: int = 40) -> Markup:
         student = model.student
         if student and student.asset:
             html_string = (
-                f'<a href="/admin/student/details/{student.student_id}" title="{student}">'
-                f'  <img src="/image/student/{student.student_id}/portrait" width="{size}" style="border-radius: 4px; margin: 2px;">'
+                f'<a href="/admin/student/details/{student.id}" title="{student}">'
+                f'  <img src="/image/student/{student.id}/portrait" width="{size}" style="border-radius: 4px; margin: 2px;">'
                 f'</a>'
             )
             return Markup(html_string)
@@ -234,7 +257,7 @@ class UserInventoryAdmin(ModelView, model=models.UserInventory):
         "First obtain (local time)": lambda model, _: format_datetime_as_local(model, "inventory_first_obtained_on"),
     }
 
-class GachaTransactionAdmin(ModelView, model=models.GachaTransaction):
+class GachaTransactionAdmin(ModelView, model=GachaTransaction):
     name = "Transaction"
     name_plural = "Transactions"
     icon = "fa-solid fa-receipt"

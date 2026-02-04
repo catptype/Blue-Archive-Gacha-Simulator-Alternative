@@ -18,34 +18,33 @@ class OverallRaritySchema(BaseModel):
     r2_count: int
     r1_count: int
 
-class KpiSchema(OverallRaritySchema):
+class KpiResponse(OverallRaritySchema):
     total_pulls: int
     total_pyroxene_spent: int
 
-class Top3StudentSchema(BaseModel):
+class Top3StudentResponse(BaseModel):
     student: StudentResponse
     count: int
     first_obtained: datetime
 
-class FirstR3Schema(BaseModel):
+class FirstR3Response(BaseModel):
     transaction_id: int
     transaction_create_on: datetime
     student: StudentResponse
 
-class CollectionProgressionSchema(BaseModel):
+class CollectionProgressionResponse(BaseModel):
     rarity: int
     obtained: int
     total: int
 
-class BannerBreakdownChartSchema(BaseModel):
+class BannerBreakdownChartResponse(BaseModel):
     data: Dict[str, OverallRaritySchema]
 
-class MilestoneSchema(BaseModel):
+class MilestoneResponse(BaseModel):
     student: StudentResponse 
     pull_number: int
 
-# --- Response
-class LuckPerformanceSchema(BaseModel):
+class LuckPerformanceResponse(BaseModel):
     banner_name: str
     total_pulls: int
     r3_count: int

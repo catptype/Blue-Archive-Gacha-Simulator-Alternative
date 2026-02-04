@@ -1,20 +1,20 @@
 <script setup lang="ts">
-interface School {
-  school_id: number;
-  school_name: string;
-  image_url: string;
-}
+  interface School {
+    id: number;
+    name: string;
+    image_url: string;
+  }
 
-defineProps<{
-  schools: School[];
-  selectedId: number | null;
-  isLoading: boolean;
-}>();
+  defineProps<{
+    schools: School[];
+    selectedId: number | null;
+    isLoading: boolean;
+  }>();
 
-const emit = defineEmits<{
-  (e: 'selectSchool', school: School): void;
-  (e: 'update:sidebarExpanded', isExpanded: boolean): void;
-}>();
+  const emit = defineEmits<{
+    (e: 'selectSchool', school: School): void;
+    (e: 'update:sidebarExpanded', isExpanded: boolean): void;
+  }>();
 </script>
 
 <template>
@@ -30,14 +30,14 @@ const emit = defineEmits<{
     <div v-if="isLoading" class="text-slate-400 p-2">Loading...</div>
     <button
       v-for="school in schools"
-      :key="school.school_id"
+      :key="school.id"
       @click="emit('selectSchool', school)"
       class="school-button w-full p-2 rounded-lg flex items-center transition-colors duration-300 ease-in-out bg-gray-600/80 hover:bg-sky-600/70"
-      :class="{ 'active ring-2 ring-sky-400': school.school_id === selectedId }"
+      :class="{ 'active ring-2 ring-sky-400': school.id === selectedId }"
     >
-      <img :src="school.image_url" :alt="`${school.school_name} Logo`" class="h-12 w-12 object-contain flex-shrink-0 transition-all duration-300">
+      <img :src="school.image_url" :alt="`${school.name} Logo`" class="h-12 w-12 object-contain shrink-0 transition-all duration-300">
       <span class="school-name ml-3 font-bold text-lg whitespace-nowrap overflow-hidden transition-all duration-300 ease-in-out opacity-0 max-w-0">
-        {{ school.school_name }}
+        {{ school.name }}
       </span>
     </button>
   </div>

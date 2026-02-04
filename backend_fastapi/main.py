@@ -21,7 +21,16 @@ from .util.admin import init_admin
 from .util.auth import get_optional_current_user, get_required_current_user
 from .util.cache import get_cache, Cache
 from .util.database import get_db
-from .util.schemas.schemas import create_student_response, schemas
+from .util.schemas.StudentResponse import create_student_response
+from .util.schemas.User import UserCreate, UserSchema, Token
+from .util.schemas.GachaResponse import GachaPullResponse, GachaResultStudent
+from .util.schemas.BannerResponse import BannerResponse, BannerDetailResponse
+from .util.schemas.SchoolResponse import SchoolResponse
+from .util.schemas.StudentResponse import StudentResponse
+from .util.schemas.DashboardResponse import KpiResponse, LuckGapsSchema, OverallRaritySchema, Top3StudentResponse, FirstR3Response, BannerBreakdownChartResponse, MilestoneResponse, LuckPerformanceResponse, CollectionProgressionResponse
+from .util.schemas.HistoryResponse import HistoryResponse, TransactionSchema
+from .util.schemas.CollectionResponse import CollectionResponse, CollectionStudentSchema
+from .util.schemas.AchievementResponse import UserAchievementResponse, AchievementResponse
 from .util.GachaEngine import GachaEngine
 from .util.AchievementEngine import AchievementEngine
 
@@ -46,7 +55,7 @@ def _perform_pull(
         request: Request,
         current_user: models.User | None,
         cache: Cache
-    ) -> schemas.GachaPullResponse:
+    ) -> GachaPullResponse:
     """
     Internal function that uses the GachaEngine and conditionally saves
     transactions based on whether a user is present.
@@ -57,7 +66,7 @@ def _perform_pull(
         selectinload(models.GachaBanner.pickup_students),
         selectinload(models.GachaBanner.excluded_students),
         selectinload(models.GachaBanner.included_versions)
-    ).filter(models.GachaBanner.banner_id == banner_id).first()
+    ).filter(models.GachaBanner.id == banner_id).first()
     
     if not banner:
         raise HTTPException(status_code=404, detail="Banner not found")
@@ -66,8 +75,8 @@ def _perform_pull(
     pulled_students_orm = engine.draw(amount)
 
     # Initialize variables for the response
-    pickup_ids = {s.student_id for s in banner.pickup_students}
-    final_results: List[schemas.GachaResultStudent] = []
+    pickup_ids = {s.id for s in banner.pickup_students}
+    final_results: List[GachaResultStudent] = []
     unlocked_achievements: List[models.Achievement] = []
 
     # --- THIS IS THE KEY CHANGE ---
@@ -77,54 +86,54 @@ def _perform_pull(
 
         # --- STEP 1: PREPARE FOR CHECKS ---
         # Get the user's total pull count *before* this pull for milestone checks.
-        initial_pull_count = db.query(func.count(models.GachaTransaction.transaction_id)).filter(
-            models.GachaTransaction.user_id_fk == current_user.user_id
+        initial_pull_count = db.query(func.count(models.GachaTransaction.id)).filter(
+            models.GachaTransaction.user_id == current_user.id
         ).scalar() or 0
 
         # Instantiate the achievement engine. It loads the user's existing unlocks.
         ach_engine = AchievementEngine(user=current_user, db=db)
 
         # Pre-fetch the user's existing inventory for the pulled students to check for "new".
-        pulled_student_ids = [s.student_id for s in pulled_students_orm]
+        pulled_student_ids = [s.id for s in pulled_students_orm]
         user_inventory_query = db.query(models.UserInventory).filter(
-            models.UserInventory.user_id_fk == current_user.user_id,
-            models.UserInventory.student_id_fk.in_(pulled_student_ids)
+            models.UserInventory.user_id == current_user.id,
+            models.UserInventory.student_id.in_(pulled_student_ids)
         )
         # Create a dictionary for fast lookups: {student_id: UserInventory_object}
-        inventory_map = {item.student_id_fk: item for item in user_inventory_query}
+        inventory_map = {item.student_id: item for item in user_inventory_query}
 
         # --- STEP 2: PROCESS PULL RESULTS IN A LOOP ---
         for student in pulled_students_orm:
 
             # A) Create a transaction record for every pull.
             new_transaction = models.GachaTransaction(
-                user_id_fk=current_user.user_id,
-                banner_id_fk=banner_id,
-                student_id_fk=student.student_id
+                user_id=current_user.id,
+                banner_id=banner_id,
+                student_id=student.id
             )
             db.add(new_transaction)
 
             # B) Check if this student is new for the user's inventory.
-            is_new = student.student_id not in inventory_map
+            is_new = student.id not in inventory_map
 
             # C) Update or create the inventory entry.
-            inventory_item = inventory_map.get(student.student_id)
+            inventory_item = inventory_map.get(student.id)
             if inventory_item:
-                inventory_item.inventory_num_obtained += 1
+                inventory_item.num_obtained += 1
             else:
                 new_inventory_item = models.UserInventory(
-                    user_id_fk=current_user.user_id,
-                    student_id_fk=student.student_id,
-                    inventory_num_obtained=1
+                    user_id=current_user.id,
+                    student_id=student.id,
+                    num_obtained=1
                 )
                 db.add(new_inventory_item)
-                inventory_map[student.student_id] = new_inventory_item
+                inventory_map[student.id] = new_inventory_item
             
             # D) Build the decorated result object for the frontend response.
             student_response = create_student_response(student, request)
-            result_student = schemas.GachaResultStudent(
+            result_student = GachaResultStudent(
                 **student_response.model_dump(),
-                is_pickup=(student.student_id in pickup_ids),
+                is_pickup=(student.id in pickup_ids),
                 is_new=is_new
             )
             final_results.append(result_student)
@@ -148,16 +157,16 @@ def _perform_pull(
             db.commit()
 
         # --- STEP 6: INVALIDATE ALL DASHBOARD CACHES FOR THIS USER ---
-        cache_pattern = f"dashboard:*:{current_user.user_id}*"
+        cache_pattern = f"dashboard:*:{current_user.id}*"
         cache.delete_by_pattern(cache_pattern)
         
     else:
         LOGGER.debug("Guest is pulling. Skipping transaction history.")
         for student in pulled_students_orm:
             student_response = create_student_response(student, request)
-            result_student = schemas.GachaResultStudent(
+            result_student = GachaResultStudent(
                 **student_response.model_dump(),
-                is_pickup=(student.student_id in pickup_ids),
+                is_pickup=(student.id in pickup_ids),
                 is_new=False # Guests never have "new" students
             )
             final_results.append(result_student)
@@ -165,11 +174,11 @@ def _perform_pull(
     # --- Format the final response, including any unlocked achievements ---
     achievements_response = []
     for ach in unlocked_achievements:
-        ach_resp = schemas.AchievementResponse.model_validate(ach)
+        ach_resp = AchievementResponse.model_validate(ach)
         ach_resp.image_url = str(request.url_for('serve_achievement_image', achievement_id=ach.achievement_id)) if ach.achievement_image else None
         achievements_response.append(ach_resp)
 
-    return schemas.GachaPullResponse(
+    return GachaPullResponse(
         success=True,
         results=final_results,
         unlocked_achievements=achievements_response # Mocked for now
@@ -177,8 +186,8 @@ def _perform_pull(
 
 # --- Authentication Endpoints ---
 
-@app.post("/api/register/", response_model=schemas.UserSchema)
-def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+@app.post("/api/register/", response_model=UserSchema)
+def register_user(user: UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(models.User).filter(models.User.username == user.username).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Username already registered")
@@ -195,7 +204,7 @@ def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     new_user = models.User(
         username=user.username, 
         hashed_password=hashed_password,
-        role_id_fk=member_role.role_id  # Assign the foreign key ID
+        role_id=member_role.role_id  # Assign the foreign key ID
     )
     # --- END OF CHANGES ---
 
@@ -204,7 +213,7 @@ def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return new_user
 
-@app.post("/api/token", response_model=schemas.Token)
+@app.post("/api/token", response_model=Token)
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(models.User).filter(models.User.username == form_data.username).first()
     if not user or not auth.verify_password(form_data.password, user.hashed_password):
@@ -219,7 +228,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
-@app.get("/api/users/me", response_model=schemas.UserSchema)
+@app.get("/api/users/me", response_model=UserSchema)
 def read_users_me(current_user: models.User = Depends(get_required_current_user)):
     """
     Fetches the data for the currently authenticated user.
@@ -238,7 +247,7 @@ def clear_all_caches(cache: Cache = Depends(get_cache)):
 
 # --- API Endpoints ---
 
-@app.get("/api/banners/", response_model=list[schemas.BannerResponse])
+@app.get("/api/banners/", response_model=list[BannerResponse])
 def get_banners(request: Request, db: Session = Depends(get_db), cache: Cache = Depends(get_cache)):
     cache_key = "all_banners"
 
@@ -252,7 +261,7 @@ def get_banners(request: Request, db: Session = Depends(get_db), cache: Cache = 
 
     response_banners = []
     for banner in db_banners:
-        banner_data = schemas.BannerResponse.model_validate(banner)
+        banner_data = BannerResponse.model_validate(banner)
         if banner.banner_image:
             banner_data.image_url = str(request.url_for('serve_banner_image', banner_id=banner.banner_id))
         response_banners.append(banner_data)
@@ -263,7 +272,7 @@ def get_banners(request: Request, db: Session = Depends(get_db), cache: Cache = 
     return response_banners
     
 
-@app.get("/api/schools/", response_model=list[schemas.SchoolResponse])
+@app.get("/api/schools/", response_model=list[SchoolResponse])
 def get_schools(request: Request, db: Session = Depends(get_db), cache: Cache = Depends(get_cache)):
     cache_key = "all_schools"
 
@@ -277,9 +286,9 @@ def get_schools(request: Request, db: Session = Depends(get_db), cache: Cache = 
     
     response_schools = []
     for school in db_schools:
-        school_data = schemas.SchoolResponse.model_validate(school)
-        if school.school_image:
-            school_data.image_url = str(request.url_for('serve_school_image', school_id=school.school_id))
+        school_data = SchoolResponse.model_validate(school)
+        if school.image_data:
+            school_data.image_url = str(request.url_for('serve_school_image', school_id=school.id))
         response_schools.append(school_data)
 
     schools_to_cache = [s.dict() for s in response_schools]
@@ -287,7 +296,7 @@ def get_schools(request: Request, db: Session = Depends(get_db), cache: Cache = 
         
     return response_schools
 
-@app.get("/api/students/", response_model=list[schemas.StudentResponse])
+@app.get("/api/students/", response_model=list[StudentResponse])
 def get_students(
         request: Request, 
         school_id: Optional[int] = None,
@@ -303,31 +312,31 @@ def get_students(
     
     # If a school_id was provided in the URL, apply the filter
     if school_id is not None:
-        students_query = students_query.filter(models.Student.school_id_fk == school_id)
+        students_query = students_query.filter(models.Student.school_id == school_id)
 
     if version_id is not None:
-        students_query = students_query.filter(models.Student.version_id_fk == version_id)
+        students_query = students_query.filter(models.Student.version_id == version_id)
 
     db_students = students_query.all()
     
     response_students = []
     for student in db_students:
         # Step 1: Validate the base student and its nested school object
-        student_response = schemas.StudentResponse.model_validate(student)
+        student_response = StudentResponse.model_validate(student)
 
         # Step 2: Create the school response object, adding the URL
-        school_response = schemas.SchoolResponse.model_validate(student.school)
-        if student.school.school_image:
-             school_response.image_url = str(request.url_for('serve_school_image', school_id=student.school.school_id))
+        school_response = SchoolResponse.model_validate(student.school)
+        if student.school.image_data:
+             school_response.image_url = str(request.url_for('serve_school_image', school_id=student.school.id))
 
-        student_response.portrait_url = str(request.url_for('serve_student_image', student_id=student.student_id, image_type='portrait'))
-        student_response.artwork_url = str(request.url_for('serve_student_image', student_id=student.student_id, image_type='artwork'))
+        student_response.portrait_url = str(request.url_for('serve_student_image', student_id=student.id, image_type='portrait'))
+        student_response.artwork_url = str(request.url_for('serve_student_image', student_id=student.id, image_type='artwork'))
         
         response_students.append(student_response)
         
     return response_students
 
-@app.get("/api/banners/{banner_id}/details/", response_model=schemas.BannerDetailResponse)
+@app.get("/api/banners/{banner_id}/details/", response_model=BannerDetailResponse)
 def get_banner_details(banner_id: int, request: Request, db: Session = Depends(get_db)):
     # 1. Fetching logic is unchanged.
     db_banner = db.query(models.GachaBanner).options(
@@ -337,24 +346,24 @@ def get_banner_details(banner_id: int, request: Request, db: Session = Depends(g
         ),
         selectinload(models.GachaBanner.included_versions),
         selectinload(models.GachaBanner.excluded_students)
-    ).filter(models.GachaBanner.banner_id == banner_id).first()
+    ).filter(models.GachaBanner.id == banner_id).first()
 
     if not db_banner:
         raise HTTPException(status_code=404, detail="Banner not found")
 
     # 2. & 3. Querying and partitioning logic is also unchanged.
-    pickup_ids = {s.student_id for s in db_banner.pickup_students}
-    excluded_ids = {s.student_id for s in db_banner.excluded_students}
-    included_version_ids = {v.version_id for v in db_banner.included_versions}
+    pickup_ids = {s.id for s in db_banner.pickup_students}
+    excluded_ids = {s.id for s in db_banner.excluded_students}
+    included_version_ids = {v.id for v in db_banner.included_versions}
 
     base_pool_query = db.query(models.Student).options(
         joinedload(models.Student.school), joinedload(models.Student.version), joinedload(models.Student.asset)
     ).filter(
-        models.Student.version_id_fk.in_(included_version_ids),
-        models.Student.student_id.not_in(pickup_ids | excluded_ids)
+        models.Student.version_id.in_(included_version_ids),
+        models.Student.id.not_in(pickup_ids | excluded_ids)
     )
 
-    if not db_banner.banner_include_limited:
+    if not db_banner.include_limited:
         base_pool_query = base_pool_query.filter(models.Student.student_is_limited == False)
 
     all_pool_students_db = base_pool_query.all()
@@ -369,7 +378,7 @@ def get_banner_details(banner_id: int, request: Request, db: Session = Depends(g
 
     # Step 4a: Create the base banner data using the BannerResponse schema
     # This automatically handles banner_id, banner_name, and the nested preset.
-    base_banner_response = schemas.BannerResponse.model_validate(db_banner)
+    base_banner_response = BannerResponse.model_validate(db_banner)
     
     # Step 4b: Manually add the computed image_url
     base_banner_response.image_url = str(request.url_for('serve_banner_image', banner_id=db_banner.banner_id)) if db_banner.banner_image else None
@@ -383,7 +392,7 @@ def get_banner_details(banner_id: int, request: Request, db: Session = Depends(g
     # Step 4d: Construct the final BannerDetailResponse
     # We unpack the base response and add the student lists.
     # Pydantic's `model_dump()` is the new way to get a dict from a model instance.
-    final_response = schemas.BannerDetailResponse(
+    final_response = BannerDetailResponse(
         **base_banner_response.model_dump(),
         pickup_r3_students=pickup_r3_response,
         nonpickup_r3_students=nonpickup_r3_response,
@@ -394,7 +403,7 @@ def get_banner_details(banner_id: int, request: Request, db: Session = Depends(g
     return final_response
 
 # --- UPDATE the pull endpoints to use the new dependency ---
-@app.post("/api/gacha/{banner_id}/pull_single", response_model=schemas.GachaPullResponse)
+@app.post("/api/gacha/{banner_id}/pull_single", response_model=GachaPullResponse)
 def perform_gacha_pull_single(
     banner_id: int,
     request: Request,
@@ -406,7 +415,7 @@ def perform_gacha_pull_single(
         banner_id=banner_id, amount=1, db=db, request=request, current_user=current_user, cache=cache
     )
 
-@app.post("/api/gacha/{banner_id}/pull_ten", response_model=schemas.GachaPullResponse)
+@app.post("/api/gacha/{banner_id}/pull_ten", response_model=GachaPullResponse)
 def perform_gacha_pull_ten(
     banner_id: int,
     request: Request,
@@ -418,16 +427,16 @@ def perform_gacha_pull_ten(
         banner_id=banner_id, amount=10, db=db, request=request, current_user=current_user, cache=cache
     )
 
-@app.get("/api/dashboard/summary/kpis", response_model=schemas.DashboardKpiResponse)
+@app.get("/api/dashboard/summary/kpis", response_model=KpiResponse)
 def get_dashboard_kpis(
     current_user: models.User = Depends(get_required_current_user),
     db: Session = Depends(get_db)
 ):
     # --- PERFORMANCE IMPROVEMENT: Fetch all rarities in a single, efficient query ---
     rarity_pulls = db.query(models.Student.student_rarity).join(
-        models.GachaTransaction, models.GachaTransaction.student_id_fk == models.Student.student_id
+        models.GachaTransaction, models.GachaTransaction.student_id == models.Student.id
     ).filter(
-        models.GachaTransaction.user_id_fk == current_user.user_id
+        models.GachaTransaction.user_id == current_user.user_id
     ).all()
 
     # The result is a list of tuples, e.g., [(3,), (2,), (2,)].
@@ -436,7 +445,7 @@ def get_dashboard_kpis(
     total_pulls = len(rarity_pulls)
 
     # Return an instance of the Pydantic schema
-    return schemas.DashboardKpiResponse(
+    return KpiResponse(
         total_pulls=total_pulls,
         total_pyroxene_spent=total_pulls * 120,
         r3_count=rarity_counter.get(3, 0),
@@ -444,7 +453,7 @@ def get_dashboard_kpis(
         r1_count=rarity_counter.get(1, 0),
     )
 
-@app.get("/api/dashboard/summary/top-students/{rarity}", response_model=List[schemas.TopStudentResponse])
+@app.get("/api/dashboard/summary/top-students/{rarity}", response_model=List[Top3StudentResponse])
 def get_top_students_by_rarity(
     rarity: int,
     request: Request, # Add Request to build image URLs
@@ -453,7 +462,7 @@ def get_top_students_by_rarity(
     cache: Cache = Depends(get_cache)
 ):
     
-    cache_key = f"dashboard:top_students:{current_user.user_id}:{rarity}"
+    cache_key = f"dashboard:top_students:{current_user.id}:{rarity}"
 
     # 3. Try to get the data from the cache first
     cached_data = cache.get(cache_key)
@@ -468,20 +477,20 @@ def get_top_students_by_rarity(
      # --- START OF THE NEW, EFFICIENT QUERY ---
 
     # Step 1: Create a subquery that works ONLY on the GachaTransaction table.
-    # It finds the most frequent student_id_fk for this user.
+    # It finds the most frequent student_id for this user.
     top_student_ids_subquery = (
         db.query(
-            models.GachaTransaction.student_id_fk,
-            func.count(models.GachaTransaction.student_id_fk).label('count'),
+            models.GachaTransaction.student_id,
+            func.count(models.GachaTransaction.student_id).label('count'),
             func.min(models.GachaTransaction.transaction_create_on).label('first_obtained')
         )
         .join(models.Student) # Join to filter by rarity
         .filter(
-            models.GachaTransaction.user_id_fk == current_user.user_id,
+            models.GachaTransaction.user_id == current_user.user_id,
             models.Student.student_rarity == rarity
         )
-        .group_by(models.GachaTransaction.student_id_fk)
-        .order_by(func.count(models.GachaTransaction.student_id_fk).desc(), func.min(models.GachaTransaction.transaction_create_on).asc())
+        .group_by(models.GachaTransaction.student_id)
+        .order_by(func.count(models.GachaTransaction.student_id).desc(), func.min(models.GachaTransaction.transaction_create_on).asc())
         .limit(3)
         .subquery()
     )
@@ -496,7 +505,7 @@ def get_top_students_by_rarity(
         )
         .join(
             top_student_ids_subquery,
-            models.Student.student_id == top_student_ids_subquery.c.student_id_fk
+            models.Student.id == top_student_ids_subquery.c.student_id
         )
         .order_by(top_student_ids_subquery.c.count.desc(), top_student_ids_subquery.c.first_obtained.asc())
         .all()
@@ -504,13 +513,13 @@ def get_top_students_by_rarity(
     # --- END OF THE NEW QUERY ---
     
     # --- BUILD THE SCHEMA RESPONSE ---
-    response_data: List[schemas.TopStudentResponse] = []
+    response_data: List[Top3StudentResponse] = []
     for student_orm, count, first_obtained in top_students_query:
         # 1. Reuse our helper to create the detailed StudentResponse
         student_response = create_student_response(student_orm, request)
         
         # 2. Create an instance of our new TopStudentResponse schema
-        entry = schemas.TopStudentResponse(
+        entry = Top3StudentResponse(
             student=student_response,
             count=count,
             first_obtained=first_obtained
@@ -524,7 +533,7 @@ def get_top_students_by_rarity(
 
 @app.get(
     "/api/dashboard/summary/first-r3-pull", 
-    response_model=Optional[schemas.FirstR3Response] # The response can be null
+    response_model=Optional[FirstR3Response] # The response can be null
 )
 def get_first_r3_pull(
     request: Request,
@@ -548,7 +557,7 @@ def get_first_r3_pull(
         db.query(models.GachaTransaction)
         .join(models.Student)
         .filter(
-            models.GachaTransaction.user_id_fk == current_user.user_id,
+            models.GachaTransaction.user_id == current_user.user_id,
             models.Student.student_rarity == 3
         )
         .order_by(models.GachaTransaction.transaction_create_on.asc())
@@ -562,7 +571,7 @@ def get_first_r3_pull(
 
     # Build the Pydantic response object
     student_response = create_student_response(first_r3_pull_orm.student, request)
-    response_data = schemas.FirstR3Response(
+    response_data = FirstR3Response(
         transaction_id=first_r3_pull_orm.transaction_id,
         transaction_create_on=first_r3_pull_orm.transaction_create_on,
         student=student_response
@@ -575,7 +584,7 @@ def get_first_r3_pull(
 
 @app.get(
     "/api/dashboard/summary/chart-banner-breakdown",
-    response_model=schemas.BannerBreakdownChartResponse
+    response_model=BannerBreakdownChartResponse
 )
 def get_chart_banner_breakdown(
     current_user: models.User = Depends(get_required_current_user),
@@ -595,10 +604,10 @@ def get_chart_banner_breakdown(
         models.GachaBanner.banner_name,
         models.Student.student_rarity
     ).join(
-        models.GachaTransaction, models.GachaTransaction.banner_id_fk == models.GachaBanner.banner_id
+        models.GachaTransaction, models.GachaTransaction.banner_id == models.GachaBanner.id
     ).join(
-        models.Student, models.GachaTransaction.student_id_fk == models.Student.student_id
-    ).filter(models.GachaTransaction.user_id_fk == current_user.user_id).all()
+        models.Student, models.GachaTransaction.student_id == models.Student.id
+    ).filter(models.GachaTransaction.user_id == current_user.user_id).all()
 
     # Process in Python for speed
     pulls_by_banner = defaultdict(Counter)
@@ -607,19 +616,19 @@ def get_chart_banner_breakdown(
     
     response_data = {}
     for banner_name, rarity_counter in pulls_by_banner.items():
-        response_data[banner_name] = schemas.OverallRaritySchema(
+        response_data[banner_name] = OverallRaritySchema(
             r3_count=rarity_counter.get(3, 0),
             r2_count=rarity_counter.get(2, 0),
             r1_count=rarity_counter.get(1, 0),
         )
     
-    final_response = schemas.BannerBreakdownChartResponse(data=response_data)
+    final_response = BannerBreakdownChartResponse(data=response_data)
     cache.set(cache_key, final_response.model_dump(), expire=DEFAULT_TIMEOUT)
     return final_response
 
 @app.get(
     "/api/dashboard/summary/milestone-timeline",
-    response_model=List[schemas.MilestoneResponse]
+    response_model=List[MilestoneResponse]
 )
 def get_milestone_timeline(
     request: Request,
@@ -642,10 +651,10 @@ def get_milestone_timeline(
     # every single pull for the current user chronologically.
     numbered_pulls_subquery = (
         db.query(
-            models.GachaTransaction.student_id_fk,
+            models.GachaTransaction.student_id,
             func.row_number().over(order_by=models.GachaTransaction.transaction_create_on.asc()).label("pull_number")
         )
-        .filter(models.GachaTransaction.user_id_fk == current_user.user_id)
+        .filter(models.GachaTransaction.user_id == current_user.user_id)
         .subquery()
     )
 
@@ -654,15 +663,15 @@ def get_milestone_timeline(
     # for each unique 3-star student.
     milestone_query_results = (
         db.query(
-            models.Student.student_id,
+            models.Student.id,
             func.min(numbered_pulls_subquery.c.pull_number).label("first_pull_number")
         )
         .join(
             numbered_pulls_subquery,
-            models.Student.student_id == numbered_pulls_subquery.c.student_id_fk
+            models.Student.id == numbered_pulls_subquery.c.student_id
         )
         .filter(models.Student.student_rarity == 3)
-        .group_by(models.Student.student_id)
+        .group_by(models.Student.id)
         .order_by(func.min(numbered_pulls_subquery.c.pull_number).asc())
         .all()
     )
@@ -674,7 +683,7 @@ def get_milestone_timeline(
     # Step 3: Now that we have the small list of milestone student IDs, fetch their
     # full ORM objects in a second, simple query. This query WILL correctly use `lazy='joined'`.
     milestone_student_ids = [item[0] for item in milestone_query_results]
-    students_orm = db.query(models.Student).filter(models.Student.student_id.in_(milestone_student_ids)).all()
+    students_orm = db.query(models.Student).filter(models.Student.id.in_(milestone_student_ids)).all()
     
     # Create a lookup map for easy access
     student_map = {s.student_id: s for s in students_orm}
@@ -682,12 +691,12 @@ def get_milestone_timeline(
     # --- END OF THE NEW QUERY ---
 
     # 4. Process the results by combining the two query results.
-    milestone_pulls: List[schemas.MilestoneResponse] = []
+    milestone_pulls: List[MilestoneResponse] = []
     for student_id, pull_number in milestone_query_results:
         student_orm = student_map.get(student_id)
         if student_orm:
             student_response = create_student_response(student_orm, request)
-            milestone_entry = schemas.MilestoneResponse(
+            milestone_entry = MilestoneResponse(
                 student=student_response,
                 pull_number=pull_number
             )
@@ -696,10 +705,10 @@ def get_milestone_timeline(
 
     # 3. Process the small, final result set into the response schema.
     # The result is a list of tuples: (Student_object, pull_number)
-    # milestone_pulls: List[schemas.MilestoneResponse] = []
+    # milestone_pulls: List[MilestoneResponse] = []
     # for student_orm, pull_number in milestone_query_results:
     #     student_response = create_student_response(student_orm, request)
-    #     milestone_entry = schemas.MilestoneResponse(
+    #     milestone_entry = MilestoneResponse(
     #         student=student_response,
     #         pull_number=pull_number
     #     )
@@ -712,7 +721,7 @@ def get_milestone_timeline(
 
 @app.get(
     "/api/dashboard/summary/performance-table",
-    response_model=List[schemas.LuckPerformanceResponse]
+    response_model=List[LuckPerformanceResponse]
 )
 def get_performance_table(
     current_user: models.User = Depends(get_required_current_user),
@@ -730,21 +739,21 @@ def get_performance_table(
     # 1. Perform an efficient aggregation query to get stats for ALL banners at once.
     banner_stats_query = (
         db.query(
-            models.GachaBanner.banner_id,
+            models.GachaBanner.id,
             models.GachaBanner.banner_name,
             models.GachaPreset.preset_r3_rate,
             func.count(models.GachaTransaction.transaction_id).label("total_pulls"),
             func.sum(case((models.Student.student_rarity == 3, 1), else_=0)).label("r3_count")
         )
-        .join(models.GachaTransaction, models.GachaTransaction.banner_id_fk == models.GachaBanner.banner_id)
-        .join(models.Student, models.GachaTransaction.student_id_fk == models.Student.student_id)
-        .join(models.GachaPreset, models.GachaBanner.preset_id_fk == models.GachaPreset.preset_id)
-        .filter(models.GachaTransaction.user_id_fk == current_user.user_id)
-        .group_by(models.GachaBanner.banner_id, models.GachaBanner.banner_name, models.GachaPreset.preset_r3_rate)
+        .join(models.GachaTransaction, models.GachaTransaction.banner_id == models.GachaBanner.id)
+        .join(models.Student, models.GachaTransaction.student_id == models.Student.id)
+        .join(models.GachaPreset, models.GachaBanner.preset_id == models.GachaPreset.preset_id)
+        .filter(models.GachaTransaction.user_id == current_user.user_id)
+        .group_by(models.GachaBanner.id, models.GachaBanner.banner_name, models.GachaPreset.preset_r3_rate)
         .order_by(models.GachaBanner.banner_name)
     ).all()
 
-    banner_analysis: List[schemas.LuckPerformanceResponse] = []
+    banner_analysis: List[LuckPerformanceResponse] = []
     for banner_id, banner_name, banner_rate_decimal, total_pulls, r3_count in banner_stats_query:
         banner_rate = float(banner_rate_decimal)
         user_rate = (r3_count / total_pulls) * 100 if total_pulls > 0 else 0.0
@@ -757,27 +766,27 @@ def get_performance_table(
             r3_pulls_for_banner = db.query(
                 func.row_number().over(
                     order_by=models.GachaTransaction.transaction_create_on.asc(),
-                    partition_by=models.GachaTransaction.banner_id_fk
+                    partition_by=models.GachaTransaction.banner_id
                 ).label("pull_num")
             ).filter(
-                models.GachaTransaction.user_id_fk == current_user.user_id,
-                models.GachaTransaction.banner_id_fk == banner_id,
-                models.GachaTransaction.student_id_fk.in_(
-                    db.query(models.Student.student_id).filter(models.Student.student_rarity == 3)
+                models.GachaTransaction.user_id == current_user.user_id,
+                models.GachaTransaction.banner_id == banner_id,
+                models.GachaTransaction.student_id.in_(
+                    db.query(models.Student.id).filter(models.Student.student_rarity == 3)
                 )
             ).order_by("pull_num").all()
             
             r3_indices = [p[0] for p in r3_pulls_for_banner]
             gaps = [r3_indices[i] - r3_indices[i-1] for i in range(1, len(r3_indices))]
             
-            gaps_data = schemas.LuckGapsSchema(
+            gaps_data = LuckGapsSchema(
                 min=min(gaps),
                 max=max(gaps),
                 avg=round(statistics.mean(gaps), 1)
             )
 
         # 3. Assemble the Pydantic model for this row.
-        analysis_entry = schemas.LuckPerformanceResponse(
+        analysis_entry = LuckPerformanceResponse(
             banner_name=banner_name,
             total_pulls=total_pulls,
             r3_count=r3_count,
@@ -795,7 +804,7 @@ def get_performance_table(
 
 @app.get(
     "/api/dashboard/summary/collection-progression",
-    response_model=List[schemas.CollectionProgressionResponse]
+    response_model=List[CollectionProgressionResponse]
 )
 def get_collection_progression(
     current_user: models.User = Depends(get_required_current_user),
@@ -815,7 +824,7 @@ def get_collection_progression(
     total_counts_query = (
         db.query(
             models.Student.student_rarity,
-            func.count(models.Student.student_id)
+            func.count(models.Student.id)
         ).group_by(models.Student.student_rarity).all()
     )
     total_map = {rarity: count for rarity, count in total_counts_query}
@@ -824,21 +833,21 @@ def get_collection_progression(
     obtained_counts_query = (
         db.query(
             models.Student.student_rarity,
-            func.count(models.UserInventory.student_id_fk)
+            func.count(models.UserInventory.student_id)
         )
         .join(models.Student)
-        .filter(models.UserInventory.user_id_fk == current_user.user_id)
+        .filter(models.UserInventory.user_id == current_user.user_id)
         .group_by(models.Student.student_rarity)
     ).all()
     obtained_map = {rarity: count for rarity, count in obtained_counts_query}
 
     # Assemble the response
-    response_data: List[schemas.CollectionProgressionResponse] = []
+    response_data: List[CollectionProgressionResponse] = []
     for rarity in [3, 2, 1]: # Iterate in desired display order
         obtained_count = obtained_map.get(rarity, 0)
         total_count = total_map.get(rarity, 0)
         
-        response_data.append(schemas.CollectionProgressionResponse(
+        response_data.append(CollectionProgressionResponse(
             rarity=rarity,
             obtained=obtained_count,
             total=total_count
@@ -850,7 +859,7 @@ def get_collection_progression(
 
     return response_data
 
-@app.get("/api/dashboard/history", response_model=schemas.HistoryResponse)
+@app.get("/api/dashboard/history", response_model=HistoryResponse)
 def get_user_history(
     request: Request,
     page: int = Query(1, ge=1, description="Page number"),
@@ -860,12 +869,12 @@ def get_user_history(
 ):
     # 1. First, get the total count of transactions for this user (fast query)
     total_items_query = db.query(func.count(models.GachaTransaction.transaction_id)).filter(
-        models.GachaTransaction.user_id_fk == current_user.user_id
+        models.GachaTransaction.user_id == current_user.user_id
     )
     total_items = total_items_query.scalar()
     
     if total_items == 0:
-        return schemas.HistoryResponse(
+        return HistoryResponse(
             total_items=0, total_pages=0, current_page=1, limit=limit, items=[]
         )
 
@@ -876,7 +885,7 @@ def get_user_history(
     # 3. Fetch the items for the requested page
     history_query = (
         db.query(models.GachaTransaction)
-        .filter(models.GachaTransaction.user_id_fk == current_user.user_id)
+        .filter(models.GachaTransaction.user_id == current_user.user_id)
         .order_by(models.GachaTransaction.transaction_create_on.desc())
         .offset(offset)
         .limit(limit)
@@ -887,18 +896,18 @@ def get_user_history(
     history_items_response = []
     for tx in history_items_orm:
         student_resp = create_student_response(tx.student, request)
-        banner_resp = schemas.BannerResponse.model_validate(tx.banner)
+        banner_resp = BannerResponse.model_validate(tx.banner)
         banner_resp.image_url = str(request.url_for('serve_banner_image', banner_id=tx.banner.banner_id)) if tx.banner.banner_image else None
         
-        history_items_response.append(schemas.TransactionSchema(
-            transaction_id=tx.transaction_id,
-            transaction_create_on=tx.transaction_create_on,
+        history_items_response.append(TransactionSchema(
+            transaction_id=tx.id,
+            transaction_create_on=tx.create_on,
             student=student_resp,
             banner=banner_resp
         ))
         
     # 5. Return the structured paginated response
-    return schemas.HistoryResponse(
+    return HistoryResponse(
         total_items=total_items,
         total_pages=total_pages,
         current_page=page,
@@ -906,7 +915,7 @@ def get_user_history(
         items=history_items_response
     )
 
-@app.get("/api/dashboard/collection", response_model=schemas.CollectionResponse)
+@app.get("/api/dashboard/collection", response_model=CollectionResponse)
 def get_user_collection(
     request: Request,
     current_user: models.User = Depends(get_required_current_user),
@@ -926,22 +935,22 @@ def get_user_collection(
     # Step 1: Create a subquery containing ONLY the student IDs this user owns.
     # This is a very fast, small, temporary "virtual table".
     owned_students_subquery = (
-        db.query(models.UserInventory.student_id_fk)
-        .filter(models.UserInventory.user_id_fk == current_user.user_id)
+        db.query(models.UserInventory.student_id)
+        .filter(models.UserInventory.user_id == current_user.user_id)
         .subquery()
     )
 
     # Step 2: Query the main Student table and LEFT JOIN it to our subquery.
-    # The result of the check `owned_students_subquery.c.student_id_fk.isnot(None)`
+    # The result of the check `owned_students_subquery.c.student_id.isnot(None)`
     # will be our `is_obtained` boolean flag.
     all_students_with_status = (
         db.query(
             models.Student,
-            (owned_students_subquery.c.student_id_fk.isnot(None)).label("is_obtained")
+            (owned_students_subquery.c.student_id.isnot(None)).label("is_obtained")
         )
         .outerjoin( # This creates the LEFT OUTER JOIN
             owned_students_subquery,
-            models.Student.student_id == owned_students_subquery.c.student_id_fk
+            models.Student.id == owned_students_subquery.c.student_id
         )
         .options(
             joinedload(models.Student.school),
@@ -955,14 +964,14 @@ def get_user_collection(
     # --- END OF THE NEW QUERY ---
     
     # 3. Process the results. The result is a list of tuples: (Student, is_obtained_boolean)
-    collection_students: List[schemas.CollectionStudentSchema] = []
+    collection_students: List[CollectionStudentSchema] = []
     obtained_count = 0
     for student_orm, is_obtained in all_students_with_status:
         if is_obtained:
             obtained_count += 1
             
         student_response = create_student_response(student_orm, request)
-        collection_student = schemas.CollectionStudentSchema(
+        collection_student = CollectionStudentSchema(
             **student_response.model_dump(),
             is_obtained=is_obtained
         )
@@ -972,7 +981,7 @@ def get_user_collection(
     total_students = len(all_students_with_status)
     completion_percentage = (obtained_count / total_students) * 100 if total_students > 0 else 0
 
-    response_data = schemas.CollectionResponse(
+    response_data = CollectionResponse(
         obtained_count=obtained_count,
         total_students=total_students,
         completion_percentage=round(completion_percentage, 2),
@@ -983,7 +992,7 @@ def get_user_collection(
     cache.set(cache_key, response_data.model_dump(mode="json"), expire=3600)
     return response_data
 
-@app.get("/api/dashboard/achievements", response_model=List[schemas.UserAchievementResponse])
+@app.get("/api/dashboard/achievements", response_model=List[UserAchievementResponse])
 def get_user_achievements(
     request: Request,
     current_user: models.User = Depends(get_required_current_user),
@@ -1007,8 +1016,8 @@ def get_user_achievements(
         )
         .outerjoin(
             models.UnlockAchievement,
-            (models.Achievement.achievement_id == models.UnlockAchievement.achievement_id_fk) &
-            (models.UnlockAchievement.user_id_fk == current_user.user_id)
+            (models.Achievement.achievement_id == models.UnlockAchievement.achievement_id) &
+            (models.UnlockAchievement.user_id == current_user.user_id)
         )
         .order_by(models.Achievement.achievement_category, models.Achievement.achievement_name)
         .all()
@@ -1017,10 +1026,10 @@ def get_user_achievements(
     # Process the query result into the response schema
     response_data = []
     for ach_orm, unlock_on in achievements_with_status:
-        achievement_data = schemas.AchievementResponse.model_validate(ach_orm)
+        achievement_data = AchievementResponse.model_validate(ach_orm)
         achievement_data.image_url = str(request.url_for('serve_achievement_image', achievement_id=ach_orm.achievement_id)) if ach_orm.achievement_image else None
         
-        response_data.append(schemas.UserAchievementResponse(
+        response_data.append(UserAchievementResponse(
             **achievement_data.model_dump(),
             is_unlocked=unlock_on is not None,
             unlocked_on=unlock_on
@@ -1044,11 +1053,11 @@ def serve_achievement_image(achievement_id: int, request: Request, db: Session =
     else:
         # 3. If cache miss, query the database
         LOGGER.debug(f"CACHE MISS for {cache_key}")
-        achievement = db.query(models.Achievement).filter(models.Achievement.achievement_id == achievement_id).first()
-        if not achievement or not achievement.achievement_image:
+        achievement = db.query(models.Achievement).filter_by(id=achievement_id).first()
+        if not achievement or not achievement.image_data:
             raise HTTPException(status_code=404, detail="Achievement image not found")
 
-        image_bytes = achievement.achievement_image
+        image_bytes = achievement.image_data
 
         etag = hashlib.sha1(image_bytes).hexdigest()
         image_b64_string = base64.b64encode(image_bytes).decode("utf-8")
@@ -1089,11 +1098,11 @@ def serve_banner_image(banner_id: int, request: Request, db: Session = Depends(g
     else:
         # 3. If cache miss, query the database
         LOGGER.debug(f"CACHE MISS for {cache_key}")
-        banner = db.query(models.GachaBanner).filter(models.GachaBanner.banner_id == banner_id).first()
-        if not banner or not banner.banner_image:
+        banner = db.query(models.GachaBanner).filter(models.GachaBanner.id == banner_id).first()
+        if not banner or not banner.image_data:
             raise HTTPException(status_code=404, detail="School image not found")
 
-        image_bytes = banner.banner_image
+        image_bytes = banner.image_data
 
         etag = hashlib.sha1(image_bytes).hexdigest()
         image_b64_string = base64.b64encode(image_bytes).decode("utf-8")
@@ -1134,11 +1143,11 @@ def serve_school_image(school_id: int, request: Request, db: Session = Depends(g
         # 3. If cache miss, query the database
         LOGGER.debug(f"CACHE MISS for {cache_key}")
     
-        school = db.query(models.School).filter(models.School.school_id == school_id).first()
-        if not school or not school.school_image:
+        school = db.query(models.School).filter_by(id=school_id).first()
+        if not school or not school.image_data:
             raise HTTPException(status_code=404, detail="School image not found")
         
-        image_bytes = school.school_image
+        image_bytes = school.image_data
 
         # 4. Generate the ETag and prepare data for caching
         etag = hashlib.sha1(image_bytes).hexdigest()
@@ -1180,16 +1189,16 @@ def serve_student_image(student_id: int, image_type: str, request: Request, db: 
         filename = cached_data['filename']
     else:
         LOGGER.debug(f"CACHE MISS for {cache_key}")
-        student = db.query(models.Student).options(joinedload(models.Student.asset)).filter(models.Student.student_id == student_id).first()
+        student = db.query(models.Student).options(joinedload(models.Student.asset)).filter(models.Student.id == student_id).first()
 
         if not student or not student.asset:
             raise HTTPException(status_code=404, detail="Student asset not found")
 
         image_bytes = None
         if image_type == "portrait":
-            image_bytes = student.asset.asset_portrait_data
+            image_bytes = student.asset.portrait_data
         elif image_type == "artwork":
-            image_bytes = student.asset.asset_artwork_data
+            image_bytes = student.asset.artwork_data
         
         if not image_bytes:
             raise HTTPException(status_code=404, detail="Image data not found for this type")
@@ -1198,7 +1207,7 @@ def serve_student_image(student_id: int, image_type: str, request: Request, db: 
         etag = hashlib.sha1(image_bytes).hexdigest()
         image_b64_string = base64.b64encode(image_bytes).decode("utf-8")
         
-        filename = f"{student.student_name}_{student.version.version_name}_{image_type}.png"
+        filename = f"{student.name}_{student.version.name}_{image_type}.png"
 
         data_to_cache = {
             "etag": etag,

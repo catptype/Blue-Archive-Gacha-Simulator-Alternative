@@ -108,118 +108,118 @@ from ..models import Student
 #     Dashboard Schemas     #
 #############################
 
-class LuckGapsSchema(BaseModel):
-    min: Optional[int] = None
-    max: Optional[int] = None
-    avg: Optional[float] = None
+# class LuckGapsSchema(BaseModel):
+#     min: Optional[int] = None
+#     max: Optional[int] = None
+#     avg: Optional[float] = None
 
-class OverallRaritySchema(BaseModel):
-    r3_count: int
-    r2_count: int
-    r1_count: int
+# class OverallRaritySchema(BaseModel):
+#     r3_count: int
+#     r2_count: int
+#     r1_count: int
 
-# --- Response
-class DashboardKpiResponse(OverallRaritySchema):
-    total_pulls: int
-    total_pyroxene_spent: int
+# # --- Response
+# class DashboardKpiResponse(OverallRaritySchema):
+#     total_pulls: int
+#     total_pyroxene_spent: int
 
-# --- Response
-class TopStudentResponse(BaseModel):
-    student: StudentResponse
-    count: int
-    first_obtained: datetime
+# # --- Response
+# class TopStudentResponse(BaseModel):
+#     student: StudentResponse
+#     count: int
+#     first_obtained: datetime
 
-# --- Response
-class FirstR3Response(BaseModel):
-    transaction_id: int
-    transaction_create_on: datetime
-    student: StudentResponse
+# # --- Response
+# class FirstR3Response(BaseModel):
+#     transaction_id: int
+#     transaction_create_on: datetime
+#     student: StudentResponse
 
-# --- Response
-class CollectionProgressionResponse(BaseModel):
-    rarity: int
-    obtained: int
-    total: int
+# # --- Response
+# class CollectionProgressionResponse(BaseModel):
+#     rarity: int
+#     obtained: int
+#     total: int
 
-# --- Response
-class BannerBreakdownChartResponse(BaseModel):
-    data: Dict[str, OverallRaritySchema]
+# # --- Response
+# class BannerBreakdownChartResponse(BaseModel):
+#     data: Dict[str, OverallRaritySchema]
 
-# --- Response
-class MilestoneResponse(BaseModel):
-    student: StudentResponse 
-    pull_number: int
+# # --- Response
+# class MilestoneResponse(BaseModel):
+#     student: StudentResponse 
+#     pull_number: int
 
-# --- Response
-class LuckPerformanceResponse(BaseModel):
-    banner_name: str
-    total_pulls: int
-    r3_count: int
-    user_rate: float
-    banner_rate: float
-    luck_variance: float
-    gaps: Optional[LuckGapsSchema] = None
+# # --- Response
+# class LuckPerformanceResponse(BaseModel):
+#     banner_name: str
+#     total_pulls: int
+#     r3_count: int
+#     user_rate: float
+#     banner_rate: float
+#     luck_variance: float
+#     gaps: Optional[LuckGapsSchema] = None
 
 #############################
 #      History Schemas      #
 #############################
 
-class TransactionSchema(FirstR3Response): # Reuse from FirstR3 because it similar to gacha transaction
-    banner: BannerResponse
+# class TransactionSchema(FirstR3Response): # Reuse from FirstR3 because it similar to gacha transaction
+#     banner: BannerResponse
 
-# --- The main paginated response schema ---
-class HistoryResponse(BaseModel):
-    total_items: int
-    total_pages: int
-    current_page: int
-    limit: int
-    items: List[TransactionSchema]
+# # --- The main paginated response schema ---
+# class HistoryResponse(BaseModel):
+#     total_items: int
+#     total_pages: int
+#     current_page: int
+#     limit: int
+#     items: List[TransactionSchema]
 
 #############################
 #     Collection Schemas    #
 #############################
 
-class CollectionStudentSchema(StudentResponse):
-    is_obtained: bool
+# class CollectionStudentSchema(StudentResponse):
+#     is_obtained: bool
 
-# --- Response
-class CollectionResponse(BaseModel):
-    obtained_count: int
-    total_students: int
-    completion_percentage: float
-    students: List[CollectionStudentSchema]
+# # --- Response
+# class CollectionResponse(BaseModel):
+#     obtained_count: int
+#     total_students: int
+#     completion_percentage: float
+#     students: List[CollectionStudentSchema]
 
 #############################
 #    Achievement Schemas    #
 #############################
-class AchievementSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+# class AchievementSchema(BaseModel):
+#     model_config = ConfigDict(from_attributes=True)
 
-    achievement_id: int
-    achievement_name: str
-    achievement_description: str
-    achievement_category: str
-    achievement_key: str
+#     achievement_id: int
+#     achievement_name: str
+#     achievement_description: str
+#     achievement_category: str
+#     achievement_key: str
 
-# --- Response
-class AchievementResponse(AchievementSchema):
-    image_url: Optional[str] = None
+# # --- Response
+# class AchievementResponse(AchievementSchema):
+#     image_url: Optional[str] = None
 
-# --- Response
-class UserAchievementResponse(AchievementResponse):
-    # User-specific augmented data
-    is_unlocked: bool
-    unlocked_on: Optional[datetime] = None
+# # --- Response
+# class UserAchievementResponse(AchievementResponse):
+#     # User-specific augmented data
+#     is_unlocked: bool
+#     unlocked_on: Optional[datetime] = None
 
 #############################
 #       Mixing Schemas      #
 #############################
 
 # --- Response    
-class GachaPullResponse(BaseModel):
-    success: bool
-    results: List[GachaResultStudent]
-    unlocked_achievements: List[AchievementResponse]
+# class GachaPullResponse(BaseModel):
+#     success: bool
+#     results: List[GachaResultStudent]
+#     unlocked_achievements: List[AchievementResponse]
 
 # def create_student_response(student: Student, request: Request) -> StudentResponse:
 #     school_response = SchoolResponse.model_validate(student.school)
