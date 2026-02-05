@@ -5,6 +5,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship, Mapped
 from sqlalchemy.dialects.mysql import LONGBLOB
 from .database import Base
+from typing import List
 
 BLOB_TYPE = LargeBinary().with_variant(LONGBLOB, "mysql", "mariadb")
 DEFAULT_UTC_NOW = lambda: datetime.datetime.now(datetime.timezone.utc)
@@ -130,9 +131,12 @@ class GachaBanner(Base):
     preset: Mapped["GachaPreset"] = relationship("GachaPreset", lazy='joined')
     
     # Many-to-Many relationships defined using the association tables
-    included_versions: Mapped["Version"] = relationship("Version", secondary=banner_version_association, lazy='selectin')
-    pickup_students: Mapped["Student"] = relationship("Student", secondary=banner_pickup_association, lazy='selectin')
-    excluded_students: Mapped["Student"] = relationship("Student", secondary=banner_exclude_association, lazy='selectin')
+    included_versions: Mapped[List["Version"]] = relationship("Version", secondary=banner_version_association, lazy='selectin')
+    pickup_students: Mapped[List["Student"]] = relationship("Student", secondary=banner_pickup_association, lazy='selectin')
+    excluded_students: Mapped[List["Student"]] = relationship("Student", secondary=banner_exclude_association, lazy='selectin')
+    # included_versions = relationship("Version", secondary=banner_version_association, lazy='selectin')
+    # pickup_students = relationship("Student", secondary=banner_pickup_association, lazy='selectin')
+    # excluded_students = relationship("Student", secondary=banner_exclude_association, lazy='selectin')
 
 class GachaTransaction(Base):
     __tablename__ = 'gacha_transaction_table'

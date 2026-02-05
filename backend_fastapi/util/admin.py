@@ -1,3 +1,4 @@
+from datetime import timedelta
 from fastapi import FastAPI
 from sqladmin import Admin, ModelView
 from sqladmin.authentication import AuthenticationBackend
@@ -8,9 +9,9 @@ from markupsafe import Markup
 # Import your database engine and models
 from .database import engine, SessionLocal
 from .models import User, Role, Student, Version, School, GachaBanner, GachaPreset, GachaTransaction, Achievement, UnlockAchievement, UserInventory
-from .auth import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, create_access_token, verify_password
+from .auth import SECRET_KEY, ALGORITHM, create_access_token, verify_password
 from .timezone import format_datetime_as_local
-from datetime import timedelta
+from ..config import settings
 
 # --- 1. Define the Authentication Backend ---
 class AdminAuth(AuthenticationBackend):
@@ -23,7 +24,7 @@ class AdminAuth(AuthenticationBackend):
             user = db.query(User).filter_by(username=username).first()
             if user and verify_password(password, user.hashed_password) and user.role.name == "superuser":
                 # Create a token for the session
-                expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+                expires = timedelta(minutes=settings.TOKEN_EXPIRE)
                 token = create_access_token(data={"sub": user.username}, expires_delta=expires)
                 request.session.update({"token": token})
                 return True

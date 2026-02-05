@@ -38,7 +38,7 @@ def get_banners(request: Request, db: Session = Depends(get_db), cache: Cache = 
         response_banners.append(banner_data)
 
     # Convert format to dict for saving cache
-    banners_to_cache = [b.model_dump(model='json') for b in response_banners]
+    banners_to_cache = [b.model_dump(mode='json') for b in response_banners]
     cache.set(cache_key, banners_to_cache, expire=settings.CACHE_EXPIRE)
         
     return response_banners
@@ -71,7 +71,7 @@ def get_banner_details(banner_id: int, request: Request, db: Session = Depends(g
     ).filter(
         Student.version_id.in_(included_version_ids),
         Student.id.not_in(excluded_ids),
-        Student.is_limited == db_banner.include_limited
+        # Student.is_limited == db_banner.include_limited
     ).all()
     
     # Prepare response following schema

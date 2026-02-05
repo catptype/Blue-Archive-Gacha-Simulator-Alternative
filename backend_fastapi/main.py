@@ -33,6 +33,8 @@ from .util.schemas.AchievementResponse import UserAchievementResponse, Achieveme
 from .util.GachaEngine import GachaEngine
 from .util.AchievementEngine import AchievementEngine
 
+from .util.auth import get_optional_current_user, get_required_current_user
+
 from .routers import users, banners
 from .config import settings
 
@@ -224,7 +226,7 @@ def get_schools(request: Request, db: Session = Depends(get_db), cache: Cache = 
         response_schools.append(school_data)
 
     schools_to_cache = [s.dict() for s in response_schools]
-    cache.set(cache_key, schools_to_cache, expire=DEFAULT_TIMEOUT)
+    cache.set(cache_key, schools_to_cache, expire=settings.CACHE_EXPIRE)
         
     return response_schools
 
@@ -395,7 +397,7 @@ def get_top_students_by_rarity(
         response_data.append(entry)
 
     data_to_cache = [entry.model_dump(mode="json") for entry in response_data]
-    cache.set(cache_key, data_to_cache, expire=DEFAULT_TIMEOUT) # Cache for 1 hour
+    cache.set(cache_key, data_to_cache, expire=settings.CACHE_EXPIRE) # Cache for 1 hour
         
     return response_data
 
@@ -434,7 +436,7 @@ def get_first_r3_pull(
 
     if not first_r3_pull_orm:
         # Cache the "not found" result for 1 hour to prevent re-querying
-        cache.set(cache_key, "NONE", expire=DEFAULT_TIMEOUT)
+        cache.set(cache_key, "NONE", expire=settings.CACHE_EXPIRE)
         return None
 
     # Build the Pydantic response object
@@ -446,7 +448,7 @@ def get_first_r3_pull(
     )
     
     # Cache the successful result
-    cache.set(cache_key, response_data.model_dump(mode="json"), expire=DEFAULT_TIMEOUT) # Cache forever
+    cache.set(cache_key, response_data.model_dump(mode="json"), expire=settings.CACHE_EXPIRE) # Cache forever
 
     return response_data
 
@@ -491,7 +493,7 @@ def get_chart_banner_breakdown(
         )
     
     final_response = BannerBreakdownChartResponse(data=response_data)
-    cache.set(cache_key, final_response.model_dump(), expire=DEFAULT_TIMEOUT)
+    cache.set(cache_key, final_response.model_dump(), expire=settings.CACHE_EXPIRE)
     return final_response
 
 @app.get(
@@ -545,7 +547,7 @@ def get_milestone_timeline(
     )
 
     if not milestone_query_results:
-        cache.set(cache_key, "NONE", expire=DEFAULT_TIMEOUT)
+        cache.set(cache_key, "NONE", expire=settings.CACHE_EXPIRE)
         return []
     
     # Step 3: Now that we have the small list of milestone student IDs, fetch their
@@ -583,7 +585,7 @@ def get_milestone_timeline(
     #     milestone_pulls.append(milestone_entry)
     
     data_to_cache = [entry.model_dump(mode="json") for entry in milestone_pulls]
-    cache.set(cache_key, data_to_cache, expire=DEFAULT_TIMEOUT)
+    cache.set(cache_key, data_to_cache, expire=settings.CACHE_EXPIRE)
 
     return milestone_pulls
 
@@ -666,7 +668,7 @@ def get_performance_table(
         banner_analysis.append(analysis_entry)
 
     data_to_cache = [entry.model_dump() for entry in banner_analysis]
-    cache.set(cache_key, data_to_cache, expire=DEFAULT_TIMEOUT)
+    cache.set(cache_key, data_to_cache, expire=settings.CACHE_EXPIRE)
     
     return banner_analysis
 
@@ -935,7 +937,7 @@ def serve_achievement_image(achievement_id: int, request: Request, db: Session =
             "image_b64": image_b64_string
         }
         # Store in the application cache for 1 hour (3600 seconds)
-        cache.set(cache_key, data_to_cache, expire=DEFAULT_TIMEOUT)
+        cache.set(cache_key, data_to_cache, expire=settings.CACHE_EXPIRE)
     
     # 5. Check the browser's cache using the ETag
     # The browser sends this header if it has a cached version.
@@ -980,7 +982,7 @@ def serve_banner_image(banner_id: int, request: Request, db: Session = Depends(g
             "image_b64": image_b64_string
         }
         # Store in the application cache for 1 hour (3600 seconds)
-        cache.set(cache_key, data_to_cache, expire=DEFAULT_TIMEOUT)
+        cache.set(cache_key, data_to_cache, expire=settings.CACHE_EXPIRE)
     
     # 5. Check the browser's cache using the ETag
     # The browser sends this header if it has a cached version.
@@ -1026,7 +1028,7 @@ def serve_school_image(school_id: int, request: Request, db: Session = Depends(g
             "image_b64": image_b64_string
         }
         # Store in the application cache for 1 hour (3600 seconds)
-        cache.set(cache_key, data_to_cache, expire=DEFAULT_TIMEOUT)
+        cache.set(cache_key, data_to_cache, expire=settings.CACHE_EXPIRE)
     
     # 5. Check the browser's cache using the ETag
     # The browser sends this header if it has a cached version.
@@ -1083,7 +1085,7 @@ def serve_student_image(student_id: int, image_type: str, request: Request, db: 
             "filename": filename 
         }
         # Store in the application cache for 1 hour
-        cache.set(cache_key, data_to_cache, expire=DEFAULT_TIMEOUT)
+        cache.set(cache_key, data_to_cache, expire=settings.CACHE_EXPIRE)
     
     # 5. Check the browser cache using the ETag
     LOGGER.debug(request.headers.get("if-none-match"))
