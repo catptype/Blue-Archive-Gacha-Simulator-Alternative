@@ -4,11 +4,10 @@ import logging
 import math
 import statistics
 
-from datetime import timedelta
-from fastapi import FastAPI, Depends, HTTPException, Request, status, Query
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, Request, status, Query
 from fastapi.responses import Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import OAuth2PasswordRequestForm
+
 from logging.config import dictConfig
 from sqlalchemy.orm import Session, joinedload, selectinload
 from typing import Optional, List
@@ -18,13 +17,13 @@ from collections import Counter, defaultdict
 from .log import LOGGING_CONFIG
 from .util import auth, models
 from .util.admin import init_admin
-from .util.auth import get_optional_current_user, get_required_current_user
+
 from .util.cache import get_cache, Cache
 from .util.database import get_db
 from .util.schemas.StudentResponse import create_student_response
-from .util.schemas.User import UserCreate, UserSchema, Token
+
 from .util.schemas.GachaResponse import GachaPullResponse, GachaResultStudent
-from .util.schemas.BannerResponse import BannerResponse, BannerDetailResponse
+
 from .util.schemas.SchoolResponse import SchoolResponse
 from .util.schemas.StudentResponse import StudentResponse
 from .util.schemas.DashboardResponse import KpiResponse, LuckGapsSchema, OverallRaritySchema, Top3StudentResponse, FirstR3Response, BannerBreakdownChartResponse, MilestoneResponse, LuckPerformanceResponse, CollectionProgressionResponse
@@ -34,13 +33,22 @@ from .util.schemas.AchievementResponse import UserAchievementResponse, Achieveme
 from .util.GachaEngine import GachaEngine
 from .util.AchievementEngine import AchievementEngine
 
+from .routers import users, banners
+from .config import settings
+
 # `__name__` will automatically create a logger named "backend.main"
 dictConfig(LOGGING_CONFIG)
 LOGGER = logging.getLogger(__name__)
 
-DEFAULT_TIMEOUT = 180
-
 app = FastAPI()
+api_router = APIRouter()
+
+api_router.include_router(users.router, prefix="/users", tags=["users"])
+api_router.include_router(banners.router, prefix="/banners", tags=["banners"])
+
+# 3. Attach the Master Router to the App with the "/api" prefix
+app.include_router(api_router, prefix="/api")
+
 init_admin(app)
 
 # --- CORS Middleware ---
@@ -184,59 +192,6 @@ def _perform_pull(
         unlocked_achievements=achievements_response # Mocked for now
     )
 
-# --- Authentication Endpoints ---
-
-@app.post("/api/register/", response_model=UserSchema)
-def register_user(user: UserCreate, db: Session = Depends(get_db)):
-    db_user = db.query(models.User).filter(models.User.username == user.username).first()
-    if db_user:
-        raise HTTPException(status_code=400, detail="Username already registered")
-    
-    # --- START OF CHANGES ---
-    # Fetch the default role object from the database.
-    member_role = db.query(models.Role).filter(models.Role.role_name == "member").first()
-    if not member_role:
-        # This is a critical server error, the 'member' role should always exist.
-        raise HTTPException(status_code=500, detail="Default user role not configured on server.")
-
-    hashed_password = auth.get_password_hash(user.password)
-    
-    new_user = models.User(
-        username=user.username, 
-        hashed_password=hashed_password,
-        role_id=member_role.role_id  # Assign the foreign key ID
-    )
-    # --- END OF CHANGES ---
-
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return new_user
-
-@app.post("/api/token", response_model=Token)
-def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = db.query(models.User).filter(models.User.username == form_data.username).first()
-    if not user or not auth.verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    access_token_expires = timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = auth.create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
-
-@app.get("/api/users/me", response_model=UserSchema)
-def read_users_me(current_user: models.User = Depends(get_required_current_user)):
-    """
-    Fetches the data for the currently authenticated user.
-    If the token is invalid or expired, this endpoint will automatically
-    return a 401 Unauthorized error.
-    """
-    return current_user
-
 @app.post("/api/admin/clear-cache", status_code=204)
 def clear_all_caches(cache: Cache = Depends(get_cache)):
     cache_key_list = ["all_schools"]
@@ -247,30 +202,7 @@ def clear_all_caches(cache: Cache = Depends(get_cache)):
 
 # --- API Endpoints ---
 
-@app.get("/api/banners/", response_model=list[BannerResponse])
-def get_banners(request: Request, db: Session = Depends(get_db), cache: Cache = Depends(get_cache)):
-    cache_key = "all_banners"
 
-    response_banners = cache.get(cache_key)
-    if response_banners:
-        LOGGER.debug(f"CACHE HIT ({cache_key})")
-        return response_banners
-
-    LOGGER.debug(f"CACHE MISS ({cache_key})")
-    db_banners = db.query(models.GachaBanner).all()
-
-    response_banners = []
-    for banner in db_banners:
-        banner_data = BannerResponse.model_validate(banner)
-        if banner.image_data:
-            banner_data.image_url = str(request.url_for('serve_banner_image', banner_id=banner.id))
-        response_banners.append(banner_data)
-
-    banners_to_cache = [b.dict() for b in response_banners]
-    cache.set(cache_key, banners_to_cache, expire=DEFAULT_TIMEOUT)
-        
-    return response_banners
-    
 
 @app.get("/api/schools/", response_model=list[SchoolResponse])
 def get_schools(request: Request, db: Session = Depends(get_db), cache: Cache = Depends(get_cache)):
@@ -336,73 +268,7 @@ def get_students(
         
     return response_students
 
-@app.get("/api/banners/{banner_id}/details/", response_model=BannerDetailResponse)
-def get_banner_details(banner_id: int, request: Request, db: Session = Depends(get_db)):
-    # 1. Fetching logic is unchanged.
-    db_banner = db.query(models.GachaBanner).options(
-        joinedload(models.GachaBanner.preset),
-        selectinload(models.GachaBanner.pickup_students).options(
-            joinedload(models.Student.school), joinedload(models.Student.version), joinedload(models.Student.asset)
-        ),
-        selectinload(models.GachaBanner.included_versions),
-        selectinload(models.GachaBanner.excluded_students)
-    ).filter(models.GachaBanner.id == banner_id).first() 
 
-    db_banner:models.GachaBanner
-
-    if not db_banner:
-        raise HTTPException(status_code=404, detail="Banner not found")
-
-    # 2. & 3. Querying and partitioning logic is also unchanged.
-    pickup_ids = {s.id for s in db_banner.pickup_students}
-    excluded_ids = {s.id for s in db_banner.excluded_students}
-    included_version_ids = {v.id for v in db_banner.included_versions}
-
-    base_pool_query = db.query(models.Student).options(
-        joinedload(models.Student.school), joinedload(models.Student.version), joinedload(models.Student.asset)
-    ).filter(
-        models.Student.version_id.in_(included_version_ids),
-        models.Student.id.not_in(pickup_ids | excluded_ids)
-    )
-
-    if not db_banner.include_limited:
-        base_pool_query = base_pool_query.filter(models.Student.is_limited == False)
-
-    all_pool_students_db = base_pool_query.all()
-
-    nonpickup_r3_students_db = [s for s in all_pool_students_db if s.rarity == 3]
-    r2_students_db = [s for s in all_pool_students_db if s.rarity == 2]
-    r1_students_db = [s for s in all_pool_students_db if s.rarity == 1]
-    
-    pickup_r3_students_db = [s for s in db_banner.pickup_students if s.rarity == 3]
-
-    # --- 4. ASSEMBLE THE RESPONSE (The Updated Part) ---
-
-    # Step 4a: Create the base banner data using the BannerResponse schema
-    # This automatically handles banner_id, banner_name, and the nested preset.
-    base_banner_response = BannerResponse.model_validate(db_banner)
-    
-    # Step 4b: Manually add the computed image_url
-    base_banner_response.image_url = str(request.url_for('serve_banner_image', banner_id=db_banner.id)) if db_banner.image_data else None
-
-    # Step 4c: Convert all the partitioned student lists to the correct response schema
-    pickup_r3_response = [create_student_response(s, request) for s in pickup_r3_students_db]
-    nonpickup_r3_response = [create_student_response(s, request) for s in nonpickup_r3_students_db]
-    r2_response = [create_student_response(s, request) for s in r2_students_db]
-    r1_response = [create_student_response(s, request) for s in r1_students_db]
-
-    # Step 4d: Construct the final BannerDetailResponse
-    # We unpack the base response and add the student lists.
-    # Pydantic's `model_dump()` is the new way to get a dict from a model instance.
-    final_response = BannerDetailResponse(
-        **base_banner_response.model_dump(),
-        pickup_r3_students=pickup_r3_response,
-        nonpickup_r3_students=nonpickup_r3_response,
-        r2_students=r2_response,
-        r1_students=r1_response
-    )
-
-    return final_response
 
 # --- UPDATE the pull endpoints to use the new dependency ---
 @app.post("/api/gacha/{banner_id}/pull_single", response_model=GachaPullResponse)

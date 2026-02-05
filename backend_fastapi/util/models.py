@@ -2,7 +2,7 @@ import datetime
 from sqlalchemy import (
     Column, Integer, String, Boolean, ForeignKey, LargeBinary, Numeric, DateTime, Table, UniqueConstraint, Text
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped
 from sqlalchemy.dialects.mysql import LONGBLOB
 from .database import Base
 
@@ -53,7 +53,8 @@ class User(Base):
     username = Column(String(20), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
     role_id = Column(Integer, ForeignKey('role_table.id'), nullable=False)
-    role = relationship("Role")
+    
+    role: Mapped["Role"] = relationship("Role")
 
     def __str__(self) -> str:
         return self.username
@@ -96,9 +97,9 @@ class Student(Base):
     school_id = Column(Integer, ForeignKey('student_school_table.id'))
     asset_id = Column(Integer, ForeignKey('image_asset_table.id'), nullable=True)
 
-    version = relationship("Version", lazy='selectin')
-    school = relationship("School", lazy='selectin')
-    asset = relationship("ImageAsset", uselist=False, lazy='joined')
+    version: Mapped["Version"] = relationship("Version", lazy='selectin')
+    school: Mapped["School"] = relationship("School", lazy='selectin')
+    asset: Mapped["ImageAsset"] = relationship("ImageAsset", uselist=False, lazy='joined')
     
     __table_args__ = (UniqueConstraint('name', 'version_id', name='_student_version_uc'),)
 
@@ -124,12 +125,14 @@ class GachaBanner(Base):
     name = Column(String(20), unique=True, nullable=False)
     include_limited = Column(Boolean, default=False)
     preset_id = Column(Integer, ForeignKey('gacha_preset_table.id'), nullable=True)
-    preset = relationship("GachaPreset", lazy='joined')
+    
+    # Many-to-One relationshp
+    preset: Mapped["GachaPreset"] = relationship("GachaPreset", lazy='joined')
     
     # Many-to-Many relationships defined using the association tables
-    included_versions = relationship("Version", secondary=banner_version_association, lazy='selectin')
-    pickup_students = relationship("Student", secondary=banner_pickup_association, lazy='selectin')
-    excluded_students = relationship("Student", secondary=banner_exclude_association, lazy='selectin')
+    included_versions: Mapped["Version"] = relationship("Version", secondary=banner_version_association, lazy='selectin')
+    pickup_students: Mapped["Student"] = relationship("Student", secondary=banner_pickup_association, lazy='selectin')
+    excluded_students: Mapped["Student"] = relationship("Student", secondary=banner_exclude_association, lazy='selectin')
 
 class GachaTransaction(Base):
     __tablename__ = 'gacha_transaction_table'
@@ -140,9 +143,9 @@ class GachaTransaction(Base):
     banner_id = Column(Integer, ForeignKey('gacha_banner_table.id'))
     student_id = Column(Integer, ForeignKey('student_table.id'))
 
-    user = relationship("User", lazy='selectin')
-    banner = relationship("GachaBanner", lazy='selectin')
-    student = relationship("Student", lazy='selectin')
+    user: Mapped["User"] = relationship("User", lazy='selectin')
+    banner: Mapped["GachaBanner"] = relationship("GachaBanner", lazy='selectin')
+    student: Mapped["Student"] = relationship("Student", lazy='selectin')
 
 class UserInventory(Base):
     __tablename__ = 'user_inventory_table'
@@ -153,8 +156,8 @@ class UserInventory(Base):
     user_id = Column(Integer, ForeignKey('user_table.id'))
     student_id = Column(Integer, ForeignKey('student_table.id'))
 
-    user = relationship("User", lazy='selectin')
-    student = relationship("Student", lazy='selectin')
+    user: Mapped["User"] = relationship("User", lazy='selectin')
+    student: Mapped["Student"] = relationship("Student", lazy='selectin')
     
     __table_args__ = (UniqueConstraint('user_id', 'student_id', name='_user_student_uc'),)
 
@@ -178,7 +181,7 @@ class UnlockAchievement(Base):
     user_id = Column(Integer, ForeignKey('user_table.id'))
     achievement_id = Column(Integer, ForeignKey('achievement_table.id'))
 
-    user = relationship("User", lazy='selectin')
-    achievement = relationship("Achievement", lazy='selectin')
+    user: Mapped["User"] = relationship("User", lazy='selectin')
+    achievement: Mapped["Achievement"] = relationship("Achievement", lazy='selectin')
 
     __table_args__ = (UniqueConstraint('user_id', 'achievement_id', name='_user_achievement_uc'),)

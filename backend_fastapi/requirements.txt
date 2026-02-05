@@ -8,3 +8,4 @@ markupsafe
 pytz
 psycopg2-binary
 mysqlclient
+pydantic-settings
