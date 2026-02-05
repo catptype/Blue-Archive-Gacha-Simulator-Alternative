@@ -134,9 +134,6 @@ class GachaBanner(Base):
     included_versions: Mapped[List["Version"]] = relationship("Version", secondary=banner_version_association, lazy='selectin')
     pickup_students: Mapped[List["Student"]] = relationship("Student", secondary=banner_pickup_association, lazy='selectin')
     excluded_students: Mapped[List["Student"]] = relationship("Student", secondary=banner_exclude_association, lazy='selectin')
-    # included_versions = relationship("Version", secondary=banner_version_association, lazy='selectin')
-    # pickup_students = relationship("Student", secondary=banner_pickup_association, lazy='selectin')
-    # excluded_students = relationship("Student", secondary=banner_exclude_association, lazy='selectin')
 
 class GachaTransaction(Base):
     __tablename__ = 'gacha_transaction_table'
