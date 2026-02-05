@@ -71,8 +71,7 @@ def get_banner_details(banner_id: int, request: Request, db: Session = Depends(g
     ).filter(
         Student.version_id.in_(included_version_ids),
         Student.id.not_in(excluded_ids),
-        # Student.is_limited == db_banner.include_limited
-    ).all()
+    )
     
     # Prepare response following schema
     base_banner_response = BannerResponse.model_validate(db_banner)
@@ -91,7 +90,7 @@ def get_banner_details(banner_id: int, request: Request, db: Session = Depends(g
         if student_obj.rarity == 3:
             if student_obj.id in pickup_ids:
                 pickup_r3_list.append(response)
-            else:
+            elif student_obj.is_limited and db_banner.include_limited or not student_obj.is_limited:
                 nonpickup_r3_list.append(response)
         elif student_obj.rarity == 2:
             r2_list.append(response)
