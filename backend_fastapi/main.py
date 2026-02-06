@@ -1,11 +1,9 @@
-import base64
-import hashlib
 import logging
 import math
 import statistics
 
 from fastapi import FastAPI, APIRouter, Depends, HTTPException, Request, status, Query
-from fastapi.responses import Response
+
 from fastapi.middleware.cors import CORSMiddleware
 
 from logging.config import dictConfig
@@ -35,7 +33,7 @@ from .util.AchievementEngine import AchievementEngine
 
 from .util.auth import get_optional_current_user, get_required_current_user
 
-from .routers import users, banners
+from .routers import users, banners, images
 from .config import settings
 
 # `__name__` will automatically create a logger named "backend.main"
@@ -47,6 +45,7 @@ api_router = APIRouter()
 
 api_router.include_router(users.router, prefix="/users", tags=["users"])
 api_router.include_router(banners.router, prefix="/banners", tags=["banners"])
+api_router.include_router(images.router, prefix="/images", tags=["images"])
 
 # 3. Attach the Master Router to the App with the "/api" prefix
 app.include_router(api_router, prefix="/api")
@@ -909,195 +908,3 @@ def get_user_achievements(
     cache.set(cache_key, [item.model_dump(mode="json") for item in response_data], expire=3600)
     return response_data
 
-# --- Image Serving Endpoints (No changes needed here) ---
-@app.get("/image/achievement/{achievement_id}", name="serve_achievement_image")
-def serve_achievement_image(achievement_id: int, request: Request, db: Session = Depends(get_db), cache: Cache = Depends(get_cache)):
-
-    cache_key = f"image:achievement:{achievement_id}"
-
-    cached_data = cache.get(cache_key)
-    if cached_data:
-        LOGGER.debug(f"CACHE HIT for {cache_key}")
-        image_bytes = base64.b64decode(cached_data['image_b64'])
-        etag = cached_data['etag']
-    else:
-        # 3. If cache miss, query the database
-        LOGGER.debug(f"CACHE MISS for {cache_key}")
-        achievement = db.query(models.Achievement).filter_by(id=achievement_id).first()
-        if not achievement or not achievement.image_data:
-            raise HTTPException(status_code=404, detail="Achievement image not found")
-
-        image_bytes = achievement.image_data
-
-        etag = hashlib.sha1(image_bytes).hexdigest()
-        image_b64_string = base64.b64encode(image_bytes).decode("utf-8")
-
-        data_to_cache = {
-            "etag": etag,
-            "image_b64": image_b64_string
-        }
-        # Store in the application cache for 1 hour (3600 seconds)
-        cache.set(cache_key, data_to_cache, expire=settings.CACHE_EXPIRE)
-    
-    # 5. Check the browser's cache using the ETag
-    # The browser sends this header if it has a cached version.
-    if request.headers.get("if-none-match") == etag:
-        LOGGER.debug(f"CACHE HIT (Browser - 304) for {cache_key}")
-        # A 304 response tells the browser to use its local copy.
-        return Response(status_code=304)
-
-    # 6. If it's a new request or the ETag doesn't match, send the full response
-    # and include headers that tell the browser to cache the image.
-    headers = {
-        "Cache-Control": "public, max-age=86400",  # Cache for 1 day
-        "ETag": etag
-    }
-    return Response(content=image_bytes, media_type="image/png", headers=headers)
-
-
-@app.get("/image/banner/{banner_id}", name="serve_banner_image")
-def serve_banner_image(banner_id: int, request: Request, db: Session = Depends(get_db), cache: Cache = Depends(get_cache)):
-
-    cache_key = f"image:banner:{banner_id}"
-
-    cached_data = cache.get(cache_key)
-    if cached_data:
-        LOGGER.debug(f"CACHE HIT for {cache_key}")
-        image_bytes = base64.b64decode(cached_data['image_b64'])
-        etag = cached_data['etag']
-    else:
-        # 3. If cache miss, query the database
-        LOGGER.debug(f"CACHE MISS for {cache_key}")
-        banner = db.query(models.GachaBanner).filter(models.GachaBanner.id == banner_id).first()
-        if not banner or not banner.image_data:
-            raise HTTPException(status_code=404, detail="School image not found")
-
-        image_bytes = banner.image_data
-
-        etag = hashlib.sha1(image_bytes).hexdigest()
-        image_b64_string = base64.b64encode(image_bytes).decode("utf-8")
-
-        data_to_cache = {
-            "etag": etag,
-            "image_b64": image_b64_string
-        }
-        # Store in the application cache for 1 hour (3600 seconds)
-        cache.set(cache_key, data_to_cache, expire=settings.CACHE_EXPIRE)
-    
-    # 5. Check the browser's cache using the ETag
-    # The browser sends this header if it has a cached version.
-    if request.headers.get("if-none-match") == etag:
-        LOGGER.debug(f"CACHE HIT (Browser - 304) for {cache_key}")
-        # A 304 response tells the browser to use its local copy.
-        return Response(status_code=304)
-
-    # 6. If it's a new request or the ETag doesn't match, send the full response
-    # and include headers that tell the browser to cache the image.
-    headers = {
-        "Cache-Control": "public, max-age=86400",  # Cache for 1 day
-        "ETag": etag
-    }
-    return Response(content=image_bytes, media_type="image/png", headers=headers)
-
-@app.get("/image/school/{school_id}", name="serve_school_image")
-def serve_school_image(school_id: int, request: Request, db: Session = Depends(get_db), cache: Cache = Depends(get_cache)):
-    
-    cache_key = f"image:school:{school_id}"
-
-    cached_data = cache.get(cache_key)
-    if cached_data:
-        LOGGER.debug(f"CACHE HIT for {cache_key}")
-        image_bytes = base64.b64decode(cached_data['image_b64'])
-        etag = cached_data['etag']
-    else:
-        # 3. If cache miss, query the database
-        LOGGER.debug(f"CACHE MISS for {cache_key}")
-    
-        school = db.query(models.School).filter_by(id=school_id).first()
-        if not school or not school.image_data:
-            raise HTTPException(status_code=404, detail="School image not found")
-        
-        image_bytes = school.image_data
-
-        # 4. Generate the ETag and prepare data for caching
-        etag = hashlib.sha1(image_bytes).hexdigest()
-        image_b64_string = base64.b64encode(image_bytes).decode("utf-8")
-
-        data_to_cache = {
-            "etag": etag,
-            "image_b64": image_b64_string
-        }
-        # Store in the application cache for 1 hour (3600 seconds)
-        cache.set(cache_key, data_to_cache, expire=settings.CACHE_EXPIRE)
-    
-    # 5. Check the browser's cache using the ETag
-    # The browser sends this header if it has a cached version.
-    if request.headers.get("if-none-match") == etag:
-        LOGGER.debug(f"CACHE HIT (Browser - 304) for {cache_key}")
-        # A 304 response tells the browser to use its local copy.
-        return Response(status_code=304)
-
-    # 6. If it's a new request or the ETag doesn't match, send the full response
-    # and include headers that tell the browser to cache the image.
-    headers = {
-        "Cache-Control": "public, max-age=86400",  # Cache for 1 day
-        "ETag": etag
-    }
-    return Response(content=image_bytes, media_type="image/png", headers=headers)
-
-@app.get("/image/student/{student_id}/{image_type}", name="serve_student_image")
-def serve_student_image(student_id: int, image_type: str, request: Request, db: Session = Depends(get_db), cache: Cache = Depends(get_cache)):
-    
-    cache_key = f"image:student:{student_id}:{image_type}"
-
-    cached_data = cache.get(cache_key)
-    if cached_data:
-        LOGGER.debug(f"CACHE HIT for {cache_key}")
-        # Data in cache is stored as a dictionary with etag and the b64 image
-        image_bytes = base64.b64decode(cached_data['image_b64'])
-        etag = cached_data['etag']
-        filename = cached_data['filename']
-    else:
-        LOGGER.debug(f"CACHE MISS for {cache_key}")
-        student = db.query(models.Student).options(joinedload(models.Student.asset)).filter(models.Student.id == student_id).first()
-
-        if not student or not student.asset:
-            raise HTTPException(status_code=404, detail="Student asset not found")
-
-        image_bytes = None
-        if image_type == "portrait":
-            image_bytes = student.asset.portrait_data
-        elif image_type == "artwork":
-            image_bytes = student.asset.artwork_data
-        
-        if not image_bytes:
-            raise HTTPException(status_code=404, detail="Image data not found for this type")
-        
-        # 4. Generate the ETag and prepare data for caching
-        etag = hashlib.sha1(image_bytes).hexdigest()
-        image_b64_string = base64.b64encode(image_bytes).decode("utf-8")
-        
-        filename = f"{student.name}_{student.version.name}_{image_type}.png"
-
-        data_to_cache = {
-            "etag": etag,
-            "image_b64": image_b64_string,
-            "filename": filename 
-        }
-        # Store in the application cache for 1 hour
-        cache.set(cache_key, data_to_cache, expire=settings.CACHE_EXPIRE)
-    
-    # 5. Check the browser cache using the ETag
-    LOGGER.debug(request.headers.get("if-none-match"))
-    if request.headers.get("if-none-match") == etag:
-        LOGGER.debug(f"CACHE HIT (Browser - 304) for {cache_key}")
-        return Response(status_code=304)
-
-    # 6. If it's a new request or the ETag doesn't match, send the full response
-    # with the correct headers to enable browser caching for next time.
-    headers = {
-        "Cache-Control": "public, max-age=86400",  # Cache for 1 day (86400 seconds)
-        "ETag": etag,
-        "Content-Disposition": f'inline; filename="{filename}"'
-    }
-    return Response(content=image_bytes, media_type="image/png", headers=headers)
