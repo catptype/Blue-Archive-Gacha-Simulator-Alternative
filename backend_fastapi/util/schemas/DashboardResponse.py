@@ -1,12 +1,63 @@
 from datetime import datetime
 from pydantic import BaseModel
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 from .StudentResponse import StudentResponse
 
 #############################
 #     Dashboard Schemas     #
 #############################
+
+class LuckGapsSchema(BaseModel):
+    min: Optional[int] = None
+    max: Optional[int] = None
+    avg: Optional[float] = None
+
+class RarityCounterSchema(BaseModel):
+    r3_count: int
+    r2_count: int
+    r1_count: int
+
+class BannerBreakdownSchema(BaseModel):
+    data: Dict[str, RarityCounterSchema]
+
+class TopStudentSchema(BaseModel):
+    student: StudentResponse
+    count: int
+    first_obtained_on: datetime
+
+class FirstR3Schema(BaseModel):
+    student: StudentResponse
+    obtained_on: datetime
+
+class CollectionProgressionSchema(BaseModel):
+    rarity: int
+    obtained: int
+    total: int
+
+class R3MilestoneSchema(BaseModel):
+    student: StudentResponse 
+    pull_number: int
+
+class LuckPerformanceSchema(BaseModel):
+    banner_name: str
+    total_pulls: int
+    r3_count: int
+    user_rate: float
+    banner_rate: float
+    luck_variance: float
+    gaps: Optional[LuckGapsSchema] = None
+
+class SummaryDashboardResponse(BaseModel):
+    total_pulls: int
+    total_pyroxene_spent: int
+    first_r3: FirstR3Schema
+    top3: List[TopStudentSchema]
+    progression: List[CollectionProgressionSchema]
+    milestone: List[R3MilestoneSchema]
+    performance: List[LuckPerformanceSchema]
+
+#####
 
 class LuckGapsSchema(BaseModel):
     min: Optional[int] = None

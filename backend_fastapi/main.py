@@ -1,6 +1,4 @@
 import logging
-import math
-import statistics
 
 from fastapi import FastAPI, APIRouter, Depends, HTTPException, Request, status, Query
 
@@ -9,32 +7,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from logging.config import dictConfig
 from sqlalchemy.orm import Session, joinedload, selectinload
 from typing import Optional, List
-from sqlalchemy import func, desc, case
 
+from .config import settings
 from .log import LOGGING_CONFIG
+from .routers import users, banners, images, gacha, dashboard
 from .util.models import School, Student
 from .util.admin import init_admin
-
 from .util.cache import get_cache, Cache
 from .util.database import get_db
-from .util.schemas.StudentResponse import create_student_response
-
 from .util.schemas.SchoolResponse import SchoolResponse
 from .util.schemas.StudentResponse import StudentResponse
-from .util.schemas.DashboardResponse import KpiResponse, LuckGapsSchema, OverallRaritySchema, Top3StudentResponse, FirstR3Response, BannerBreakdownChartResponse, MilestoneResponse, LuckPerformanceResponse, CollectionProgressionResponse
-from .util.schemas.HistoryResponse import HistoryResponse, TransactionSchema
-from .util.schemas.CollectionResponse import CollectionResponse, CollectionStudentSchema
-from .util.schemas.AchievementResponse import UserAchievementResponse, AchievementResponse
-
-from .util.auth import get_optional_current_user, get_required_current_user
-
-from .routers import users, banners, images, gacha, dashboard
-from .config import settings
 
 # `__name__` will automatically create a logger named "backend.main"
 dictConfig(LOGGING_CONFIG)
 LOGGER = logging.getLogger(__name__)
-
 app = FastAPI()
 api_router = APIRouter()
 

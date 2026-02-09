@@ -22,12 +22,6 @@ LOGGER = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# --- Helper functions ---
-
-def _get_summary_tab():
-    pass
-
-# --- API Endpoints ---
 
 @router.get("/summary/kpis", response_model=KpiResponse)
 def get_dashboard_kpis(
