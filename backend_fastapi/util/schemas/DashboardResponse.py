@@ -30,7 +30,7 @@ class FirstR3Schema(BaseModel):
     student: StudentResponse
     obtained_on: datetime
 
-class CollectionProgressionSchema(BaseModel):
+class ProgressionSchema(BaseModel):
     rarity: int
     obtained: int
     total: int
@@ -48,12 +48,13 @@ class LuckPerformanceSchema(BaseModel):
     luck_variance: float
     gaps: Optional[LuckGapsSchema] = None
 
-class SummaryDashboardResponse(BaseModel):
+class DashboardSummaryResponse(RarityCounterSchema):
     total_pulls: int
-    total_pyroxene_spent: int
+    total_pyroxene: int
+    breakdown: BannerBreakdownSchema
     first_r3: FirstR3Schema
     top3: List[TopStudentSchema]
-    progression: List[CollectionProgressionSchema]
+    progression: List[ProgressionSchema]
     milestone: List[R3MilestoneSchema]
     performance: List[LuckPerformanceSchema]
 
