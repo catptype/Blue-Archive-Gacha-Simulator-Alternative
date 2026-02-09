@@ -31,7 +31,7 @@
 
         try {
             // The API request remains the same, sending only the final password
-            await apiClient.post('/register/', {
+            await apiClient.post('/users/register/', {
               username: username.value,
               password: password.value,
             });

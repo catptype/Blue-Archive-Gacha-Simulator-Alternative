@@ -26,7 +26,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     async function login(formData: URLSearchParams) {
         // FastAPI's OAuth2PasswordRequestForm expects form data, not JSON
-        const response = await apiClient.post('/token', formData, {
+        const response = await apiClient.post('/users/token', formData, {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded'
             }

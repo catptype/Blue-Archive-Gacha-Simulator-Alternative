@@ -3,18 +3,17 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session, joinedload, selectinload
 from typing import List
 
-from ..util.models import GachaBanner, Student
+from ..config import settings
 from ..util.cache import get_cache, Cache
 from ..util.database import get_db
+from ..util.models import GachaBanner, Student
 from ..util.schemas.BannerResponse import BannerResponse, BannerDetailResponse
 from ..util.schemas.StudentResponse import StudentResponse, create_student_response
-from ..config import settings
 
 LOGGER = logging.getLogger(__name__)
-
 router = APIRouter()
 
-@router.get("/", tags=["banners"], response_model=List[BannerResponse])
+@router.get("/", response_model=List[BannerResponse])
 def get_banners(request: Request, db: Session = Depends(get_db), cache: Cache = Depends(get_cache)):
     cache_key = "all_banners"
 
@@ -43,7 +42,7 @@ def get_banners(request: Request, db: Session = Depends(get_db), cache: Cache = 
         
     return response_banners
 
-@router.get("/{banner_id}/details/", tags=["banners"], response_model=BannerDetailResponse)
+@router.get("/{banner_id}/details/", response_model=BannerDetailResponse)
 def get_banner_details(banner_id: int, request: Request, db: Session = Depends(get_db)):
 
     # Check banner is exist    

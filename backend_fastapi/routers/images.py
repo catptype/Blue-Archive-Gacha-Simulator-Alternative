@@ -1,21 +1,16 @@
-import base64
 import hashlib
 import logging
-
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import Response
 from sqlalchemy.orm import Session, joinedload
-
 from typing import Callable, Tuple
 
+from ..config import settings
 from ..util.cache import get_cache, Cache
 from ..util.database import get_db
-
-from ..config import settings
 from ..util.models import Achievement, Student, School, GachaBanner
 
 LOGGER = logging.getLogger(__name__)
-
 router = APIRouter()
 
 # --- Helper functions
@@ -72,7 +67,7 @@ def serve_image(
 
 # --- Endpoints ---
 
-@router.get("/achievement/{achievement_id}", tags=["images"], name="serve_achievement_image")
+@router.get("/achievement/{achievement_id}", name="serve_achievement_image")
 def serve_achievement_image(achievement_id: int, request: Request, db: Session = Depends(get_db), cache: Cache = Depends(get_cache)):
     cache_key = f"image:achievement:{achievement_id}"
     
@@ -85,7 +80,7 @@ def serve_achievement_image(achievement_id: int, request: Request, db: Session =
     
     return serve_image(request, cache, cache_key, fetch_achievement)
 
-@router.get("/banner/{banner_id}", tags=["images"], name="serve_banner_image")
+@router.get("/banner/{banner_id}", name="serve_banner_image")
 def serve_banner_image(banner_id: int, request: Request, db: Session = Depends(get_db), cache: Cache = Depends(get_cache)):
     cache_key = f"image:banner:{banner_id}"
     
@@ -98,7 +93,7 @@ def serve_banner_image(banner_id: int, request: Request, db: Session = Depends(g
     
     return serve_image(request, cache, cache_key, fetch_banner)
 
-@router.get("/school/{school_id}", tags=["images"], name="serve_school_image")
+@router.get("/school/{school_id}", name="serve_school_image")
 def serve_school_image(school_id: int, request: Request, db: Session = Depends(get_db), cache: Cache = Depends(get_cache)):
     
     cache_key = f"image:school:{school_id}"
@@ -111,7 +106,7 @@ def serve_school_image(school_id: int, request: Request, db: Session = Depends(g
     
     return serve_image(request, cache, cache_key, fetch_school)
 
-@router.get("/student/{student_id}/{image_type}", tags=["images"], name="serve_student_image")
+@router.get("/student/{student_id}/{image_type}", name="serve_student_image")
 def serve_student_image(student_id: int, image_type: str, request: Request, db: Session = Depends(get_db), cache: Cache = Depends(get_cache)):
     
     if image_type not in ["portrait", "artwork"]:

@@ -4,12 +4,11 @@ from typing import Optional
 
 class AchievementSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-
-    achievement_id: int
-    achievement_name: str
-    achievement_description: str
-    achievement_category: str
-    achievement_key: str
+    id: int
+    name: str
+    description: str
+    category: str
+    key: str
 
 # --- Response
 class AchievementResponse(AchievementSchema):
