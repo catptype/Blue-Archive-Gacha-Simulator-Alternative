@@ -8,8 +8,7 @@ import gachaVideo from '@/assets/gacha.mov';
       <source :src="gachaVideo" type="video/mp4">
       Your browser does not support the video tag.
     </video>
-    <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent z-10"></div>
-    <div class="absolute inset-0 flex items-center justify-center z-20">
+    <div class="absolute inset-0 flex items-center justify-center bg-linear-to-t from-black/80 via-black/40 to-transparent z-10">
       <h2 class="text-6xl font-black text-white uppercase tracking-widest" style="text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.7);">
         SALTY
       </h2>

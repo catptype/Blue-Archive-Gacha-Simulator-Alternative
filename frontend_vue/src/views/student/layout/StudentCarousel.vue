@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-
-interface Student {
-  id: number;
-  name: string;
-  portrait_url: string;
-}
+import { type Student } from '@/types/web'
+import LoadSpinner from '@/components/base/LoadSpinner.vue';
+import CarouselCard from '../components/CarouselCard.vue';
+import CarouselNavButton from '../components/CarouselNavButton.vue';
 
 const props = defineProps<{
   students: Student[];
@@ -63,29 +61,6 @@ const onTransitionEnd = () => {
     currentIndex.value = totalRealCards + CLONE_COUNT - 1;
   }
 };
-
-
-
-const getCardStyle = (index: number) => {
-  const isActive = index === currentIndex.value;
-  return {
-    transform: `scale(${isActive ? 1.15 : 0.9})`,
-    opacity: isActive ? '1' : '0.5',
-    filter: isActive ? 'none' : 'grayscale(1)',
-  };
-};
-
-const getCardNameStyle = (index: number) => {
-  const isActive = index === currentIndex.value;
-  return {
-    'opacity-100 translate-x-0': isActive,
-    'opacity-0 -translate-x-8': !isActive,
-  };
-};
-
-// --- ========================================================= ---
-// --- NEW & IMPROVED: Sidebar Synchronization Logic             ---
-// --- ========================================================= ---
 
 /**
  * Manually calculates and sets the carousel's position.
@@ -151,13 +126,7 @@ onUnmounted(() => window.removeEventListener('resize', recenterInstantly));
 
 <template>
   <div class="h-full relative overflow-hidden">
-    <!-- Loading Spinner -->
-    <div v-if="isLoading" class="w-full h-full flex items-center justify-center">
-      <svg class="animate-spin h-10 w-10 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-    </div>
+    <LoadSpinner v-if="isLoading" />
 
     <!-- Carousel -->
     <div v-else-if="students.length > 0" class="character-group w-full h-full" ref="carouselGroup">
@@ -167,36 +136,27 @@ onUnmounted(() => window.removeEventListener('resize', recenterInstantly));
         @transitionend="onTransitionEnd"
         ref="slider"
       >
-        <div
+        <CarouselCard
           v-for="(student, index) in displayStudents"
           :key="index"
-          class="character-card flex-shrink-0 w-[300px] h-[85%] mx-4"
-          :class="{ 'transition-all duration-500 ease-in-out': useTransition }"
-          :style="getCardStyle(index)"
-        >
-          <div class="relative w-full h-full group">
-            <img :src="student.portrait_url" :alt="student.name" class="w-full h-full object-cover rounded-lg">
-            <div
-              class="character-name absolute bottom-[20px] left-[70px]"
-              :class="[getCardNameStyle(index), { 'transition-all duration-500 ease-in-out': useTransition }]"
-            >
-              <h2 
-                class="text-5xl font-black text-white uppercase tracking-widest origin-bottom-left transform -rotate-90"
-                style="text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.7);">
-                {{ student.name }}
-              </h2>
-            </div>
-          </div>
-        </div>
+          :student="student"
+          :is-active="index === currentIndex"
+          :use-transition="useTransition"
+        />
+
       </div>
 
       <!-- Navigation -->
-      <button @click="navigate(-1)" class="nav-arrow nav-left absolute left-6 top-1/2 -translate-y-1/2 bg-black/40 p-3 rounded-full hover:bg-sky-500/50 transition-colors z-40">
-        <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-      </button>
-      <button @click="navigate(1)" class="nav-arrow nav-right absolute right-6 top-1/2 -translate-y-1/2 bg-black/40 p-3 rounded-full hover:bg-sky-500/50 transition-colors z-40">
-        <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-      </button>
+       <CarouselNavButton 
+        direction="left" 
+        @click="navigate(-1)" 
+      />
+      
+      <CarouselNavButton 
+        direction="right" 
+        @click="navigate(1)" 
+      />
+
     </div>
     
     <!-- No Students Message -->

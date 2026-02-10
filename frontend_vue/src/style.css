@@ -13,3 +13,7 @@ button,
 input {
     font-family: 'RoGSanSrfStd-Bd';
 }
+
+img {
+    image-rendering: smooth !important; 
+}

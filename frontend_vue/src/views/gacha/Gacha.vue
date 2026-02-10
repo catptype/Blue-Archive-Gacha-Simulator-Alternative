@@ -4,9 +4,9 @@ import { useToastStore } from '@/stores/toast';
 import apiClient from '@/services/client';
 
 // Import all necessary components
-import SlidingBannerCarousel from '@/components/gacha/SlidingBannerCarousel.vue';
-import DetailsModal from '@/components/gacha/DetailsModal.vue';
-import GachaResults from '@/components/gacha/GachaResults.vue';
+import SlidingBannerCarousel from './components/SlidingBannerCarousel.vue';
+import DetailsModal from './components/DetailsModal.vue';
+import GachaResults from './components/GachaResults.vue';
 import planaMov from '@/assets/plana-gacha.mov';
 
 interface Banner { id: number; name: string; image_url: string; }

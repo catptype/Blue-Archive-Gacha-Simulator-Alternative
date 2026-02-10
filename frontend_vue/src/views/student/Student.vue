@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import Background from '../components/Background.vue';
-import SchoolList from '../components/student/SchoolFilter.vue';
-import StudentCarousel from '../components/student/StudentCarousel.vue';
-import apiClient from '../services/client'; 
-
-interface School { id: number; name: string; image_url: string; }
-interface Student { id: number; name: string; portrait_url: string; }
+import { type Student, type School } from '@/types/web';
+import Background from '@/components/Background.vue';
+import SchoolSidebar from './layout/SchoolSidebar.vue';
+import StudentCarousel from './layout/StudentCarousel.vue';
+import apiClient from '@/services/client'; 
 
 // --- State managed by the parent ---
 const schools = ref<School[]>([]);
@@ -14,22 +12,9 @@ const students = ref<Student[]>([]);
 const selectedSchoolId = ref<number | null>(null);
 const isLoadingSchools = ref(true);
 const isLoadingStudents = ref(true);
-const isSidebarExpanded = ref(false); // State for sidebar expansion
+const isSidebarExpanded = ref(false);
 
 // --- Methods ---
-async function fetchSchools() {
-  isLoadingSchools.value = true;
-  try {
-    const response = await apiClient.get('/schools/'); 
-    schools.value = response.data;
-    const firstSchool = schools.value[0];
-    if (firstSchool) {
-      handleSchoolSelect(firstSchool);
-    }
-  } catch (error) { console.error('Failed to fetch schools:', error); }
-  finally { isLoadingSchools.value = false; }
-}
-
 async function handleSchoolSelect(school: School) {
   if (school.id === selectedSchoolId.value) return; // Don't reload if already selected
 
@@ -43,7 +28,21 @@ async function handleSchoolSelect(school: School) {
 }
 
 // Fetch initial data when the component is mounted
-onMounted(fetchSchools);
+onMounted(async () => {
+  isLoadingSchools.value = true;
+  try {
+    const response = await apiClient.get('/schools/');
+    schools.value = response.data;
+    const firstSchool = schools.value[0];
+    if (firstSchool) {
+      handleSchoolSelect(firstSchool);
+    }
+  } catch (error) {
+    console.error('Failed to fetch schools:', error);
+  } finally {
+    isLoadingSchools.value = false;
+  }
+});
 </script>
 
 <template>
@@ -51,10 +50,6 @@ onMounted(fetchSchools);
   <div class="relative min-h-screen w-full bg-black antialiased text-white overflow-hidden pt-20">
     <Background />
     
-    <!-- 
-      The main grid. Its class is dynamically bound to expand/collapse.
-      The style provides the height calculation.
-    -->
     <div
       id="main-grid"
       class="absolute top-20 left-0 right-0"
@@ -62,7 +57,7 @@ onMounted(fetchSchools);
       style="height: calc(100vh - 5rem);"
     >
       <!-- Left Column -->
-      <SchoolList
+      <SchoolSidebar
         :schools="schools"
         :selected-id="selectedSchoolId"
         :is-loading="isLoadingSchools"
@@ -83,7 +78,6 @@ onMounted(fetchSchools);
 </template>
 
 <style>
-/* Global styles from student-page.css needed for the grid and transitions */
 #main-grid {
   display: grid;
   grid-template-columns: 6rem 1fr;

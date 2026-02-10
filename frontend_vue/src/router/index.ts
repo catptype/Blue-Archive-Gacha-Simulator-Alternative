@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import HomeView from '@/views/Home.vue';
-import StudentView from '@/views/Student.vue';
-import GachaView from '@/views/Gacha.vue';
+import HomeView from '@/views/home/Home.vue';
+import StudentView from '@/views/student/Student.vue';
+import GachaView from '@/views/gacha/Gacha.vue';
 import LoginView from '@/views/Login.vue';
 import RegisterView from '@/views/Register.vue';
 import DashboardView from '@/views/Dashboard.vue';

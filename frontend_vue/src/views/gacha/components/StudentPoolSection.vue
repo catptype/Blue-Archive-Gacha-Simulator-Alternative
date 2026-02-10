@@ -31,7 +31,7 @@
       <div
         v-for="student in students"
         :key="student.student_id"
-        class="group/item relative w-16 h-16 transition-all duration-300 group-hover/list:opacity-50 group-hover/list:grayscale hover:!opacity-100 hover:!grayscale-0"
+        class="group/item relative w-16 h-16 transition-all duration-300 group-hover/list:opacity-50 group-hover/list:grayscale hover:opacity-100! hover:grayscale-0!"
       >
         <div class="w-full h-full bg-slate-900 rounded-lg border overflow-hidden transition-all duration-200 hover:scale-120" :class="gridItemBorderClass">
           <img :src="student.portrait_url" :alt="student.student_name">
