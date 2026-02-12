@@ -1,5 +1,6 @@
 <script setup lang="ts">
-interface Banner { id: number; name: string; image_url: string; }
+import { type Banner } from '@/types/web'
+import NavButton from '@/components/base/NavButton.vue';
 
 const props = defineProps<{
   banners: Banner[];
@@ -60,12 +61,14 @@ const goPrev = () => {
 <template>
   <div class="relative w-full max-w-[80%] h-36 mx-auto">
     <!-- Navigation Buttons -->
-    <button @click="goPrev" class="absolute rounded-full bg-cyan-600/80 top-1/2 -translate-y-1/2 -left-8 z-20 p-2">
-      <svg class="w-8 h-8 opacity-80 hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"></path></svg>
-    </button>
-    <button @click="goNext" class="absolute rounded-full bg-cyan-600/80 top-1/2 -translate-y-1/2 -right-8 z-20 p-2">
-      <svg class="w-8 h-8 opacity-80 hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></svg>
-    </button>
+    <NavButton 
+      direction="left" 
+      @click="goPrev" 
+    />
+    <NavButton 
+      direction="right" 
+      @click="goNext" 
+    />
 
     <!-- Banner Images -->
     <img

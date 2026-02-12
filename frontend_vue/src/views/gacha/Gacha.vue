@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useToastStore } from '@/stores/toast';
+import { type Student, type Banner } from '@/types/web'
 import apiClient from '@/services/client';
+import PolyButton from '@/components/base/PolyButton.vue';
 
 // Import all necessary components
-import SlidingBannerCarousel from './components/SlidingBannerCarousel.vue';
-import DetailsModal from './components/DetailsModal.vue';
-import GachaResults from './components/GachaResults.vue';
+import BannerCarousel from './layout/BannerCarousel.vue';
+import DetailsModal from './layout/DetailsModal.vue';
+import ResultsModal from './layout/ResultsModal.vue';
 import planaMov from '@/assets/plana-gacha.mov';
 
-interface Banner { id: number; name: string; image_url: string; }
-interface Student { /* ... */ }
 
 const banners = ref<Banner[]>([]);
 const activeIndex = ref(0);
@@ -72,7 +72,7 @@ const handlePull = async (amount: 1 | 10) => {
 
       <!-- Banner Carousel -->
       <div class="w-full max-w-[80%] h-36 -mb-12">
-        <SlidingBannerCarousel
+        <BannerCarousel
           v-if="banners.length > 0"
           :banners="banners"
           v-model:activeIndex="activeIndex"
@@ -93,6 +93,26 @@ const handlePull = async (amount: 1 | 10) => {
           </button>
         </div>
       </div>
+
+
+      <div class="relative z-30 w-full px-6 md:px-12 pb-8 pt-4 flex flex-col md:flex-row justify-between items-end bg-gradient-to-t from-black via-brand-dark/90 to-transparent">
+        
+        <div class="mb-4 md:mb-0">
+            <div class="text-xs text-gray-500 tracking-[0.2em] mb-1">GUARANTEE COUNT</div>
+            <div class="flex items-end gap-2">
+                <span class="text-4xl font-bold text-white">45</span>
+                <span class="text-xl text-gray-600 mb-1">/ 90</span>
+            </div>
+            <div class="w-48 h-1.5 bg-gray-800 mt-2 rounded-full overflow-hidden">
+                <div class="h-full bg-brand-cyan shadow-[0_0_10px_#4DF0FF]" style="width: 50%"></div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4 md:gap-6">
+            <PolyButton @click="handlePull(1)" color="cyan" label="Draw 1"/>
+            <PolyButton @click="handlePull(10)" color="cyan" label="Draw 10"/>
+        </div>
+    </div>
       
     </div>
 
@@ -102,7 +122,7 @@ const handlePull = async (amount: 1 | 10) => {
       :banner-id="activeBanner.id"
       @close="isDetailsModalVisible = false"
     />
-    <GachaResults
+    <ResultsModal
       v-if="isResultsModalVisible"
       :results="gachaResults"
       @close="isResultsModalVisible = false"

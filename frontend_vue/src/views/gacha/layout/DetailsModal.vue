@@ -1,12 +1,14 @@
 <script setup lang="ts">
     import { ref, onMounted, computed } from 'vue';
+    import { type Banner } from '@/types/web'
+    import LoadSpinner from '@/components/base/LoadSpinner.vue';
     import apiClient from '@/services/client';
-    import StudentPoolSection from './StudentPoolSection.vue';
+    import StudentPoolSection from '../components/StudentPoolSection.vue';
 
     const props = defineProps<{ bannerId: number }>();
     const emit = defineEmits(['close']);
 
-    const bannerData = ref<any>(null);
+    const bannerData = ref<Banner>();
     const isLoading = ref(true);
     const error = ref('');
     const viewMode = ref<'grid' | 'list'>('grid');
@@ -50,9 +52,7 @@
         <button @click="emit('close')" class="absolute top-2 right-2 text-slate-400 hover:text-white z-10 text-4xl leading-none">&times;</button>
 
         <!-- Loading State -->
-        <div v-if="isLoading" class="w-full h-full flex items-center justify-center">
-          <svg class="animate-spin h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-        </div>
+        <LoadSpinner v-if="isLoading" />
 
         <!-- Error State -->
         <div v-else-if="error" class="w-full h-full flex items-center justify-center">
@@ -62,12 +62,12 @@
         <!-- Content -->
         <template v-else-if="bannerData">
           <!-- Header -->
-          <div class="flex-shrink-0 p-4 border-b border-slate-600">
+          <div class="shrink-0 p-4 border-b border-slate-600">
             <h2 class="text-2xl font-bold text-cyan-300">Banner Details: {{ bannerData.name }}</h2>
           </div>
 
           <!-- View Switcher -->
-          <div class="flex-shrink-0 p-4 flex justify-between items-center border-b border-slate-700">
+          <div class="shrink-0 p-4 flex justify-between items-center border-b border-slate-700">
             <div class="flex items-center border border-slate-600 rounded-lg">
               <button @click="viewMode = 'grid'" :class="viewMode === 'grid' ? 'bg-slate-700 text-white' : 'bg-transparent text-slate-400'" class="p-2" title="Grid View">
                 <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
@@ -80,7 +80,7 @@
           </div>
 
           <!-- Scrollable Content -->
-          <div class="flex-grow p-4 overflow-y-auto">
+          <div class="grow p-4 overflow-y-auto">
             <StudentPoolSection v-if="bannerData.pickup_r3_students.length > 0" title="Pickup Students" :totalRate="Number(bannerData.preset.pickup_rate)" :students="bannerData.pickup_r3_students" :viewMode="viewMode" :individualRate="pickupRatePerStudent" :is-pickup="true" />
             <StudentPoolSection v-if="bannerData.nonpickup_r3_students.length > 0" title="Available ★★★ Pool" :totalRate="Number(bannerData.preset.r3_rate) - Number(bannerData.preset.pickup_rate)" :students="bannerData.nonpickup_r3_students" :viewMode="viewMode" :individualRate="nonPickupR3RatePerStudent" :is-pickup="false" />
             <StudentPoolSection v-if="bannerData.r2_students.length > 0" title="Available ★★ Pool" :totalRate="Number(bannerData.preset.r2_rate)" :students="bannerData.r2_students" :viewMode="viewMode" :individualRate="r2RatePerStudent" :is-pickup="false" />

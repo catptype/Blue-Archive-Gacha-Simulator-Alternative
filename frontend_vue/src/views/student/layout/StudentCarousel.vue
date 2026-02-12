@@ -3,7 +3,7 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { type Student } from '@/types/web'
 import LoadSpinner from '@/components/base/LoadSpinner.vue';
 import CarouselCard from '../components/CarouselCard.vue';
-import CarouselNavButton from '../components/CarouselNavButton.vue';
+import NavButton from '@/components/base/NavButton.vue';
 
 const props = defineProps<{
   students: Student[];
@@ -147,12 +147,12 @@ onUnmounted(() => window.removeEventListener('resize', recenterInstantly));
       </div>
 
       <!-- Navigation -->
-       <CarouselNavButton 
+      <NavButton 
         direction="left" 
         @click="navigate(-1)" 
       />
       
-      <CarouselNavButton 
+      <NavButton 
         direction="right" 
         @click="navigate(1)" 
       />
