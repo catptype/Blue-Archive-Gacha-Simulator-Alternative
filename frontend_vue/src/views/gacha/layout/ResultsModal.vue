@@ -3,11 +3,14 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import LoadSpinner from '@/components/base/LoadSpinner.vue';
 import ResultCard from '../components/ResultCard.vue';
 import NavButton from '@/components/base/NavButton.vue';
+import PolyButton from '@/components/base/PolyButton.vue';
 import { type Result } from '@/types/web'
 
-const props = defineProps<{ results: Result[] }>();
+const props = defineProps<{ 
+  results: Result[]
+  isPulling: boolean
+}>();
 
-const isLoading = ref(false);
 const emit = defineEmits(['close']);
 
 const flippedStates = ref<boolean[]>(props.results.map(() => false));
@@ -61,7 +64,7 @@ onUnmounted(() => { window.removeEventListener('resize', handleResize); });
           <h2 class="text-2xl font-bold text-cyan-300">Gacha Results</h2>
         </div>
 
-        <LoadSpinner v-if="isLoading" />
+        <LoadSpinner v-if="props.isPulling" />
 
         <div v-else class="grow p-4 overflow-hidden" style="perspective: 1000px;">
           <!-- ====================== CONDITIONAL RENDERING START ====================== -->
@@ -106,20 +109,18 @@ onUnmounted(() => { window.removeEventListener('resize', handleResize); });
 
         <div class="shrink-0 p-4 border-t border-slate-700 flex justify-center items-center">
           <Transition name="fade" mode="out-in">
-            <button
+            <PolyButton 
               v-if="!allCardsRevealed"
               @click="revealAll"
-              class="px-6 py-3 bg-slate-600 hover:bg-slate-500 text-white font-semibold rounded-lg transition-colors text-lg"
-            >
-              Reveal All
-            </button>
-            <button
+              color="cyan"
+              label="Reveal All"
+            />
+            <PolyButton 
               v-else-if="allCardsRevealed"
               @click="emit('close')"
-              class="px-6 py-3 bg-cyan-600 hover:bg-cyan-500 text-white font-semibold rounded-lg transition-colors text-lg"
-            >
-              Close
-            </button>
+              color="cyan"
+              label="Close"
+            />
           </Transition>
         </div>
 

@@ -17,6 +17,7 @@ const activeIndex = ref(0);
 const gachaResults = ref<Result[]>([]);
 const isDetailsModalVisible = ref(false);
 const isResultsModalVisible = ref(false);
+const isPulling = ref(false);
 const toastStore = useToastStore();
 
 const activeBanner = computed(() => banners.value[activeIndex.value] || null);
@@ -27,13 +28,18 @@ onMounted(async () => {
 });
 
 const handlePull = async (amount: 1 | 10) => {
-  if (!activeBanner.value) return;
+  // Handling multiple click
+  if (!activeBanner.value || isPulling.value) return;
+  
   const bannerId = activeBanner.value.id;
   const pullType = amount === 10 ? 'pull_ten' : 'pull_single';
+  
   try {
+    isResultsModalVisible.value = true;
+    isPulling.value = true
     const { data } = await apiClient.post(`/gacha/${bannerId}/${pullType}`);
     gachaResults.value = data.results;
-    isResultsModalVisible.value = true;
+    isPulling.value = false
     
     // Toast notification logic is unchanged
     if (data.unlocked_achievements?.length > 0) {
@@ -71,7 +77,7 @@ const handlePull = async (amount: 1 | 10) => {
       </Transition>
 
       <!-- Banner Carousel -->
-      <div class="w-full max-w-[80%] h-36 -mb-12">
+      <div class="w-full max-w-[80%] h-36 mb-24">
         <BannerCarousel
           v-if="banners.length > 0"
           :banners="banners"
@@ -79,17 +85,7 @@ const handlePull = async (amount: 1 | 10) => {
         />
       </div>
 
-      <!-- Central Core -->
-      <div class="h-auto w-full flex justify-center">
-        <div class="w-full border border-slate-700 bg-slate-900/50 backdrop-blur-lg rounded-tl-full rounded-tr-full h-full grid grid-cols-1 md:grid-cols-2 p-10 md:p-20 gap-4">
-          <button @click="isDetailsModalVisible = true" class="md:col-span-2 w-40 h-14 bg-cyan-600 hover:bg-cyan-500 text-lg text-white rounded-lg justify-self-center">
-            DETAILS
-          </button>
-        </div>
-      </div>
-
-
-      <div class="relative z-30 w-full px-6 md:px-12 pb-8 pt-4 flex flex-col md:flex-row justify-between items-end bg-gradient-to-t from-black via-brand-dark/90 to-transparent">
+      <div class="relative z-30 w-full px-6 md:px-12 pb-8 pt-4 flex flex-col md:flex-row justify-between items-end bg-linear-to-t from-black via-brand-dark/90 to-transparent">
         
         <div class="mb-4 md:mb-0">
             <div class="text-xs text-gray-500 tracking-[0.2em] mb-1">GUARANTEE COUNT</div>
@@ -120,6 +116,7 @@ const handlePull = async (amount: 1 | 10) => {
     <ResultsModal
       v-if="isResultsModalVisible"
       :results="gachaResults"
+      :is-pulling="isPulling"
       @close="isResultsModalVisible = false"
     />
   </div>
