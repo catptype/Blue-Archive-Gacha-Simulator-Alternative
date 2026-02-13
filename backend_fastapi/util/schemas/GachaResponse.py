@@ -20,6 +20,5 @@ class GachaResultStudent(StudentResponse):
     is_new: bool
 
 class GachaPullResponse(BaseModel):
-    success: bool
     results: List[GachaResultStudent]
     unlocked_achievements: List[AchievementResponse]

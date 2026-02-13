@@ -153,7 +153,6 @@ def _perform_pull(
             final_results.append(result_student)
         
         return GachaPullResponse(
-            success=True,
             results=final_results,
             unlocked_achievements=[]
         )
@@ -164,7 +163,6 @@ def _perform_pull(
     
     # --- Format the final response, including any unlocked achievements ---
     return GachaPullResponse(
-        success=True,
         results=final_results,
         unlocked_achievements=unlocked_achievements # Mocked for now
     )
