@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import LoadSpinner from '@/components/base/LoadSpinner.vue';
 import ResultCard from '../components/ResultCard.vue';
 import NavButton from '@/components/base/NavButton.vue';
+import { type Result } from '@/types/web'
 
-const props = defineProps<{ results: any[] }>();
+const props = defineProps<{ results: Result[] }>();
+
+const isLoading = ref(false);
 const emit = defineEmits(['close']);
 
 const flippedStates = ref<boolean[]>(props.results.map(() => false));
@@ -19,11 +23,10 @@ const allCardsRevealed = computed(() => {
 // --- The rest of the script is unchanged ---
 const mobileCurrentIndex = ref(0);
 const isDesktop = ref(window.innerWidth >= 1280);
-const handleResize = () => { isDesktop.value = window.innerWidth >= 1280; };
-onMounted(() => { window.addEventListener('resize', handleResize); });
-onUnmounted(() => { window.removeEventListener('resize', handleResize); });
 
 const sliderTrackStyle = computed(() => ({ transform: `translateX(-${mobileCurrentIndex.value * 100}%)` }));
+
+// -- Functions
 const navigateMobile = (direction: 1 | -1) => {
   const newIndex = mobileCurrentIndex.value + direction;
   if (newIndex >= 0 && newIndex < props.results.length) {
@@ -31,27 +34,22 @@ const navigateMobile = (direction: 1 | -1) => {
   }
 };
 
-const revealCard = (index: number) => {
-  flippedStates.value[index] = true;
-};
+const revealCard = (index: number) => { flippedStates.value[index] = true; };
 
 const revealAll = () => {
   // Sort for dramatic effect (logic is the same)
-  const sortedIndices = props.results
-    .map((_, index) => index)
-    .sort((a, b) => props.results[b].student_rarity - props.results[a].student_rarity);
-  
+  const sortedIndices = props.results.map((_, index) => index)
   sortedIndices.forEach((cardIndex, revealIndex) => {
-    setTimeout(() => {
-      // We now call revealCard to ensure the state is updated correctly
-      revealCard(cardIndex);
-    }, revealIndex * 100);
+    // We now call revealCard to ensure the state is updated correctly
+    setTimeout(() => { revealCard(cardIndex); }, revealIndex * 100);
   });
 };
+
+const handleResize = () => { isDesktop.value = window.innerWidth >= 1280; };
+
+onMounted(() => { window.addEventListener('resize', handleResize); });
+onUnmounted(() => { window.removeEventListener('resize', handleResize); });
 </script>
-
-
-
 
 <template>
   <Transition name="modal-fade" appear>
@@ -63,15 +61,17 @@ const revealAll = () => {
           <h2 class="text-2xl font-bold text-cyan-300">Gacha Results</h2>
         </div>
 
-        <div class="grow p-4 overflow-hidden" style="perspective: 1000px;">
+        <LoadSpinner v-if="isLoading" />
+
+        <div v-else class="grow p-4 overflow-hidden" style="perspective: 1000px;">
           <!-- ====================== CONDITIONAL RENDERING START ====================== -->
           <!-- The `v-if` directive will ONLY render this block on large screens. -->
           <div v-if="isDesktop" class="w-full h-full flex items-center justify-center">
             <div class="grid gap-4 grid-cols-5" :class="{ 'grid-cols-1': results.length === 1 }">
               <ResultCard
-                v-for="(student, index) in results"
-                :key="student.student_id + '-' + index"
-                :student="student"
+                v-for="(result, index) in results"
+                :key="result.id + '-' + index"
+                :result="result"
                 :is-flipped="flippedStates[index] ?? false"  
                 @click="revealCard(index)"
                 :class="{ 'xl:col-start-3': results.length === 1 }"
@@ -82,10 +82,10 @@ const revealAll = () => {
           <!-- The `v-else` will ONLY render this block on smaller screens. -->
           <div v-else class="relative w-full h-full">
             <div class="slider-track absolute top-0 left-0 h-full w-full flex items-center transition-transform duration-500 ease-in-out" :style="sliderTrackStyle">
-              <div v-for="(student, index) in results" :key="student.student_id + '-' + index" class="slider-slide relative w-full h-full shrink-0 flex items-center justify-center">
+              <div v-for="(result, index) in results" :key="result.id + '-' + index" class="slider-slide relative w-full h-full shrink-0 flex items-center justify-center">
                 <div class="w-64">
                   <ResultCard 
-                    :student="student"
+                    :result="result"
                     :is-flipped="flippedStates[index] ?? false" 
                     @click="revealCard(index)" 
                   />

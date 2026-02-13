@@ -1,27 +1,31 @@
 <script setup lang="ts">
   import { computed } from 'vue';
   const props = defineProps<{
-    color: 'cyan' | 'red' ;
+    color: 'cyan' | 'gray' ;
     label: string;
   }>();
 
   const emit = defineEmits(['click']);
-  const colorClass = computed(() => 
-    props.color === 'cyan' ? 'bg-linear-to-r bg-yellow-500 to-cyan-500' : ''
-  );
+
+  const colorMap = {
+    cyan: 'bg-linear-to-br from-blue-500 to-cyan-500',
+    gray: 'bg-linear-to-br from-gray-900 to-slate-500'
+  };
+
+  const colorClass = computed(() => colorMap[props.color] || '');
 
 </script>
 
 <template>
   <button 
     @click="emit('click')"
-    class="btn-poly w-52 h-16 text-black hover:brightness-110 transition-all active:scale-95 flex flex-col items-center justify-center relative overflow-hidden group"
+    class="btn-poly w-55 h-16 text-black hover:brightness-110 transition-all active:scale-95 flex flex-col items-center justify-center relative overflow-hidden group"
     :class="colorClass">
     
     <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 skew-y-12"></div>
       <!-- <span class="text-xs font-black tracking-widest opacity-70 relative z-10">Draw x10</span> -->
     <div class="flex items-center gap-1.5 mt-0.5 relative z-10">
-      <span class="text-2xl font-black">{{ label }}</span>
+      <span class="text-2xl text-white">{{ label }}</span>
     </div>
   </button>
 </template>

@@ -40,3 +40,16 @@ export interface Banner {
     r2_students: Student[];
     r1_students: Student[];
 }
+
+export interface Result {
+    id: number;
+    name: string;
+    rarity: number;
+    is_limited: boolean;
+    version: Version;
+    school: School;
+    portrait_url: string;
+    artwork_url: string;
+    is_pickup: boolean
+    is_new: boolean
+}

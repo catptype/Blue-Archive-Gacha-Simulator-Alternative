@@ -1,5 +1,6 @@
 <script setup lang="ts">
     import { computed } from 'vue';
+    import { type Result } from '@/types/web'
     import gachaR3Image from '@/assets/student_card/gacha_r3.png';
     import gachaR2Image from '@/assets/student_card/gacha_r2.png';
     import gachaR1Image from '@/assets/student_card/gacha_r1.png';
@@ -7,27 +8,8 @@
     import newImage from '@/assets/student_card/imgfont_new.png'
     import pickupImage from '@/assets/student_card/imgfont_pickup.png'
 
-    // Define a more detailed interface for the student prop
-    interface Student {
-        id: number;
-        name: string;
-        rarity: number;
-        portrait_url: string;
-        is_pickup: boolean; // Assumes API provides this
-        is_new: boolean;    // Assumes API provides this
-        school: {
-            name: string;
-            image_url: string;
-        };
-        version: {
-            name: string;
-        };
-    }
-
-    // const props = defineProps<{ student: Student }>();
-    // const isFlipped = ref(false);
     const props = withDefaults(defineProps<{ 
-      student: Student;
+      result: Result;
       isFlipped: boolean; 
       enableEffects?: boolean; // New optional prop
     }>(), {
@@ -35,35 +17,39 @@
     });
 
     // --- Computed Properties for Dynamic Styling ---
+    const student = props.result
+    const isR3 = student.rarity === 3; 
+    const isR2 = student.rarity === 2; 
+    const isR1 = student.rarity === 1; 
 
     const cardBackImage = computed(() => {
-        if (props.student.rarity === 3) return gachaR3Image;
-        if (props.student.rarity === 2) return gachaR2Image;
+        if (isR3) return gachaR3Image;
+        if (isR2) return gachaR2Image;
         return gachaR1Image;
     });
 
     const rarityBorderClass = computed(() => ({
-        'bg-gradient-to-br from-pink-400 via-purple-400 to-cyan-400': props.student.rarity === 3,
-        'bg-yellow-400/80': props.student.rarity === 2,
-        'bg-blue-400/80': props.student.rarity === 1,
+        'bg-gradient-to-br from-pink-400 via-purple-400 to-cyan-400': isR3,
+        'bg-yellow-400/80': isR2,
+        'bg-blue-400/80': isR1,
     }));
 
     const schoolPillClass = computed(() => ({
-        'bg-gradient-to-r from-pink-200 to-cyan-200 border-purple-400/80': props.student.rarity === 3,
-        'bg-yellow-200 border-yellow-400/80': props.student.rarity === 2,
-        'bg-blue-200 border-blue-400/80': props.student.rarity === 1,
+        'bg-gradient-to-r from-pink-200 to-cyan-200 border-purple-400/80': isR3,
+        'bg-yellow-200 border-yellow-400/80': isR2,
+        'bg-blue-200 border-blue-400/80': isR1,
     }));
 
     const rarityPillClass = computed(() => ({
-        'bg-gradient-to-br from-pink-400 via-purple-400 to-cyan-400': props.student.rarity === 3,
-        'bg-yellow-500 border-2 border-yellow-300/50': props.student.rarity === 2,
-        'bg-blue-500 border-2 border-blue-300/50': props.student.rarity === 1,
+        'bg-gradient-to-br from-pink-400 via-purple-400 to-cyan-400': isR3,
+        'bg-yellow-500 border-2 border-yellow-300/50': isR2,
+        'bg-blue-500 border-2 border-blue-300/50': isR1,
     }));
 
     const rarityLineClass = computed(() => ({
-        'bg-gradient-to-r from-pink-400 to-purple-400': props.student.rarity === 3,
-        'bg-yellow-400': props.student.rarity === 2,
-        'bg-blue-400': props.student.rarity === 1,
+        'bg-gradient-to-r from-pink-400 to-purple-400': isR3,
+        'bg-yellow-400': isR2,
+        'bg-blue-400': isR1,
     }));
 
 </script>
@@ -75,7 +61,7 @@
         
       <!-- CARD BACK -->
       <div class="absolute w-full h-full rounded-lg shadow-2xl overflow-hidden" style="backface-visibility: hidden;">
-        <img :src="cardBackImage" :alt="`r${props.student.rarity}`" class="w-full h-full object-cover">
+        <img :src="cardBackImage" :alt="`r${props.result.rarity}`" class="w-full h-full object-cover">
       </div>
 
       <!-- CARD FRONT -->
@@ -84,8 +70,8 @@
         <div class="relative w-full h-full rounded-lg shadow-2xl p-1" :class="rarityBorderClass">
           <div class="relative w-full h-full bg-white rounded-sm overflow-hidden flex flex-col">
             <!-- Portrait Section -->
-            <div class="relative flex-[8] bg-slate-200">
-              <div class="absolute inset-[12px] overflow-hidden" style="clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);">
+            <div class="relative flex-8 bg-slate-200">
+              <div class="absolute inset-3 overflow-hidden" style="clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);">
                 <img v-if="student.portrait_url" :src="student.portrait_url" :alt="student.name" class="w-full h-full object-cover">
                 <div class="absolute inset-0 pointer-events-none" style="box-shadow: inset 0 0 10px 4px rgba(0, 0, 0, 0.5);"></div>
               </div>
@@ -95,13 +81,13 @@
               </div>
             </div>
             <!-- Info Section -->
-            <div class="flex-[2] flex flex-col justify-center px-3 py-2 bg-gray-100 border-t-2 border-gray-300">
+            <div class="flex-2 flex flex-col justify-center px-3 py-2 bg-gray-100 border-t-2 border-gray-300">
               <div class="relative h-7 mb-2 flex items-center justify-center">
-                <div class="absolute left-0 top-1/2 w-[25%] h-[2px]" :class="rarityLineClass"></div>
-                <div class="relative h-full w-19 flex-shrink-0 flex items-center justify-center gap-0 rounded-full shadow-inner-sm" :class="rarityPillClass">
+                <div class="absolute left-0 top-1/2 w-[25%] h-0.5" :class="rarityLineClass"></div>
+                <div class="relative h-full w-19 shrink-0 flex items-center justify-center gap-0 rounded-full shadow-inner-sm" :class="rarityPillClass">
                   <img v-for="i in student.rarity" :key="i" :src="yellowStarImage" alt="star" class="w-4 h-4">
                 </div>
-                <div class="absolute right-0 top-1/2 w-[25%] h-[2px]" :class="rarityLineClass"></div>
+                <div class="absolute right-0 top-1/2 w-[25%] h-0.5" :class="rarityLineClass"></div>
               </div>
               <div class="text-center">
                 <h2 class="text-lg font-bold text-gray-800 truncate" :title="student.name">{{ student.name }}</h2>
@@ -124,7 +110,7 @@
         <!-- 3-Star Special Effects -->
         <template v-if="student.rarity === 3 && enableEffects">
           <div class="card-shine-overlay absolute inset-0 rounded-lg"></div>
-          <div class="afterglow absolute inset-[-4px] rounded-lg pointer-events-none"></div>
+          <div class="afterglow absolute -inset-1 rounded-lg pointer-events-none"></div>
           <div class="sparkle-overlay absolute inset-0">
             <div v-for="i in 5" :key="i" class="sparkle"></div>
           </div>

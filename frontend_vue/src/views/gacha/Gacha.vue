@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useToastStore } from '@/stores/toast';
-import { type Student, type Banner } from '@/types/web'
+import { type Result, type Banner } from '@/types/web'
 import apiClient from '@/services/client';
 import PolyButton from '@/components/base/PolyButton.vue';
 
@@ -14,7 +14,7 @@ import planaMov from '@/assets/plana-gacha.mov';
 
 const banners = ref<Banner[]>([]);
 const activeIndex = ref(0);
-const gachaResults = ref<Student[]>([]);
+const gachaResults = ref<Result[]>([]);
 const isDetailsModalVisible = ref(false);
 const isResultsModalVisible = ref(false);
 const toastStore = useToastStore();
@@ -85,12 +85,6 @@ const handlePull = async (amount: 1 | 10) => {
           <button @click="isDetailsModalVisible = true" class="md:col-span-2 w-40 h-14 bg-cyan-600 hover:bg-cyan-500 text-lg text-white rounded-lg justify-self-center">
             DETAILS
           </button>
-          <button @click="handlePull(1)" class="w-40 h-14 bg-cyan-600 hover:bg-cyan-500 text-lg text-white rounded-lg md:justify-self-end justify-self-center">
-            PULL x1
-          </button>
-          <button @click="handlePull(10)" class="w-40 h-14 bg-cyan-600 hover:bg-cyan-500 text-lg text-white rounded-lg md:justify-self-start justify-self-center">
-            PULL x10
-          </button>
         </div>
       </div>
 
@@ -109,6 +103,7 @@ const handlePull = async (amount: 1 | 10) => {
         </div>
 
         <div class="flex items-center gap-4 md:gap-6">
+            <PolyButton @click="isDetailsModalVisible = true" color="gray" label="Details"/>
             <PolyButton @click="handlePull(1)" color="cyan" label="Draw 1"/>
             <PolyButton @click="handlePull(10)" color="cyan" label="Draw 10"/>
         </div>
