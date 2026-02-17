@@ -107,8 +107,8 @@ onUnmounted(() => { window.removeEventListener('resize', handleResize); });
         
         </div>
 
-        <div class="shrink-0 p-4 border-t border-slate-700 flex justify-center items-center">
-          <Transition name="fade" mode="out-in">
+        <div class="shrink-0 p-4 flex justify-center items-center">
+          <Transition v-if="!props.isPulling" name="fade" mode="out-in">
             <PolyButton 
               v-if="!allCardsRevealed"
               @click="revealAll"

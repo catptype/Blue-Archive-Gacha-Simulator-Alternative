@@ -1,9 +1,12 @@
 import json
+import logging
 from pathlib import Path
 from typing import List, Optional, Set
-from collections import Counter
 from sqlalchemy.orm import Session
 from .models import User, UserInventory, Achievement, UnlockAchievement, Student, Version
+from .schemas.GachaResponse import GachaStudentSchema 
+
+LOGGER = logging.getLogger(__name__)
 
 # --- Load Collection Achievement Definitions at Startup ---
 # This replicates your Django logic of loading JSON files once.
@@ -16,7 +19,7 @@ try:
             if data.get("category") == "COLLECTION" and "students" in data:
                 COLLECTION_SETS[data["key"]] = data["students"]
 except Exception as e:
-    print(f"WARNING: Could not load collection achievement definitions: {e}")
+    LOGGER.error(f"WARNING: Could not load collection achievement definitions: {e}")
 
 class AchievementEngine:
     def __init__(self, user: User, db: Session):
@@ -42,7 +45,7 @@ class AchievementEngine:
 
         achievement_to_award = self.db.query(Achievement).filter_by(key=unlock_key).first()
         if not achievement_to_award:
-            print(f"ERROR: Achievement with key '{unlock_key}' not found in DB.")
+            LOGGER.error(f"ERROR: Achievement with key '{unlock_key}' not found in DB.")
             return None
         
         new_unlock = UnlockAchievement(
@@ -51,12 +54,12 @@ class AchievementEngine:
         )
         self.db.add(new_unlock)
         self.unlocked_keys.add(unlock_key) # Update in-memory set
-        print(f"ACHIEVEMENT UNLOCKED for {self.user.username}: {achievement_to_award.name}")
+        LOGGER.info(f"ACHIEVEMENT UNLOCKED for {self.user.username}: {achievement_to_award.name}")
         return achievement_to_award
 
     # --- "RULE" METHODS ---
 
-    def check_luck_achievements(self, pulled_students: List[Student]) -> List[Achievement]:
+    def check_luck_achievements(self, pulled_students: List[GachaStudentSchema]) -> List[Achievement]:
         """Checks for achievements related to a single gacha pull (e.g., multi-3-star)."""
         newly_unlocked = []
         r3_count = sum(1 for student in pulled_students if student.rarity == 3)

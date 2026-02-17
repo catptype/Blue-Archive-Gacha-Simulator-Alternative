@@ -9,7 +9,7 @@ from ..util.cache import get_cache, Cache
 from ..util.database import get_db
 from ..util.models import GachaBanner, GachaTransaction, User, Achievement, UserInventory, Student
 from ..util.schemas.AchievementResponse import AchievementResponse
-from ..util.schemas.GachaResponse import GachaPullResponse, GachaResultStudent
+from ..util.schemas.GachaResponse import GachaPullResponse, GachaStudentSchema
 from ..util.schemas.StudentResponse import create_student_response
 from ..util.AchievementEngine import AchievementEngine
 from ..util.GachaEngine import GachaEngine
@@ -20,33 +20,66 @@ router = APIRouter()
 
 # --- Helper Functions ---
 
-def _serialize_gacha_result(student: Student, request: Request, pickup_id_list:list, is_new:bool=False) -> GachaResultStudent:
-    student_response = create_student_response(student, request)
-    result_student = GachaResultStudent(
-        **student_response.model_dump(),
-        is_pickup=(student.id in pickup_id_list),
-        is_new=is_new
-    )
-    return result_student
+def _serialize_gacha_student(student_list: List[Student], banner: GachaBanner, request: Request) -> List[GachaStudentSchema]:
+    pickup_ids = [s.id for s in banner.pickup_students]
 
-def _insert_transaction(
-    amount: int,
-    banner: GachaBanner,
-    pulled_results: List[Student], 
-    db: Session, 
+    results = []
+    for student in student_list:
+        student_response = create_student_response(student, request)
+        result_student = GachaStudentSchema(
+            **student_response.model_dump(),
+            is_pickup=student.id in pickup_ids,
+            is_new=False
+        )
+        results.append(result_student)
+
+    return results
+
+def _check_achievement(
+    result_schema: List[GachaStudentSchema],
     request: Request,
+    db: Session, 
     current_user: User, 
-    cache: Cache
-) -> Tuple[List[GachaResultStudent], List[AchievementResponse]]:
-    
-    # Prepare pickup student id
-    pickup_ids = {s.id for s in banner.pickup_students}
-
+) -> List[AchievementResponse]:
     # Get the user's total pull count *before* this pull for milestone checks.
     initial_pull_count = db.query(func.count(GachaTransaction.id)).filter_by(user_id=current_user.id).scalar() or 0
 
+    # Get number of current pull
+    amount = len(result_schema)
+    
     # Instantiate the achievement engine. It loads the user's existing unlocks.
     ach_engine = AchievementEngine(user=current_user, db=db)
+
+    # Check achievement (Raw data)
+    achievement_list: List[Achievement] = []
+    achievement_list.extend(ach_engine.check_luck_achievements(result_schema))
+    achievement_list.extend(ach_engine.check_milestone_achievements(initial_pull_count, amount))
+    achievement_list.extend(ach_engine.check_collection_achievements())
+
+    # Convert raw data to schema and save database
+    achievements_response: List[AchievementResponse] = []
+    for ach in achievement_list:
+        
+        # Convert schema
+        ach_resp = AchievementResponse.model_validate(ach)
+        ach_resp.image_url = str(request.url_for('serve_achievement_image', achievement_id=ach.id)) if ach.image_data else None
+        achievements_response.append(ach_resp)
+        
+        # Preparing save database
+        db.add(ach)
+
+    # Save database
+    db.commit()
+
+    return achievements_response
+
+def _insert_transaction(
+    pulled_results: List[GachaStudentSchema],
+    banner: GachaBanner,
+    db: Session, 
+    current_user: User, 
+    cache: Cache
+) -> None:
 
     # Pre-fetch the user's existing inventory for the pulled students to check for "new".
     pulled_student_ids = [s.id for s in pulled_results]
@@ -59,7 +92,6 @@ def _insert_transaction(
     inventory_map = {item.student_id: item for item in user_inventory_query}
 
     # Process pull result for labeling "new" or "pickup"
-    final_results: List[GachaResultStudent] = []
     for student in pulled_results:
 
         # Create a transaction record for each pulled student.
@@ -70,8 +102,8 @@ def _insert_transaction(
         )
         db.add(new_transaction)
 
-        # Check if this student is new for the user's inventory.
-        is_new = student.id not in inventory_map
+        # Update is_new value for GachaStudentSchema in user mode
+        student.is_new = student.id not in inventory_map
 
         # Update or create the inventory entry.
         inventory_item = inventory_map.get(student.id)
@@ -85,18 +117,6 @@ def _insert_transaction(
             )
             db.add(new_inventory_item)
             inventory_map[student.id] = new_inventory_item
-        
-        # Build the decorated result object for the frontend response.
-        result_student = _serialize_gacha_result(student, request, pickup_ids, is_new)
-        final_results.append(result_student)
-
-    # Check achievements
-    unlocked_achievements: List[Achievement] = []
-    unlocked_achievements.extend(ach_engine.check_luck_achievements(pulled_results))
-    unlocked_achievements.extend(ach_engine.check_milestone_achievements(initial_pull_count, amount))
-    newly_unlocked_collection = ach_engine.check_collection_achievements()
-    if newly_unlocked_collection:
-        unlocked_achievements.extend(newly_unlocked_collection)
 
     # Commit database
     db.commit()
@@ -104,15 +124,6 @@ def _insert_transaction(
     # Clear dashboard cache for this user
     cache_pattern = f"dashboard:*:{current_user.id}*"
     cache.delete_by_pattern(cache_pattern)
-
-    # Post processing for unlocked achievements
-    achievements_response: List[AchievementResponse] = []
-    for ach in unlocked_achievements:
-        ach_resp = AchievementResponse.model_validate(ach)
-        ach_resp.image_url = str(request.url_for('serve_achievement_image', achievement_id=ach.id)) if ach.image_data else None
-        achievements_response.append(ach_resp)
-
-    return final_results, achievements_response
 
 def _perform_pull(
         banner_id: int,
@@ -139,31 +150,28 @@ def _perform_pull(
     
     # Perform gacha pulling
     engine = GachaEngine(banner=banner, db=db)
-    pulled_results = engine.draw(amount)
+    student_list = engine.draw(amount)
 
+    # Create GachaStudentSchema
+    result_schema = _serialize_gacha_student(student_list, banner, request)
+
+    # Return response pulling result immediately
     if current_user is None:
         LOGGER.debug("Guest is pulling. Skipping transaction history.")
         
-        # Prepare pickup student id
-        pickup_ids = {s.id for s in banner.pickup_students}
-
-        final_results = []
-        for student in pulled_results:
-            result_student = _serialize_gacha_result(student, request, pickup_ids)
-            final_results.append(result_student)
-        
         return GachaPullResponse(
-            results=final_results,
+            results=result_schema,
             unlocked_achievements=[]
         )
 
-    # Check current user for saving transaction
+    # Perform saving transaction and achievement database before response
     LOGGER.debug(f"User '{current_user.username}' is pulling. Processing inventory and transactions...")
-    final_results, unlocked_achievements = _insert_transaction(amount, banner, pulled_results, db, request, current_user, cache)
+    _insert_transaction(result_schema, banner, db, current_user, cache)
+    unlocked_achievements = _check_achievement(result_schema, request, db, current_user)
     
     # --- Format the final response, including any unlocked achievements ---
     return GachaPullResponse(
-        results=final_results,
+        results=result_schema,
         unlocked_achievements=unlocked_achievements # Mocked for now
     )
 

@@ -15,10 +15,10 @@ class GachaPresetSchema(BaseModel):
     r2_rate: Decimal
     r1_rate: Decimal
 
-class GachaResultStudent(StudentResponse):
+class GachaStudentSchema(StudentResponse):
     is_pickup: bool
     is_new: bool
 
 class GachaPullResponse(BaseModel):
-    results: List[GachaResultStudent]
+    results: List[GachaStudentSchema]
     unlocked_achievements: List[AchievementResponse]
