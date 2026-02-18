@@ -1,78 +1,93 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import planaMov from '@/assets/plana-gacha.mov';
 import LoadSpinner from '@/components/base/LoadSpinner.vue';
 import ResultCard from '../components/ResultCard.vue';
 import NavButton from '@/components/base/NavButton.vue';
 import PolyButton from '@/components/base/PolyButton.vue';
-import { type Result } from '@/types/web'
-import planaMov from '@/assets/plana-gacha.mov';
+import { type Result } from '@/types/web';
 
-const props = defineProps<{ 
-  results: Result[]
-  isPulling: boolean
+// ============================================================
+// Props & Emits
+// ============================================================
+
+const props = defineProps<{
+  results: Result[];
+  isPulling: boolean;
 }>();
 
-const emit = defineEmits(['close']);
+const emit = defineEmits<{
+  close: [];
+}>();
 
-// --- LOGIC FOR VIDEO OVERLAY ---
+// ============================================================
+// Video Overlay State
+//
+// The results layer is hidden until BOTH conditions are met:
+//   1. The API has finished pulling (isPulling === false)
+//   2. The intro video has finished playing
+// ============================================================
+
 const videoFinished = ref(false);
 
-// We only show the results when BOTH the API is done AND the video is finished
-const showResults = computed(() => {
-  return !props.isPulling && videoFinished.value;
-});
+const showResults = computed(() => !props.isPulling && videoFinished.value);
 
 const handleVideoEnd = () => {
   videoFinished.value = true;
 };
 
-// Reset state if the component stays mounted but isPulling changes
-watch(() => props.isPulling, (newVal) => {
-  if (newVal) {
-    videoFinished.value = false;
-  }
-});
+// Reset video state whenever a new pull starts
+watch(
+  () => props.isPulling,
+  (isPulling) => { if (isPulling) videoFinished.value = false; }
+);
 
+// ============================================================
+// Card Flip State
+// ============================================================
 
 const flippedStates = ref<boolean[]>(props.results.map(() => false));
 
-// --- NEW COMPUTED PROPERTY TO TRACK REVEAL STATE ---
-// This will be true only when every value in the flippedStates array is true.
-const allCardsRevealed = computed(() => {
-  // For a single pull, it's "revealed" as soon as it's flipped.
-  if (flippedStates.value.length === 0) return false;
-  return flippedStates.value.every(state => state === true);
-});
+const allCardsRevealed = computed(
+  () => flippedStates.value.length > 0 && flippedStates.value.every(Boolean)
+);
 
-// --- The rest of the script is unchanged ---
-const mobileCurrentIndex = ref(0);
-const isDesktop = ref(window.innerWidth >= 1280);
-
-const sliderTrackStyle = computed(() => ({ transform: `translateX(-${mobileCurrentIndex.value * 100}%)` }));
-
-// -- Functions
-const navigateMobile = (direction: 1 | -1) => {
-  const newIndex = mobileCurrentIndex.value + direction;
-  if (newIndex >= 0 && newIndex < props.results.length) {
-    mobileCurrentIndex.value = newIndex;
-  }
+const revealCard = (index: number) => {
+  flippedStates.value[index] = true;
 };
 
-const revealCard = (index: number) => { flippedStates.value[index] = true; };
-
 const revealAll = () => {
-  // Sort for dramatic effect (logic is the same)
-  const sortedIndices = props.results.map((_, index) => index)
-  sortedIndices.forEach((cardIndex, revealIndex) => {
-    // We now call revealCard to ensure the state is updated correctly
-    setTimeout(() => { revealCard(cardIndex); }, revealIndex * 100);
+  // Stagger reveals for a dramatic effect
+  props.results.forEach((_, index) => {
+    setTimeout(() => revealCard(index), index * 100);
   });
 };
 
-const handleResize = () => { isDesktop.value = window.innerWidth >= 1280; };
+// ============================================================
+// Mobile Slider
+// ============================================================
 
-onMounted(() => { window.addEventListener('resize', handleResize); });
-onUnmounted(() => { window.removeEventListener('resize', handleResize); });
+const DESKTOP_BREAKPOINT = 1280; // px (matches Tailwind's `xl`)
+
+const mobileCurrentIndex = ref(0);
+const isDesktop = ref(window.innerWidth >= DESKTOP_BREAKPOINT);
+
+const sliderTrackStyle = computed(() => ({
+  transform: `translateX(-${mobileCurrentIndex.value * 100}%)`,
+}));
+
+const navigateMobile = (direction: 1 | -1) => {
+  const next = mobileCurrentIndex.value + direction;
+  const isInBounds = next >= 0 && next < props.results.length;
+  if (isInBounds) mobileCurrentIndex.value = next;
+};
+
+const handleResize = () => {
+  isDesktop.value = window.innerWidth >= DESKTOP_BREAKPOINT;
+};
+
+onMounted(() => window.addEventListener('resize', handleResize));
+onUnmounted(() => window.removeEventListener('resize', handleResize));
 </script>
 
 <template>
@@ -80,11 +95,13 @@ onUnmounted(() => { window.removeEventListener('resize', handleResize); });
     <div class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
       <div class="relative w-full max-w-7xl h-[90vh] bg-slate-800/80 border border-slate-600 rounded-lg shadow-2xl flex flex-col overflow-hidden">
         
-        <!-- 1. VIDEO OVERLAY LAYER -->
+        <!-- ===================== VIDEO OVERLAY =====================
+             Shown while results aren't ready yet. Fades out once
+             both the API call and video playback are complete.
+        ============================================================ -->
         <Transition name="fade">
           <div v-if="!showResults" class="absolute inset-0 z-20 bg-black flex items-center justify-center">
              <video 
-              ref="videoRef"
               autoplay 
               muted 
               playsinline
@@ -94,14 +111,16 @@ onUnmounted(() => { window.removeEventListener('resize', handleResize); });
               <source :src="planaMov" type="video/mp4">
             </video>
             
-            <!-- Optional: Show a mini loader if API is still working but video ended -->
+            <!-- Spinner for when video ends before API responds -->
             <div v-if="videoFinished && props.isPulling" class="absolute bottom-10">
               <LoadSpinner />
             </div>
           </div>
         </Transition>
 
-        <!-- 2. RESULTS LAYER -->
+        <!-- ===================== RESULTS LAYER =====================
+             Rendered only after video + API are both done.
+        ============================================================ -->
         <div v-if="showResults" class="flex flex-col h-full w-full">
 
           <!-- Header -->
@@ -109,9 +128,10 @@ onUnmounted(() => { window.removeEventListener('resize', handleResize); });
             <h2 class="text-2xl font-bold text-cyan-300">Gacha Results</h2>
           </div>
 
-          <div class="grow p-4 overflow-hidden" style="perspective: 1000px;">
-            <!-- ====================== CONDITIONAL RENDERING START ====================== -->
-            <!-- The `v-if` directive will ONLY render this block on large screens. -->
+          <!-- Card Display Area -->
+          <div class="grow p-4 overflow-hidden perspective-[1000px]">
+            
+            <!-- Desktop: Static grid -->
             <div v-if="isDesktop" class="w-full h-full flex items-center justify-center">
               <div class="grid gap-4 grid-cols-5" :class="{ 'grid-cols-1': results.length === 1 }">
                 <ResultCard
@@ -125,7 +145,7 @@ onUnmounted(() => { window.removeEventListener('resize', handleResize); });
               </div>
             </div>
 
-            <!-- The `v-else` will ONLY render this block on smaller screens. -->
+            <!-- Mobile: Swipeable slider -->
             <div v-else class="relative w-full h-full">
               <div class="slider-track absolute top-0 left-0 h-full w-full flex items-center transition-transform duration-500 ease-in-out" :style="sliderTrackStyle">
                 <div v-for="(result, index) in results" :key="result.id + '-' + index" class="slider-slide relative w-full h-full shrink-0 flex items-center justify-center">
@@ -139,9 +159,12 @@ onUnmounted(() => { window.removeEventListener('resize', handleResize); });
                 </div>
               </div>
               
+              <!-- Slider controls (only shown for multiple results) -->
               <template v-if="results.length > 1">
                 <NavButton @click="navigateMobile(-1)" v-show="mobileCurrentIndex > 0" direction="left" />
                 <NavButton @click="navigateMobile(1)" v-show="mobileCurrentIndex < results.length - 1" direction="right" />
+                
+                <!-- Pagination dots -->
                 <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2">
                   <div v-for="(_, index) in results" :key="index" class="dot w-2 h-2 rounded-full transition-colors duration-300" :class="index === mobileCurrentIndex ? 'bg-white' : 'bg-white/30'"></div>
                 </div>
@@ -150,6 +173,7 @@ onUnmounted(() => { window.removeEventListener('resize', handleResize); });
           
           </div>
 
+          <!-- Reveal Actions -->
           <div class="shrink-0 p-4 flex justify-center items-center">
             <Transition name="fade" mode="out-in">
               <PolyButton 
@@ -166,8 +190,8 @@ onUnmounted(() => { window.removeEventListener('resize', handleResize); });
               />
             </Transition>
           </div>
-        </div>
 
+        </div>
       </div>
     </div>
   </Transition>
