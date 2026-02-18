@@ -22,7 +22,6 @@ def serve_image(
     cache_key: str,
     fetch_data_func: Callable[[], Tuple[bytes, str]], # Returns (bytes, filename)
 ):
-
     # Default variables
     etag = None
     filename = "image.png"
@@ -32,8 +31,8 @@ def serve_image(
     if cached_data:
         etag = cached_data['etag']
         filename = cached_data['filename']
-        LOGGER.critical(f"{request.headers.get("if-none-match")} || {etag}")
         # Check Browser Cache
+        LOGGER.debug(f"{request.headers.get("if-none-match")} || {etag}")
         if request.headers.get("if-none-match") == etag:
             LOGGER.debug(f"CACHE HIT (Browser - 304) for {cache_key}")
             headers = {
