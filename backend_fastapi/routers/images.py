@@ -10,6 +10,7 @@ from ..util.cache import get_cache, Cache
 from ..util.database import get_db
 from ..util.models import Achievement, Student, School, GachaBanner
 
+CACHE_CONTROL_HEADER = "public, max-age=86400"
 LOGGER = logging.getLogger(__name__)
 router = APIRouter()
 
@@ -30,11 +31,17 @@ def serve_image(
     cached_data = cache.get(cache_key)
     if cached_data:
         etag = cached_data['etag']
-        
+        filename = cached_data['filename']
+        LOGGER.critical(f"{request.headers.get("if-none-match")} || {etag}")
         # Check Browser Cache
         if request.headers.get("if-none-match") == etag:
             LOGGER.debug(f"CACHE HIT (Browser - 304) for {cache_key}")
-            return Response(status_code=304)
+            headers = {
+                "Cache-Control": CACHE_CONTROL_HEADER,
+                "ETag": etag,
+                "Content-Disposition": f'inline; filename="{filename}"'
+            }
+            return Response(status_code=304, headers=headers)
         
     # Get image data from db
     LOGGER.debug(f"FETCHING DATA for {cache_key}")
@@ -53,16 +60,17 @@ def serve_image(
     }
     cache.set(cache_key, data_to_cache, expire=settings.CACHE_EXPIRE)
 
-    # Check Browser Cache (DB Path)
-    if request.headers.get("if-none-match") == etag:
-        return Response(status_code=304)
-
     # Send response
     headers = {
-        "Cache-Control": "public, max-age=86400",
+        "Cache-Control": CACHE_CONTROL_HEADER,
         "ETag": etag,
         "Content-Disposition": f'inline; filename="{filename}"'
     }
+
+    # Check Browser Cache (DB Path)
+    if request.headers.get("if-none-match") == etag:
+        return Response(status_code=304, headers=headers)
+    
     return Response(content=image_bytes, media_type="image/png", headers=headers)
 
 # --- Endpoints ---
