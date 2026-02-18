@@ -1,6 +1,6 @@
 <script setup lang="ts">
     import { ref, onMounted, computed } from 'vue';
-    import { type Banner } from '@/types/web'
+    import { type BannerDetail } from '@/types/web'
     import LoadSpinner from '@/components/base/LoadSpinner.vue';
     import apiClient from '@/services/client';
     import StudentPoolSection from '../components/StudentPoolSection.vue';
@@ -8,7 +8,7 @@
     const props = defineProps<{ bannerId: number }>();
     const emit = defineEmits(['close']);
 
-    const bannerData = ref<Banner>();
+    const bannerData = ref<BannerDetail>();
     const isLoading = ref(true);
     const error = ref('');
     const viewMode = ref<'grid' | 'list'>('grid');

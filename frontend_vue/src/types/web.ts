@@ -35,6 +35,9 @@ export interface Banner {
     include_limited: boolean
     preset: Preset;
     image_url: string;
+}
+
+export interface BannerDetail extends Banner {
     pickup_r3_students: Student[];
     nonpickup_r3_students: Student[];
     r2_students: Student[];
