@@ -23,7 +23,6 @@
     :class="colorClass">
     
     <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 skew-y-12"></div>
-      <!-- <span class="text-xs font-black tracking-widest opacity-70 relative z-10">Draw x10</span> -->
     <div class="flex items-center gap-1.5 mt-0.5 relative z-10">
       <span class="text-2xl text-white">{{ label }}</span>
     </div>

@@ -1,48 +1,58 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { type Student, type School } from '@/types/web';
-import Background from '@/components/Background.vue';
-import SchoolSidebar from './layout/SchoolSidebar.vue';
-import StudentCarousel from './layout/StudentCarousel.vue';
-import apiClient from '@/services/client'; 
+  import { ref, onMounted } from 'vue';
+  import { type Student, type School } from '@/types/web';
+  import apiClient from '@/services/client';
+  import Background from '@/components/Background.vue';
+  import SchoolSidebar from './layout/SchoolSidebar.vue';
+  import StudentCarousel from './layout/StudentCarousel.vue';
 
-// --- State managed by the parent ---
-const schools = ref<School[]>([]);
-const students = ref<Student[]>([]);
-const selectedSchoolId = ref<number | null>(null);
-const isLoadingSchools = ref(true);
-const isLoadingStudents = ref(true);
-const isSidebarExpanded = ref(false);
+  // ============================================================
+  // State
+  // ============================================================
 
-// --- Methods ---
-async function handleSchoolSelect(school: School) {
-  if (school.id === selectedSchoolId.value) return; // Don't reload if already selected
+  const schools = ref<School[]>([]);
+  const students = ref<Student[]>([]);
+  const selectedSchoolId = ref<number | null>(null);
+  const isLoadingSchools = ref(true);
+  const isLoadingStudents = ref(true);
+  const isSidebarExpanded = ref(false);
 
-  selectedSchoolId.value = school.id;
-  isLoadingStudents.value = true;
-  try {
-    const response = await apiClient.get(`/students/?school_id=${school.id}&version_id=1`);
-    students.value = response.data;
-  } catch (error) { console.error('Failed to fetch students:', error); }
-  finally { isLoadingStudents.value = false; }
-}
+  // ============================================================
+  // Actions
+  // ============================================================
 
-// Fetch initial data when the component is mounted
-onMounted(async () => {
-  isLoadingSchools.value = true;
-  try {
-    const response = await apiClient.get('/schools/');
-    schools.value = response.data;
-    const firstSchool = schools.value[0];
-    if (firstSchool) {
-      handleSchoolSelect(firstSchool);
+  const handleSchoolSelect = async (school: School) => {
+    if (school.id === selectedSchoolId.value) return;
+
+    selectedSchoolId.value = school.id;
+    isLoadingStudents.value = true;
+
+    try {
+      const { data } = await apiClient.get(`/students/?school_id=${school.id}&version_id=1`);
+      students.value = data;
+    } catch (error) {
+      console.error('Failed to fetch students:', error);
+    } finally {
+      isLoadingStudents.value = false;
     }
-  } catch (error) {
-    console.error('Failed to fetch schools:', error);
-  } finally {
-    isLoadingSchools.value = false;
-  }
-});
+  };
+
+  // ============================================================
+  // Lifecycle
+  // ============================================================
+
+  onMounted(async () => {
+    try {
+      const { data } = await apiClient.get('/schools/');
+      schools.value = data;
+
+      if (schools.value[0]) handleSchoolSelect(schools.value[0]);
+    } catch (error) {
+      console.error('Failed to fetch schools:', error);
+    } finally {
+      isLoadingSchools.value = false;
+    }
+  });
 </script>
 
 <template>

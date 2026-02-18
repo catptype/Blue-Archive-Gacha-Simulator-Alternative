@@ -1,3 +1,15 @@
+<script setup lang="ts">
+import Background from '@/components/Background.vue';
+
+// Define the tabs for easy rendering
+const tabs = [
+  { name: 'Summary',      path: '/dashboard/summary',      icon: 'fa-solid fa-chart-pie' },
+  { name: 'History',      path: '/dashboard/history',      icon: 'fa-solid fa-clock-rotate-left' },
+  { name: 'Collection',   path: '/dashboard/collection',   icon: 'fa-solid fa-clone' },
+  { name: 'Achievements', path: '/dashboard/achievements', icon: 'fa-solid fa-trophy' },
+];
+</script>
+
 <template>
   <div class="relative min-h-screen w-full bg-black antialiased text-white pt-20">
     <Background />
@@ -28,7 +40,7 @@
 
         <!-- Dynamic Content Panel -->
         <div class="relative z-10 w-full h-[80vh] bg-slate-800/80 backdrop-blur-sm border border-slate-700 rounded-lg flex flex-col pt-12">
-          <div id="dashboard-content" class="flex-grow overflow-y-auto p-6">
+          <div id="dashboard-content" class="grow overflow-y-auto p-6">
             <!-- 
               This is the magic part. Vue Router will render the active
               child component (SummaryTab, HistoryTab, etc.) here.
@@ -53,18 +65,6 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-import Background from '../components/Background.vue';
-
-// Define the tabs for easy rendering
-const tabs = [
-  { name: 'Summary',      path: '/dashboard/summary',      icon: 'fa-solid fa-chart-pie' },
-  { name: 'History',      path: '/dashboard/history',      icon: 'fa-solid fa-clock-rotate-left' },
-  { name: 'Collection',   path: '/dashboard/collection',   icon: 'fa-solid fa-clone' },
-  { name: 'Achievements', path: '/dashboard/achievements', icon: 'fa-solid fa-trophy' },
-];
-</script>
 
 <style scoped>
 /* Scoped styles from your template */
