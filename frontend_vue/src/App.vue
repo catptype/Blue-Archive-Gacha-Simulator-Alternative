@@ -14,17 +14,17 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="relative min-h-screen w-full bg-black antialiased">
+  <div class="relative min-h-screen w-full bg-black">
     <!-- Background -->
     <Background />
 
     <!-- Navbar -->
     <Navbar />
 
-    <main>
-      <router-view />
-    </main>
+    <!-- Views -->
+    <router-view class="min-h-screen w-full pt-20 mx-auto"/>
 
+    <!-- Toast Notification -->
     <ToastContainer />
   </div>
 </template>

@@ -5,7 +5,7 @@
 </script>
 
 <template>
-  <div class="relative z-10 w-full max-w-7xl mx-auto px-4 py-8 pt-30">
+  <div class="relative z-10 max-w-7xl pt-30">
 
     <div class="flex flex-col gap-4">
       <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">

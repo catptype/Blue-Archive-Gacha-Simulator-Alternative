@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import Background from '@/components/Background.vue';
+  import TabButton from './components/TabButton.vue';
+  // Define the tabs for easy rendering
+  const tabs = [
+    { label: 'Summary',      path: '/dashboard/summary',      icon: 'fa-solid fa-chart-pie' },
+    { label: 'History',      path: '/dashboard/history',      icon: 'fa-solid fa-clock-rotate-left' },
+    { label: 'Collection',   path: '/dashboard/collection',   icon: 'fa-solid fa-clone' },
+    { label: 'Achievements', path: '/dashboard/achievements', icon: 'fa-solid fa-trophy' },
+  ];
 
-// Define the tabs for easy rendering
-const tabs = [
-  { name: 'Summary',      path: '/dashboard/summary',      icon: 'fa-solid fa-chart-pie' },
-  { name: 'History',      path: '/dashboard/history',      icon: 'fa-solid fa-clock-rotate-left' },
-  { name: 'Collection',   path: '/dashboard/collection',   icon: 'fa-solid fa-clone' },
-  { name: 'Achievements', path: '/dashboard/achievements', icon: 'fa-solid fa-trophy' },
-];
+  const tabStyle = "lg:left-6 lg:right-auto lg:justify-start"
 </script>
 
 <template>
-  <div class="relative min-h-screen w-full bg-black antialiased text-white pt-20">
-    <Background />
+  <div class="relative">
 
     <div class="w-full max-w-7xl mx-auto px-4 py-8">
       <div class="relative w-full">
@@ -21,21 +21,14 @@ const tabs = [
           - On mobile (default): Full-width, centered tabs.
           - On large screens (lg:): Reverts to the original left-aligned position.
         -->
-        <div class="absolute left-0 right-0 lg:left-6 lg:right-auto z-20 flex justify-center lg:justify-start gap-1">
-          <router-link
+        <div 
+          class="absolute left-0 right-0 z-20 flex justify-center gap-1"
+          :class="tabStyle">
+          <TabButton
             v-for="tab in tabs"
-            :key="tab.name"
-            :to="tab.path"
-            class="dashboard-tab flex items-center gap-2 px-4 lg:px-6 py-2 rounded-t-lg transition-colors duration-200 border-x border-t"
-            active-class="bg-slate-700/50 border-slate-700 text-white font-semibold"
-            inactive-class="bg-slate-900/50 border-transparent text-slate-400 hover:bg-slate-700/50"
-            :title="tab.name"
-          >
-            <!-- The Icon (always visible) -->
-            <i :class="tab.icon"></i>
-            <!-- The Text (hidden on mobile, visible on large screens) -->
-            <span class="hidden sm:inline whitespace-nowrap">{{ tab.name }}</span>
-          </router-link>
+            :label="tab.label"
+            :path="tab.path"
+            :icon="tab.icon"/>
         </div>
 
         <!-- Dynamic Content Panel -->
