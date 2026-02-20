@@ -2,8 +2,8 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/security/auth';
-import InputTextbox from './components/InputTextbox.vue';
-import SubmitButton from './components/SubmitButton.vue';
+import InputTextbox from './components/base/InputTextbox.vue';
+import SubmitButton from './components/base/SubmitButton.vue';
 
 // ============================================================
 // State

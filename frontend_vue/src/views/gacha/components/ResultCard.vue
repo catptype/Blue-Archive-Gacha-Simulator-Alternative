@@ -1,6 +1,6 @@
 <script setup lang="ts">
     import { computed } from 'vue';
-    import { type Result } from '@/types/web'
+    import { type Student } from '@/types/web'
     import gachaR3Image from '@/assets/student_card/gacha_r3.png';
     import gachaR2Image from '@/assets/student_card/gacha_r2.png';
     import gachaR1Image from '@/assets/student_card/gacha_r1.png';
@@ -9,18 +9,21 @@
     import pickupImage from '@/assets/student_card/imgfont_pickup.png'
 
     const props = withDefaults(defineProps<{ 
-      result: Result;
+      student: Student;
       isFlipped: boolean; 
+      isPickup?: boolean;
+      isNew?: boolean;
       enableEffects?: boolean; // New optional prop
     }>(), {
-      enableEffects: true, // Default to true
+      isPickup: false,
+      isNew: false,
+      enableEffects: true,
     });
 
     // --- Computed Properties for Dynamic Styling ---
-    const student = props.result
-    const isR3 = student.rarity === 3; 
-    const isR2 = student.rarity === 2; 
-    const isR1 = student.rarity === 1; 
+    const isR3 = props.student.rarity === 3; 
+    const isR2 = props.student.rarity === 2; 
+    const isR1 = props.student.rarity === 1; 
 
     const cardBackImage = computed(() => {
         if (isR3) return gachaR3Image;
@@ -61,7 +64,7 @@
         
       <!-- CARD BACK -->
       <div class="absolute w-full h-full rounded-lg shadow-2xl overflow-hidden" style="backface-visibility: hidden;">
-        <img :src="cardBackImage" :alt="`r${props.result.rarity}`" class="w-full h-full object-cover">
+        <img :src="cardBackImage" :alt="`r${student.rarity}`" class="w-full h-full object-cover">
       </div>
 
       <!-- CARD FRONT -->
@@ -85,7 +88,11 @@
               <div class="relative h-7 mb-2 flex items-center justify-center">
                 <div class="absolute left-0 top-1/2 w-[25%] h-0.5" :class="rarityLineClass"></div>
                 <div class="relative h-full w-19 shrink-0 flex items-center justify-center gap-0 rounded-full shadow-inner-sm" :class="rarityPillClass">
-                  <img v-for="i in student.rarity" :key="i" :src="yellowStarImage" alt="star" class="w-4 h-4">
+                  <img 
+                    v-for="i in student.rarity" 
+                    :key="i" :src="yellowStarImage" 
+                    alt="star" 
+                    class="w-4 h-4">
                 </div>
                 <div class="absolute right-0 top-1/2 w-[25%] h-0.5" :class="rarityLineClass"></div>
               </div>
@@ -97,24 +104,26 @@
           </div>
         </div>
 
-        <!-- "PICKUP" Indicator -->
-        <div v-if="student.is_pickup" class="absolute bottom-0 right-0 w-24 h-24 transform -rotate-12 translate-x-6 translate-y-16 pointer-events-none">
-          <img :src="pickupImage" alt="Pickup">
-        </div>
-        
-        <!-- "NEW" Indicator -->
-        <div v-if="student.is_new" class="absolute top-0 left-0 w-20 h-20 transform -rotate-12 -translate-x-5 -translate-y-5 pointer-events-none">
-          <img :src="newImage" alt="New">
-        </div>
-
         <!-- 3-Star Special Effects -->
-        <template v-if="student.rarity === 3 && enableEffects">
+        <div v-if="student.rarity === 3 && enableEffects">
           <div class="card-shine-overlay absolute inset-0 rounded-lg"></div>
           <div class="afterglow absolute -inset-1 rounded-lg pointer-events-none"></div>
           <div class="sparkle-overlay absolute inset-0">
             <div v-for="i in 5" :key="i" class="sparkle"></div>
           </div>
-        </template>
+        </div>
+
+        <!-- "PICKUP" Indicator -->
+        <div v-if="props.isPickup" class="absolute bottom-0 right-0 w-24 h-24 transform -rotate-12 translate-x-6 translate-y-16 pointer-events-none">
+          <img :src="pickupImage" alt="Pickup">
+        </div>
+        
+        <!-- "NEW" Indicator -->
+        <div v-if="props.isNew" class="absolute top-0 left-0 w-20 h-20 transform -rotate-12 -translate-x-5 -translate-y-5 pointer-events-none">
+          <img :src="newImage" alt="New">
+        </div>
+
+
       </div>
     </div>
   </div>

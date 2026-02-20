@@ -28,7 +28,7 @@ const emit = defineEmits<{
 //   2. The intro video has finished playing
 // ============================================================
 
-const videoFinished = ref(false);
+const videoFinished = ref(true);
 
 const showResults = computed(() => !props.isPulling && videoFinished.value);
 
@@ -136,8 +136,9 @@ onUnmounted(() => window.removeEventListener('resize', handleResize));
               <div class="grid gap-4 grid-cols-5" :class="{ 'grid-cols-1': results.length === 1 }">
                 <ResultCard
                   v-for="(result, index) in results"
-                  :key="result.id + '-' + index"
-                  :result="result"
+                  :student="result.student"
+                  :is-pickup="result.is_pickup"
+                  :is-new="result.is_new"
                   :is-flipped="flippedStates[index] ?? false"  
                   @click="revealCard(index)"
                   :class="{ 'xl:col-start-3': results.length === 1 }"
@@ -148,10 +149,12 @@ onUnmounted(() => window.removeEventListener('resize', handleResize));
             <!-- Mobile: Swipeable slider -->
             <div v-else class="relative w-full h-full">
               <div class="slider-track absolute top-0 left-0 h-full w-full flex items-center transition-transform duration-500 ease-in-out" :style="sliderTrackStyle">
-                <div v-for="(result, index) in results" :key="result.id + '-' + index" class="slider-slide relative w-full h-full shrink-0 flex items-center justify-center">
+                <div v-for="(result, index) in results" class="slider-slide relative w-full h-full shrink-0 flex items-center justify-center">
                   <div class="w-64">
                     <ResultCard 
-                      :result="result"
+                      :student="result.student"
+                      :is-pickup="result.is_pickup"
+                      :is-new="result.is_new"
                       :is-flipped="flippedStates[index] ?? false" 
                       @click="revealCard(index)" 
                     />

@@ -1,22 +1,23 @@
 <script setup lang="ts">
     import { defineAsyncComponent } from 'vue';
-    const KpiWidget = defineAsyncComponent(() => import('./widgets/Kpi.vue'));
-    const TopStudentsWidget = defineAsyncComponent(() => import('./widgets/TopStudents.vue'));
-    const FirstPullWidget = defineAsyncComponent(() => import('./widgets/FirstPullWidget.vue'));
-    const RarityOriginChart = defineAsyncComponent(() => import('./widgets/RarityOriginChart.vue'));
-    const MilestoneTimelineWidget = defineAsyncComponent(() => import('./widgets/MilestoneTimelineWidget.vue'));
-    const PerformanceTableWidget = defineAsyncComponent(() => import('./widgets/PerformanceTableWidget.vue'));
-    const CollectionProgressionWidget = defineAsyncComponent(() => import('./widgets/CollectionProgressionWidget.vue'));
+    import LoadSpinner from '@/components/base/LoadSpinner.vue';
+    const WidgetKpi = defineAsyncComponent(() => import('../components/widget/Kpi.vue'));
+    const TopStudentsWidget = defineAsyncComponent(() => import('../components/widget/TopStudents.vue'));
+    const FirstR3 = defineAsyncComponent(() => import('../components/widget/FirstR3.vue'));
+    // const RarityOriginChart = defineAsyncComponent(() => import('./widgets/RarityOriginChart.vue'));
+    // const MilestoneTimelineWidget = defineAsyncComponent(() => import('./widgets/MilestoneTimelineWidget.vue'));
+    // const PerformanceTableWidget = defineAsyncComponent(() => import('./widgets/PerformanceTableWidget.vue'));
+    // const CollectionProgressionWidget = defineAsyncComponent(() => import('./widgets/CollectionProgressionWidget.vue'));
 </script>
 
 <template>
   <div class="flex flex-col gap-6">
     <!-- KPI Widgets -->
     <Suspense>
-      <KpiWidget />
+      <WidgetKpi />
       <template #fallback>
         <div class="w-full h-24 flex items-center justify-center bg-slate-700/50 rounded-lg text-slate-400">
-          Loading KPIs...
+          <LoadSpinner />
         </div>
       </template>
     </Suspense>
@@ -28,17 +29,17 @@
           <TopStudentsWidget />
           <template #fallback>
             <div class="w-full h-48 flex items-center justify-center bg-slate-700/50 rounded-lg text-slate-400">
-              Loading Top Students...
+              <LoadSpinner />
             </div>
           </template>
         </Suspense>
       </div>
       <div class="lg:col-span-1">
         <Suspense>
-          <FirstPullWidget />
+          <FirstR3 />
           <template #fallback>
             <div class="w-full h-48 flex items-center justify-center bg-slate-700/50 rounded-lg text-slate-400">
-              Loading First Pull...
+              <LoadSpinner />
             </div>
           </template>
         </Suspense>

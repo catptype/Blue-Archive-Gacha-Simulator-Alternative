@@ -3,8 +3,8 @@
   import { useRouter } from 'vue-router';
   import axios from 'axios';
   import apiClient from '@/services/client';
-  import InputTextbox from './components/InputTextbox.vue';
-  import SubmitButton from './components/SubmitButton.vue';
+  import InputTextbox from './components/base/InputTextbox.vue';
+  import SubmitButton from './components/base/SubmitButton.vue';
 
   // ============================================================
   // State

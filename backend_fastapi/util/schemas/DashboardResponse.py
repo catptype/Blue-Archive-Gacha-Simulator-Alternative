@@ -80,9 +80,8 @@ class Top3StudentResponse(BaseModel):
     first_obtained: datetime
 
 class FirstR3Response(BaseModel):
-    transaction_id: int
-    transaction_create_on: datetime
     student: StudentResponse
+    first_obtain_on: datetime
 
 class CollectionProgressionResponse(BaseModel):
     rarity: int

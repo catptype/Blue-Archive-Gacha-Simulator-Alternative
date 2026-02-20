@@ -27,7 +27,8 @@ def _serialize_gacha_student(student_list: List[Student], banner: GachaBanner, r
     for student in student_list:
         student_response = create_student_response(student, request)
         result_student = GachaStudentSchema(
-            **student_response.model_dump(),
+            # **student_response.model_dump(),
+            student=student_response,
             is_pickup=student.id in pickup_ids,
             is_new=False
         )
@@ -82,7 +83,7 @@ def _insert_transaction(
 ) -> None:
 
     # Pre-fetch the user's existing inventory for the pulled students to check for "new".
-    pulled_student_ids = [s.id for s in pulled_results]
+    pulled_student_ids = [result.student.id for result in pulled_results]
     user_inventory_query = db.query(UserInventory).filter(
         UserInventory.user_id == current_user.id,
         UserInventory.student_id.in_(pulled_student_ids)
@@ -92,7 +93,8 @@ def _insert_transaction(
     inventory_map = {item.student_id: item for item in user_inventory_query}
 
     # Process pull result for labeling "new" or "pickup"
-    for student in pulled_results:
+    for result in pulled_results:
+        student = result.student
 
         # Create a transaction record for each pulled student.
         new_transaction = GachaTransaction(
@@ -103,7 +105,7 @@ def _insert_transaction(
         db.add(new_transaction)
 
         # Update is_new value for GachaStudentSchema in user mode
-        student.is_new = student.id not in inventory_map
+        result.is_new = student.id not in inventory_map
 
         # Update or create the inventory entry.
         inventory_item = inventory_map.get(student.id)

@@ -13,8 +13,8 @@
   // ============================================================
 
   const banners = ref<Banner[]>([]);
-  const activeIndex = ref(0);
   const gachaResults = ref<Result[]>([]);
+  const activeIndex = ref(0);
   const isPulling = ref(false);
   const isDetailsModalVisible = ref(false);
   const isResultsModalVisible = ref(false);

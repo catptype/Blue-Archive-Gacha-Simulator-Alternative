@@ -15,7 +15,8 @@ class GachaPresetSchema(BaseModel):
     r2_rate: Decimal
     r1_rate: Decimal
 
-class GachaStudentSchema(StudentResponse):
+class GachaStudentSchema(BaseModel):
+    student: StudentResponse
     is_pickup: bool
     is_new: bool
 

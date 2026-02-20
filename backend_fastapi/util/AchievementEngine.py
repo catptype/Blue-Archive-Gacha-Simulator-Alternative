@@ -62,7 +62,7 @@ class AchievementEngine:
     def check_luck_achievements(self, pulled_students: List[GachaStudentSchema]) -> List[Achievement]:
         """Checks for achievements related to a single gacha pull (e.g., multi-3-star)."""
         newly_unlocked = []
-        r3_count = sum(1 for student in pulled_students if student.rarity == 3)
+        r3_count = sum(1 for result in pulled_students if result.student.rarity == 3)
         
         if r3_count >= 2:
             if ach := self._award('LUCK_DOUBLE_R3'):

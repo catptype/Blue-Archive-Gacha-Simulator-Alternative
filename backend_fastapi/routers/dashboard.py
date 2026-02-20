@@ -174,9 +174,8 @@ def get_first_r3_pull(
     # Build the Pydantic response object
     student_response = create_student_response(first_r3_pull_orm.student, request)
     response_data = FirstR3Response(
-        transaction_id=first_r3_pull_orm.id,
-        transaction_create_on=first_r3_pull_orm.create_on,
-        student=student_response
+        student=student_response,
+        first_obtain_on=first_r3_pull_orm.create_on,
     )
     
     # Cache the successful result
