@@ -88,7 +88,7 @@ class CollectionProgressionResponse(BaseModel):
     obtained: int
     total: int
 
-class BannerBreakdownChartResponse(BaseModel):
+class DistributionResponse(BaseModel):
     data: Dict[str, OverallRaritySchema]
 
 class MilestoneResponse(BaseModel):

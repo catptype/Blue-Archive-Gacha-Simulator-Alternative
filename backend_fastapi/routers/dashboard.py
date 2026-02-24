@@ -13,7 +13,7 @@ from ..util.cache import get_cache, Cache
 from ..util.database import get_db
 from ..util.schemas.StudentResponse import create_student_response
 from ..util.schemas.BannerResponse import BannerResponse
-from ..util.schemas.DashboardResponse import KpiResponse, LuckGapsSchema, OverallRaritySchema, Top3StudentResponse, FirstR3Response, BannerBreakdownChartResponse, MilestoneResponse, LuckPerformanceResponse, CollectionProgressionResponse
+from ..util.schemas.DashboardResponse import KpiResponse, LuckGapsSchema, OverallRaritySchema, Top3StudentResponse, FirstR3Response, DistributionResponse, MilestoneResponse, LuckPerformanceResponse, CollectionProgressionResponse
 from ..util.schemas.HistoryResponse import HistoryResponse, TransactionSchema
 from ..util.schemas.CollectionResponse import CollectionResponse, CollectionStudentSchema
 from ..util.schemas.AchievementResponse import UserAchievementResponse, AchievementResponse
@@ -185,7 +185,7 @@ def get_first_r3_pull(
 
 @router.get(
     "/summary/chart-banner-breakdown",
-    response_model=BannerBreakdownChartResponse
+    response_model=DistributionResponse
 )
 def get_chart_banner_breakdown(
     current_user: User = Depends(get_required_current_user),
@@ -208,7 +208,7 @@ def get_chart_banner_breakdown(
         GachaTransaction, GachaTransaction.banner_id == GachaBanner.id
     ).join(
         Student, GachaTransaction.student_id == Student.id
-    ).filter(GachaTransaction.user_id == current_user.id).all()
+    ).filter(GachaTransaction.user_id == current_user.id)
 
     # Process in Python for speed
     pulls_by_banner = defaultdict(Counter)
@@ -223,7 +223,7 @@ def get_chart_banner_breakdown(
             r1_count=rarity_counter.get(1, 0),
         )
     
-    final_response = BannerBreakdownChartResponse(data=response_data)
+    final_response = DistributionResponse(data=response_data)
     cache.set(cache_key, final_response.model_dump(), expire=settings.CACHE_EXPIRE)
     return final_response
 

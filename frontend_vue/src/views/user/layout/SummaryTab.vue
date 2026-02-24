@@ -1,10 +1,10 @@
 <script setup lang="ts">
     import { defineAsyncComponent } from 'vue';
     import LoadSpinner from '@/components/base/LoadSpinner.vue';
-    const WidgetKpi = defineAsyncComponent(() => import('../components/widget/Kpi.vue'));
-    const TopStudentsWidget = defineAsyncComponent(() => import('../components/widget/TopStudents.vue'));
-    const FirstR3 = defineAsyncComponent(() => import('../components/widget/FirstR3.vue'));
-    // const RarityOriginChart = defineAsyncComponent(() => import('./widgets/RarityOriginChart.vue'));
+    const WidgetKpi = defineAsyncComponent(() => import('../components/widgets/Kpi.vue'));
+    const TopStudentsWidget = defineAsyncComponent(() => import('../components/widgets/TopStudents.vue'));
+    const FirstR3 = defineAsyncComponent(() => import('../components/widgets/FirstR3.vue'));
+    const DistributionChart = defineAsyncComponent(() => import('../components/widgets/DistributionChart.vue'));
     // const MilestoneTimelineWidget = defineAsyncComponent(() => import('./widgets/MilestoneTimelineWidget.vue'));
     // const PerformanceTableWidget = defineAsyncComponent(() => import('./widgets/PerformanceTableWidget.vue'));
     // const CollectionProgressionWidget = defineAsyncComponent(() => import('./widgets/CollectionProgressionWidget.vue'));
@@ -16,7 +16,7 @@
     <Suspense>
       <WidgetKpi />
       <template #fallback>
-        <div class="w-full h-24 flex items-center justify-center bg-slate-700/50 rounded-lg text-slate-400">
+        <div class="w-full h-24 flex items-center justify-center bg-slate-700/50 rounded-lg">
           <LoadSpinner />
         </div>
       </template>
@@ -28,7 +28,7 @@
         <Suspense>
           <TopStudentsWidget />
           <template #fallback>
-            <div class="w-full h-48 flex items-center justify-center bg-slate-700/50 rounded-lg text-slate-400">
+            <div class="w-full h-48 flex items-center justify-center bg-slate-700/50 rounded-lg">
               <LoadSpinner />
             </div>
           </template>
@@ -38,7 +38,7 @@
         <Suspense>
           <FirstR3 />
           <template #fallback>
-            <div class="w-full h-48 flex items-center justify-center bg-slate-700/50 rounded-lg text-slate-400">
+            <div class="w-full h-48 flex items-center justify-center bg-slate-700/50 rounded-lg">
               <LoadSpinner />
             </div>
           </template>
@@ -49,7 +49,7 @@
     <Suspense>
       <CollectionProgressionWidget />
       <template #fallback>
-        <div class="w-full h-48 flex items-center justify-center bg-slate-700/50 rounded-lg text-slate-400">
+        <div class="w-full h-48 flex items-center justify-center bg-slate-700/50 rounded-lg">
           Loading Collection Data...
         </div>
       </template>
@@ -60,10 +60,10 @@
 
       <!-- Barchart breakdown -->
       <Suspense>
-        <RarityOriginChart />
+        <DistributionChart />
         <template #fallback>
-          <div class="w-full h-72 flex items-center justify-center bg-slate-700/50 rounded-lg text-slate-400">
-            Loading Chart...
+          <div class="w-full h-72 flex items-center justify-center bg-slate-700/50 rounded-lg">
+            <LoadSpinner />
           </div>
         </template>
       </Suspense>
@@ -71,7 +71,7 @@
       <Suspense>
         <MilestoneTimelineWidget />
         <template #fallback>
-          <div class="w-full h-48 flex items-center justify-center bg-slate-700/50 rounded-lg text-slate-400">
+          <div class="w-full h-48 flex items-center justify-center bg-slate-700/50 rounded-lg">
             Loading Timeline...
           </div>
         </template>
@@ -80,7 +80,7 @@
       <Suspense>
         <PerformanceTableWidget />
         <template #fallback>
-          <div class="w-full h-72 flex items-center justify-center bg-slate-700/50 rounded-lg text-slate-400">
+          <div class="w-full h-72 flex items-center justify-center bg-slate-700/50 rounded-lg">
             Loading Performance Data...
           </div>
         </template>

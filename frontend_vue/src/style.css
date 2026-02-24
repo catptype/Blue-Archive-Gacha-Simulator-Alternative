@@ -17,3 +17,9 @@ input {
 img {
     image-rendering: smooth !important; 
 }
+
+/* Uncomment for debug layout */
+/* * {
+    border-color: red !important;
+    border-style: dashed !important;
+} */

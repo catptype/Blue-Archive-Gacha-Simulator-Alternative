@@ -1,5 +1,6 @@
 <script setup lang="ts">
   import TabButton from './components/base/TabButton.vue';
+  import LoadSpinner from '@/components/base/LoadSpinner.vue';
   // Define the tabs for easy rendering
   const tabs = [
     { label: 'Summary',      path: '/dashboard/summary',      icon: 'fa-solid fa-chart-pie' },
@@ -8,11 +9,10 @@
     { label: 'Achievements', path: '/dashboard/achievements', icon: 'fa-solid fa-trophy' },
   ];
 
-  const tabStyle = "lg:left-6 lg:right-auto lg:justify-start"
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto text-white pt-30">
+  <div class="max-w-7xl mx-auto pt-30 text-white">
     <div class="relative w-full">
       <!-- Tab Buttons -->
       <!-- 
@@ -20,8 +20,7 @@
         - On large screens (lg:): Reverts to the original left-aligned position.
       -->
       <div 
-        class="absolute left-0 right-0 z-20 flex justify-center gap-1"
-        :class="tabStyle">
+        class="absolute left-0 right-0 z-20 flex justify-center gap-2">
         <TabButton
           v-for="tab in tabs"
           :label="tab.label"
@@ -42,9 +41,7 @@
                 <Suspense>
                   <component :is="Component" />
                   <template #fallback>
-                    <div class="w-full h-full flex items-center justify-center">
-                      <svg class="animate-spin h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                    </div>
+                    <LoadSpinner />
                   </template>
                 </Suspense>
               </KeepAlive>

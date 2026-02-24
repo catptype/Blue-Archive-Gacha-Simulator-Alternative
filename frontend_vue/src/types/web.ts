@@ -70,10 +70,13 @@ export interface Top3Student {
   first_obtained: Date | string;
 }
 
-export interface Kpi {
+interface RarityCounter {
   r3_count: number
   r2_count: number
   r1_count: number
+}
+
+export interface Kpi extends RarityCounter {
   total_pulls: number
   total_pyroxene_spent: number
 }
@@ -81,4 +84,8 @@ export interface Kpi {
 export interface GachaPull {
   results: Result[];
   unlocked_achievements: Achievement[];
+}
+
+export interface BannerDistribution {
+  data: Record<string, RarityCounter>;
 }
