@@ -4,7 +4,7 @@
     import { type BannerDistribution } from '@/types/web';
 
     // 1. Fetch the same data as before
-    const response = await apiClient.get<BannerDistribution>('/dashboard/summary/chart-banner-breakdown');
+    const response = await apiClient.get('/dashboard/summary/chart-banner-breakdown');
     const apiData = ref<BannerDistribution>(response.data);
       
     const totals = computed(() => {

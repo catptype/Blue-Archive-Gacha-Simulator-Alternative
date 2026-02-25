@@ -13,7 +13,7 @@ from ..util.cache import get_cache, Cache
 from ..util.database import get_db
 from ..util.schemas.StudentResponse import create_student_response
 from ..util.schemas.BannerResponse import BannerResponse
-from ..util.schemas.DashboardResponse import KpiResponse, LuckGapsSchema, OverallRaritySchema, Top3StudentResponse, FirstR3Response, DistributionResponse, MilestoneResponse, LuckPerformanceResponse, CollectionProgressionResponse
+from ..util.schemas.DashboardResponse import KpiResponse, LuckGapsSchema, OverallRaritySchema, Top3StudentResponse, FirstR3Response, DistributionResponse, MilestoneResponse, LuckPerformanceResponse, SummaryCollectionSchema, SummaryCollectionResponse
 from ..util.schemas.HistoryResponse import HistoryResponse, TransactionSchema
 from ..util.schemas.CollectionResponse import CollectionResponse, CollectionStudentSchema
 from ..util.schemas.AchievementResponse import UserAchievementResponse, AchievementResponse
@@ -224,7 +224,7 @@ def get_chart_banner_breakdown(
         )
     
     final_response = DistributionResponse(data=response_data)
-    cache.set(cache_key, final_response.model_dump(), expire=settings.CACHE_EXPIRE)
+    cache.set(cache_key, final_response.model_dump(mode='json'), expire=settings.CACHE_EXPIRE)
     return final_response
 
 @router.get(
@@ -404,15 +404,15 @@ def get_performance_table(
     return banner_analysis
 
 @router.get(
-    "/summary/collection-progression",
-    response_model=List[CollectionProgressionResponse]
+    "/summary/collection",
+    response_model=SummaryCollectionResponse
 )
 def get_collection_progression(
     current_user: User = Depends(get_required_current_user),
     db: Session = Depends(get_db),
     cache: Cache = Depends(get_cache)
 ):
-    cache_key = f"dashboard:collection_progression:{current_user.id}"
+    cache_key = f"dashboard:collection_summary:{current_user.id}"
     cached_data = cache.get(cache_key)
     if cached_data:
         LOGGER.debug(f"CACHE HIT for {cache_key}")
@@ -420,15 +420,9 @@ def get_collection_progression(
 
     LOGGER.debug(f"CACHE MISS for {cache_key}")
 
-    # Query 1: Get the total number of students for each rarity.
-    # This is the same for all users, so it's very fast.
-    total_counts_query = (
-        db.query(
-            Student.rarity,
-            func.count(Student.id)
-        ).group_by(Student.rarity).all()
-    )
-    total_map = {rarity: count for rarity, count in total_counts_query}
+    # 1. Fetch total counts
+    total_counts_query = db.query(Student.rarity, func.count(Student.id)).group_by(Student.rarity).all()
+    total_map = {str(rarity): count for rarity, count in total_counts_query}
 
     # Query 2: Get the number of unique students the USER has obtained for each rarity.
     obtained_counts_query = (
@@ -440,25 +434,20 @@ def get_collection_progression(
         .filter(UserInventory.user_id == current_user.id)
         .group_by(Student.rarity)
     ).all()
-    obtained_map = {rarity: count for rarity, count in obtained_counts_query}
+    obtained_map = {str(rarity): count for rarity, count in obtained_counts_query}
 
     # Assemble the response
-    response_data: List[CollectionProgressionResponse] = []
-    for rarity in [3, 2, 1]: # Iterate in desired display order
-        obtained_count = obtained_map.get(rarity, 0)
-        total_count = total_map.get(rarity, 0)
-        
-        response_data.append(CollectionProgressionResponse(
-            rarity=rarity,
-            obtained=obtained_count,
-            total=total_count
-        ))
-        
-    data_to_cache = [entry.model_dump() for entry in response_data]
-    # Cache for 1 hour. This should be invalidated after a pull that yields a *new* student.
-    cache.set(cache_key, data_to_cache, expire=3600)
+    response_data = {}
+    for rarity in ["3", "2", "1"]:
+        response_data[rarity] = SummaryCollectionSchema(
+            obtained=obtained_map.get(rarity, 0),
+            total=total_map.get(rarity, 0)
+        )
+    
+    final_response = SummaryCollectionResponse(data=response_data)
+    cache.set(cache_key, final_response.model_dump(mode='json'), expire=settings.CACHE_EXPIRE)
 
-    return response_data
+    return final_response
 
 @router.get("/history", response_model=HistoryResponse)
 def get_user_history(

@@ -83,10 +83,12 @@ class FirstR3Response(BaseModel):
     student: StudentResponse
     first_obtain_on: datetime
 
-class CollectionProgressionResponse(BaseModel):
-    rarity: int
+class SummaryCollectionSchema(BaseModel):
     obtained: int
     total: int
+
+class SummaryCollectionResponse(BaseModel):
+    data: Dict[str, SummaryCollectionSchema]
 
 class DistributionResponse(BaseModel):
     data: Dict[str, OverallRaritySchema]

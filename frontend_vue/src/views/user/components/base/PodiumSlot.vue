@@ -45,14 +45,14 @@ const rankConfig = computed(() => {
     </div>
     
     <!-- Podium Step -->
-    <div :class="[rankConfig.height, 'w-full rounded-t-md mt-2 bg-slate-600/50 flex items-center justify-center']"></div>
-    
-    <!-- Rank Icon -->
-    <div :class="['absolute flex flex-col items-center', rankConfig.bottom]">
+    <div :class="[rankConfig.height, 'relative w-full rounded-t-md mt-2 bg-slate-600/50 flex flex-col items-center justify-start']">
+      <!-- Rank Icon -->
       <img :src="rankConfig.img" :alt="'rank' + rank" class="w-14 h-14 object-cover">
-      <span class="font-bold text-md -mt-4 text-white" style="text-shadow: 1px 1px 3px #000;">
+      <span class="font-bold text-md -mt-3 text-white" style="text-shadow: 1px 1px 3px #000;">
         {{ rankConfig.label }}
       </span>
     </div>
+    
+    
   </div>
 </template>

@@ -89,3 +89,12 @@ export interface GachaPull {
 export interface BannerDistribution {
   data: Record<string, RarityCounter>;
 }
+
+interface SummaryEntry {
+  obtained: number;
+  total: number;
+}
+
+export interface SummaryCollectionResponse {
+  data: Record<string, SummaryEntry>;
+}

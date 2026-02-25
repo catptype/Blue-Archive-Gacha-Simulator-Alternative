@@ -7,7 +7,7 @@
     const DistributionChart = defineAsyncComponent(() => import('../components/widgets/DistributionChart.vue'));
     // const MilestoneTimelineWidget = defineAsyncComponent(() => import('./widgets/MilestoneTimelineWidget.vue'));
     // const PerformanceTableWidget = defineAsyncComponent(() => import('./widgets/PerformanceTableWidget.vue'));
-    // const CollectionProgressionWidget = defineAsyncComponent(() => import('./widgets/CollectionProgressionWidget.vue'));
+    const CollectionProgressionWidget = defineAsyncComponent(() => import('../components/widgets/CollectionProgressionWidget.vue'));
 </script>
 
 <template>
@@ -50,7 +50,7 @@
       <CollectionProgressionWidget />
       <template #fallback>
         <div class="w-full h-48 flex items-center justify-center bg-slate-700/50 rounded-lg">
-          Loading Collection Data...
+          <LoadSpinner />
         </div>
       </template>
     </Suspense>
