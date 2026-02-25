@@ -58,6 +58,13 @@ class AdminAuth(AuthenticationBackend):
 # --- 2. Define the Model Views ---
 # See icon at https://fontawesome.com/search?f=classic&s=solid&ic=free&o=r
 
+def generate_html_student(id:int, im_type:str, size) -> str:
+    return f"""
+    <a href="/admin/student/details/{id}" title="">
+      <img src="/api/images/student/{id}/{im_type}" width="{size}" style="border-radius: 4px; margin: 2px;">
+    </a>
+    """
+
 class RoleAdmin(ModelView, model=Role):
     name = "Role"
     name_plural = "Roles"
@@ -82,22 +89,14 @@ class StudentAdmin(ModelView, model=Student):
     @staticmethod
     def _format_portrait(model: Student, _, size: int = 40) -> Markup:
         if model and model.asset:
-            html_string = (
-                f'<a href="/admin/student/details/{model.id}" title="{model}">'
-                f'  <img src="/image/student/{model.id}/portrait" width="{size}" style="border-radius: 4px; margin: 2px;">'
-                f'</a>'
-            )
+            html_string = generate_html_student(model.id, "portrait", size)
             return Markup(html_string)
         return ""
     
     @staticmethod
     def _format_artwork(model: Student, _, size: int = 40) -> Markup:
         if model and model.asset:
-            html_string = (
-                f'<a href="/admin/student/details/{model.id}" title="{model}">'
-                f'  <img src="/image/student/{model.id}/artwork" width="{size}" style="border-radius: 4px; margin: 2px;">'
-                f'</a>'
-            )
+            html_string = generate_html_student(model.id, "artwork", size)
             return Markup(html_string)
         return ""
     
@@ -147,9 +146,7 @@ class GachaBannerAdmin(ModelView, model=GachaBanner):
         Takes an optional 'size' argument for flexibility.
         """
         html_string = ''.join(
-            f'<a href="/admin/student/details/{student.id}" title="{student}">'
-            f'  <img src="/image/student/{student.id}/portrait" width="{size}" style="border-radius: 4px; margin: 2px;">'
-            f'</a>'
+            generate_html_student(student.id, "portrait", size)
             for student in model.pickup_students if student.asset
         )
         return Markup(html_string)
@@ -161,16 +158,14 @@ class GachaBannerAdmin(ModelView, model=GachaBanner):
         Takes an optional 'size' argument for flexibility.
         """
         html_string = ''.join(
-            f'<a href="/admin/student/details/{student.id}" title="{student}">'
-            f'  <img src="/image/student/{student.id}/portrait" width="{size}" style="border-radius: 4px; margin: 2px;">'
-            f'</a>'
+            generate_html_student(student.id, "portrait", size)
             for student in model.excluded_students if student.asset
         )
         return Markup(html_string)
 
     column_formatters = {
         "banner_image": lambda model, _: Markup(
-            f'<img src="/image/banner/{model.id}" width="120">' # Assumes you create this endpoint
+            f'<img src="/api/images/banner/{model.id}" width="120">' # Assumes you create this endpoint
         ) if model.image_data else "",
 
         "Pickups": lambda model, _: GachaBannerAdmin._format_pickups(model, _, size=40),
@@ -218,7 +213,7 @@ class AchievementAdmin(ModelView, model=Achievement):
         if model and model.image_data:
             html_string = (
                 f'<a href="/admin/achievement/details/{model.id}" title="{model}">'
-                f'  <img src="/image/achievement/{model.id}" width="{size}" style="border-radius: 4px; margin: 2px;">'
+                f'  <img src="/api/images/achievement/{model.id}" width="{size}" style="border-radius: 4px; margin: 2px;">'
                 f'</a>'
             )
             return Markup(html_string)
@@ -238,18 +233,14 @@ class UserInventoryAdmin(ModelView, model=UserInventory):
     name = "Inventory"
     name_plural = "Inventories"
     icon = "fa-solid fa-box-archive"
-    column_list = ["inventory_id", "user", "Portrait", "student", "inventory_num_obtained", "inventory_first_obtained_on", "First obtain (local time)"]
+    column_list = ["id", "user", "Portrait", "student", "inventory_num_obtained", "inventory_first_obtained_on", "First obtain (local time)"]
     column_searchable_list = ["user.username"]
 
     @staticmethod
     def _format_portrait(model: UserInventory, _, size: int = 40) -> Markup:
         student = model.student
         if student and student.asset:
-            html_string = (
-                f'<a href="/admin/student/details/{student.id}" title="{student}">'
-                f'  <img src="/image/student/{student.id}/portrait" width="{size}" style="border-radius: 4px; margin: 2px;">'
-                f'</a>'
-            )
+            html_string = generate_html_student(student.id, "portrait", size)
             return Markup(html_string)
         return ""
     
@@ -262,23 +253,19 @@ class GachaTransactionAdmin(ModelView, model=GachaTransaction):
     name = "Transaction"
     name_plural = "Transactions"
     icon = "fa-solid fa-receipt"
-    column_list = ["transaction_id", "user", "Portrait", "student", "transaction_create_on", "create_on (local time)"]
+    column_list = ["id", "user", "Portrait", "student", "student.rarity", "create_on", "create_on (local time)"]
 
     @staticmethod
     def _format_portrait(model, _, size: int = 40) -> Markup:
         student = model.student
         if student and student.asset:
-            html_string = (
-                f'<a href="/admin/student/details/{student.student_id}" title="{student}">'
-                f'  <img src="/image/student/{student.student_id}/portrait" width="{size}" style="border-radius: 4px; margin: 2px;">'
-                f'</a>'
-            )
+            html_string = generate_html_student(student.id, "portrait", size)
             return Markup(html_string)
         return ""
 
     column_formatters = {
         "Portrait": lambda model, _: GachaTransactionAdmin._format_portrait(model, _, size=40),
-        "create_on (local time)": lambda model, _: format_datetime_as_local(model, "transaction_create_on"),
+        "create_on (local time)": lambda model, _: format_datetime_as_local(model, "create_on"),
     }
     
 # --- 3. Create the Initialization Function ---

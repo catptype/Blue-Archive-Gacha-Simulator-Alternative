@@ -5,9 +5,9 @@
     const TopStudentsWidget = defineAsyncComponent(() => import('../components/widgets/TopStudents.vue'));
     const FirstR3 = defineAsyncComponent(() => import('../components/widgets/FirstR3.vue'));
     const DistributionChart = defineAsyncComponent(() => import('../components/widgets/DistributionChart.vue'));
-    // const MilestoneTimelineWidget = defineAsyncComponent(() => import('./widgets/MilestoneTimelineWidget.vue'));
-    // const PerformanceTableWidget = defineAsyncComponent(() => import('./widgets/PerformanceTableWidget.vue'));
-    const CollectionProgressionWidget = defineAsyncComponent(() => import('../components/widgets/CollectionProgressionWidget.vue'));
+    const Milestone = defineAsyncComponent(() => import('../components/widgets/Milestone.vue'));
+    const PerformanceTable = defineAsyncComponent(() => import('../components/widgets/PerformanceTable.vue'));
+    const CollectionChart = defineAsyncComponent(() => import('../components/widgets/CollectionChart.vue'));
 </script>
 
 <template>
@@ -47,7 +47,7 @@
     </div>
 
     <Suspense>
-      <CollectionProgressionWidget />
+      <CollectionChart />
       <template #fallback>
         <div class="w-full h-48 flex items-center justify-center bg-slate-700/50 rounded-lg">
           <LoadSpinner />
@@ -69,19 +69,19 @@
       </Suspense>
       
       <Suspense>
-        <MilestoneTimelineWidget />
+        <Milestone />
         <template #fallback>
           <div class="w-full h-48 flex items-center justify-center bg-slate-700/50 rounded-lg">
-            Loading Timeline...
+            <LoadSpinner />
           </div>
         </template>
       </Suspense>
 
       <Suspense>
-        <PerformanceTableWidget />
+        <PerformanceTable />
         <template #fallback>
           <div class="w-full h-72 flex items-center justify-center bg-slate-700/50 rounded-lg">
-            Loading Performance Data...
+            <LoadSpinner />
           </div>
         </template>
       </Suspense>

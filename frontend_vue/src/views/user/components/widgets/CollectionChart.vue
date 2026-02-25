@@ -3,12 +3,11 @@
   import apiClient from '@/services/client';
   import RarityRadialChart from '../base/RarityRadialChart.vue'; // Adjust path
   import { type SummaryCollectionResponse } from '@/types/web';
-  
 
   // Fetch the data
   const response = await apiClient('/dashboard/summary/collection');
   const collection = ref<SummaryCollectionResponse>(response.data)
-  
+    
   const rarityOrder = ['3', '2', '1'] as const;
 </script>
 

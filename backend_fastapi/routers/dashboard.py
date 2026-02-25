@@ -253,7 +253,9 @@ def get_milestone_timeline(
     numbered_pulls_subquery = (
         db.query(
             GachaTransaction.student_id,
-            func.row_number().over(order_by=GachaTransaction.create_on.asc()).label("pull_number")
+            func.row_number().over(
+                order_by=GachaTransaction.create_on.asc()
+            ).label("pull_number")
         )
         .filter(GachaTransaction.user_id == current_user.id)
         .subquery()
@@ -302,18 +304,6 @@ def get_milestone_timeline(
                 pull_number=pull_number
             )
             milestone_pulls.append(milestone_entry)
-
-
-    # 3. Process the small, final result set into the response schema.
-    # The result is a list of tuples: (Student_object, pull_number)
-    # milestone_pulls: List[MilestoneResponse] = []
-    # for student_orm, pull_number in milestone_query_results:
-    #     student_response = create_student_response(student_orm, request)
-    #     milestone_entry = MilestoneResponse(
-    #         student=student_response,
-    #         pull_number=pull_number
-    #     )
-    #     milestone_pulls.append(milestone_entry)
     
     data_to_cache = [entry.model_dump(mode="json") for entry in milestone_pulls]
     cache.set(cache_key, data_to_cache, expire=settings.CACHE_EXPIRE)
@@ -360,31 +350,44 @@ def get_performance_table(
         user_rate = (r3_count / total_pulls) * 100 if total_pulls > 0 else 0.0
         luck_variance = float(user_rate) - banner_rate # solve datatype problem if use mysql for 'decimal.Decimal' and 'float'
 
-        gaps_data = None
         # 2. Only perform the expensive gap analysis if there are enough 3-stars.
-        if r3_count > 1:
-            # Fetch the chronological pulls FOR THIS BANNER ONLY.
-            r3_pulls_for_banner = db.query(
-                func.row_number().over(
-                    order_by=GachaTransaction.create_on.asc(),
-                    partition_by=GachaTransaction.banner_id
-                ).label("pull_num")
-            ).filter(
-                GachaTransaction.user_id == current_user.id,
-                GachaTransaction.banner_id == banner_id,
-                GachaTransaction.student_id.in_(
-                    db.query(Student.id).filter(Student.rarity == 3)
+        gaps_data = None
+        if r3_count >= 1:
+            subquery = (
+                db.query(
+                    GachaTransaction.student_id,
+                    func.row_number().over(
+                        order_by=GachaTransaction.create_on.asc()
+                    ).label("pull_index")
                 )
-            ).order_by("pull_num").all()
-            
-            r3_indices = [p[0] for p in r3_pulls_for_banner]
-            gaps = [r3_indices[i] - r3_indices[i-1] for i in range(1, len(r3_indices))]
-            
-            gaps_data = LuckGapsSchema(
-                min=min(gaps),
-                max=max(gaps),
-                avg=round(statistics.mean(gaps), 1)
+                .filter(
+                    GachaTransaction.user_id == current_user.id,
+                    GachaTransaction.banner_id == banner_id
+                )
+                .subquery()
             )
+
+            # 2. Query from that subquery, but filter for 3-stars only
+            r3_pulls_indices = (
+                db.query(subquery.c.pull_index)
+                .join(Student, Student.id == subquery.c.student_id)
+                .filter(Student.rarity == 3)
+                .order_by(subquery.c.pull_index.asc())
+            ).all()
+
+            # Convert [(14,), (45,), (102,)] -> [14, 45, 102]
+            r3_indices = [p[0] for p in r3_pulls_indices]
+            
+            # Calculate gaps
+            if len(r3_indices) > 1:
+                # Gap between each 3-star
+                gaps = [r3_indices[i] - r3_indices[i-1] for i in range(1, len(r3_indices))]
+                
+                gaps_data = LuckGapsSchema(
+                    min=min(gaps),
+                    max=max(gaps),
+                    avg=round(statistics.mean(gaps), 1)
+                )
 
         # 3. Assemble the Pydantic model for this row.
         analysis_entry = LuckPerformanceResponse(

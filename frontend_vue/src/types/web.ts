@@ -98,3 +98,8 @@ interface SummaryEntry {
 export interface SummaryCollectionResponse {
   data: Record<string, SummaryEntry>;
 }
+
+export interface MileStone {
+  pull_number: number;
+  student: Student;
+}

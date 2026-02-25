@@ -13,7 +13,7 @@
 
 <template>
   <div class="p-4 bg-slate-700/50 rounded-lg">
-    <h3 class="text-xl font-semibold mb-4">Luck Performance</h3>
+    <h3 class="text-xl text-center font-semibold mb-4">Luck Performance</h3>
     <div class="overflow-x-auto">
       <table class="w-full text-left text-sm whitespace-nowrap">
         <thead class="border-b border-slate-600">
@@ -40,11 +40,11 @@
             <td class="p-2 text-center">{{ analysis.user_rate.toFixed(2) }}%</td>
             <td class="p-2 text-center">{{ analysis.banner_rate.toFixed(2) }}%</td>
             <td class="p-2 text-center font-bold" :class="getLuckVarianceClass(analysis.luck_variance)">
-              {{ analysis.luck_variance > 0 ? '+' : '' }}{{ analysis.luck_variance.toFixed(2) }}%
+              {{ analysis.luck_variance > 0 ? '+' : '' }}{{ analysis.luck_variance.toFixed(2) }}% {{ analysis.luck_variance > 0 ? '▲' : '▼' }}
             </td>
-            <td class="p-2 text-center">{{ analysis.gaps?.min ?? 'N/A' }}</td>
-            <td class="p-2 text-center">{{ analysis.gaps?.max ?? 'N/A' }}</td>
-            <td class="p-2 text-center">{{ analysis.gaps?.avg ?? 'N/A' }}</td>
+            <td class="p-2 text-center">{{ analysis.gaps?.min ?? '—' }}</td>
+            <td class="p-2 text-center">{{ analysis.gaps?.max ?? '—' }}</td>
+            <td class="p-2 text-center">{{ analysis.gaps?.avg ?? '—' }}</td>
           </tr>
         </tbody>
       </table>
