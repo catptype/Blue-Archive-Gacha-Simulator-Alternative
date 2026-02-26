@@ -61,9 +61,9 @@ class DashboardSummaryResponse(RarityCounterSchema):
 #####
 
 class LuckGapsSchema(BaseModel):
-    min: Optional[int] = None
-    max: Optional[int] = None
-    avg: Optional[float] = None
+    min: int
+    max: int
+    avg: float
 
 class OverallRaritySchema(BaseModel):
     r3_count: int

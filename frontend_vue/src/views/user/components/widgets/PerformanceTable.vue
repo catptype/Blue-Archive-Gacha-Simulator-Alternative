@@ -1,14 +1,23 @@
 <script setup lang="ts">
-    import apiClient from '@/services/client';
+  import { ref } from 'vue';
+  import { type LuckPerformance } from '@/types/web';
+  import apiClient from '@/services/client';
+  import LuckTableRow from '../base/LuckTableRow.vue'; // Adjust path accordingly
 
-    const { data } = await apiClient.get('/dashboard/summary/performance-table');
+  const response = await apiClient.get('/dashboard/summary/performance-table');
+  const performances = ref<LuckPerformance[]>(response.data)
 
-    // Helper function to determine the color for the luck variance
-    const getLuckVarianceClass = (variance: number) => {
-        if (variance > 0) return 'text-green-400';
-        if (variance < 0) return 'text-red-400';
-        return 'text-slate-400';
-    };
+  const columns = [
+    { label: 'Banner', align: 'text-left' },
+    { label: 'Total Pulls', align: 'text-center' },
+    { label: '★★★ Count', align: 'text-center' },
+    { label: 'Your Rate', align: 'text-center' },
+    { label: 'Banner Rate', align: 'text-center' },
+    { label: 'Luck Variance', align: 'text-center' },
+    { label: 'Shortest Gap', align: 'text-center' },
+    { label: 'Average Gap', align: 'text-center' },
+    { label: 'Longest Gap', align: 'text-center' },
+  ];
 </script>
 
 <template>
@@ -18,34 +27,25 @@
       <table class="w-full text-left text-sm whitespace-nowrap">
         <thead class="border-b border-slate-600">
           <tr>
-            <th class="p-2">Banner</th>
-            <th class="p-2 text-center">Total Pulls</th>
-            <th class="p-2 text-center">★★★ Count</th>
-            <th class="p-2 text-center">Your Rate</th>
-            <th class="p-2 text-center">Banner Rate</th>
-            <th class="p-2 text-center">Luck Variance</th>
-            <th class="p-2 text-center">Shortest Gap</th>
-            <th class="p-2 text-center">Longest Gap</th>
-            <th class="p-2 text-center">Average Gap</th>
+            <th v-for="col in columns" 
+              :key="col.label" 
+              class="p-2" 
+              :class="col.align">
+              {{ col.label }}
+            </th>
           </tr>
         </thead>
         <tbody>
-          <tr v-if="data.length === 0">
-            <td colspan="9" class="text-center p-4 text-slate-400">No pull data available yet.</td>
-          </tr>
-          <tr v-for="analysis in data" :key="analysis.banner_name" class="border-b border-slate-700/50">
-            <td class="p-2 font-bold">{{ analysis.banner_name }}</td>
-            <td class="p-2 text-center">{{ analysis.total_pulls }}</td>
-            <td class="p-2 text-center text-yellow-300 font-bold">{{ analysis.r3_count }}</td>
-            <td class="p-2 text-center">{{ analysis.user_rate.toFixed(2) }}%</td>
-            <td class="p-2 text-center">{{ analysis.banner_rate.toFixed(2) }}%</td>
-            <td class="p-2 text-center font-bold" :class="getLuckVarianceClass(analysis.luck_variance)">
-              {{ analysis.luck_variance > 0 ? '+' : '' }}{{ analysis.luck_variance.toFixed(2) }}% {{ analysis.luck_variance > 0 ? '▲' : '▼' }}
+          <tr v-if="!performances || performances.length === 0">
+            <td :colspan="columns.length" class="text-center p-4 text-slate-400">
+              No pull data available yet.
             </td>
-            <td class="p-2 text-center">{{ analysis.gaps?.min ?? '—' }}</td>
-            <td class="p-2 text-center">{{ analysis.gaps?.max ?? '—' }}</td>
-            <td class="p-2 text-center">{{ analysis.gaps?.avg ?? '—' }}</td>
           </tr>
+          <LuckTableRow 
+            v-for="data in performances" 
+            :key="data.banner_name" 
+            :performance="data" 
+          />
         </tbody>
       </table>
     </div>

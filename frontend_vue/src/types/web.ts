@@ -103,3 +103,19 @@ export interface MileStone {
   pull_number: number;
   student: Student;
 }
+
+interface LuckGaps {
+  min: number;
+  max: number;
+  avg: number;
+}
+
+export interface LuckPerformance {
+  banner_name: string;
+  total_pulls: number;
+  r3_count: number;
+  user_rate: number;
+  banner_rate: number;
+  luck_variance: number;
+  gaps: LuckGaps | null;
+}

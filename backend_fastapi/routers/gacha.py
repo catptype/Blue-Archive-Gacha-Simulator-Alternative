@@ -1,14 +1,16 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import func
-from sqlalchemy.orm import Session, joinedload, selectinload
-from typing import List, Tuple
+from sqlalchemy.orm import Session
+from typing import List
 
+from ..config import settings
 from ..util.auth import get_optional_current_user
 from ..util.cache import get_cache, Cache
 from ..util.database import get_db
 from ..util.models import GachaBanner, GachaTransaction, User, Achievement, UserInventory, Student
 from ..util.schemas.AchievementResponse import AchievementResponse
+from ..util.schemas.BannerResponse import BannerCacheSchema
 from ..util.schemas.GachaResponse import GachaPullResponse, GachaStudentSchema
 from ..util.schemas.StudentResponse import create_student_response
 from ..util.AchievementEngine import AchievementEngine
@@ -27,7 +29,6 @@ def _serialize_gacha_student(student_list: List[Student], banner: GachaBanner, r
     for student in student_list:
         student_response = create_student_response(student, request)
         result_student = GachaStudentSchema(
-            # **student_response.model_dump(),
             student=student_response,
             is_pickup=student.id in pickup_ids,
             is_new=False
@@ -139,19 +140,30 @@ def _perform_pull(
     Internal function that uses the GachaEngine and conditionally saves
     transactions based on whether a user is present.
     """
-    # ... (fetching the banner and instantiating the engine is the same)
-    banner = db.query(GachaBanner).options(
-        joinedload(GachaBanner.preset),
-        selectinload(GachaBanner.pickup_students),
-        selectinload(GachaBanner.excluded_students),
-        selectinload(GachaBanner.included_versions)
-    ).filter_by(id=banner_id).first()
-    
-    if not banner:
-        raise HTTPException(status_code=404, detail="Banner not found")
+
+    cache_key = f"gacha:banner:{banner_id}"
+    banner_data = cache.get(cache_key)
+
+    if banner_data:
+        LOGGER.debug(f"Banner '{banner_id}' hit cache.")
+        # Deserialize JSON back into the Pydantic Schema
+        banner = BannerCacheSchema.model_validate(banner_data)
+
+    else:
+        LOGGER.debug(f"Banner '{banner_id}' missed cache. Fetching from DB.")
+        banner_db = db.query(GachaBanner).filter_by(id=banner_id).first()
+
+        if not banner_db:
+            raise HTTPException(status_code=404, detail="Banner not found")
+
+        # Convert SQLAlchemy object to Pydantic Schema
+        banner = BannerCacheSchema.model_validate(banner_db)
+        
+        # Save to cache
+        cache.set(cache_key, banner.model_dump(mode='json'), expire=settings.CACHE_EXPIRE)
     
     # Perform gacha pulling
-    engine = GachaEngine(banner=banner, db=db)
+    engine = GachaEngine(banner=banner, db=db) # banner must be GachaBanner
     student_list = engine.draw(amount)
 
     # Create GachaStudentSchema

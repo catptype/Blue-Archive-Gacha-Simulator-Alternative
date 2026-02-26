@@ -1,14 +1,14 @@
 import random
-from typing import List
-from decimal import Decimal
+from typing import List, Union
 from sqlalchemy.orm import Session
 from .models import GachaBanner, Student
+from .schemas.BannerResponse import BannerCacheSchema
 
 class GachaEngine:
     """
     A stateless service class that handles the logic of performing gacha pulls,
     """
-    def __init__(self, banner: GachaBanner, db: Session):
+    def __init__(self, banner: Union[GachaBanner, BannerCacheSchema], db: Session):
         if not banner.preset:
             raise ValueError("Banner does not have a rate preset.")
 
