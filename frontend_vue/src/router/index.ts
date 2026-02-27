@@ -6,7 +6,7 @@ import LoginView from '@/views/user/Login.vue';
 import RegisterView from '@/views/user/Register.vue';
 import DashboardView from '@/views/user/Dashboard.vue';
 import SummaryTab from '@/views/user/layout/SummaryTab.vue';
-import HistoryTab from '@/components/dashboard/HistoryTab.vue';
+import HistoryTab from '@/views/user/layout/HistoryTab.vue';
 import CollectionTab from '@/components/dashboard/CollectionTab.vue';
 import AchievementsTab from '@/components/dashboard/AchievementsTab.vue';
 

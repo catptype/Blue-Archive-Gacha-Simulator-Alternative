@@ -1,7 +1,7 @@
 <script setup lang="ts">
   import { ref, computed, onMounted } from 'vue';
   import { useToastStore } from '@/stores/toast';
-  import { type Result, type Banner } from '@/types/web';
+  import type { Result, Banner } from '@/types/web';
   import apiClient from '@/services/client';
   import PolyButton from '@/components/base/PolyButton.vue';
   import BannerCarousel from './layout/BannerCarousel.vue';

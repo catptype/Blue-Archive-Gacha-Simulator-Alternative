@@ -493,8 +493,8 @@ def get_user_history(
         banner_resp.image_url = str(request.url_for('serve_banner_image', banner_id=tx.banner.id)) if tx.banner.image_data else None
         
         history_items_response.append(TransactionSchema(
-            transaction_id=tx.id,
-            transaction_create_on=tx.create_on,
+            id=tx.id,
+            create_on=tx.create_on,
             student=student_resp,
             banner=banner_resp
         ))
@@ -550,7 +550,7 @@ def get_user_collection(
             joinedload(Student.version),
             joinedload(Student.asset) # Good practice to be explicit
         )
-        .order_by(Student.rarity.desc(), Student.student_name.asc())
+        .order_by(Student.rarity.desc(), Student.name.asc())
         .all()
     )
 

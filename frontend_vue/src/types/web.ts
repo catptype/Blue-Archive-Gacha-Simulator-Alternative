@@ -1,3 +1,5 @@
+// Achievement
+
 export interface Achievement {
   id: number;
   name: string;
@@ -7,18 +9,11 @@ export interface Achievement {
   image_url: string;
 }
 
+// Student
+
 export interface Version {
   id: number;
   name: string;
-}
-
-export interface Preset {
-  id: number;
-  name: string;
-  pickup_rate: number;
-  r3_rate: number;
-  r2_rate: number;
-  r1_rate: number;
 }
 
 export interface School {
@@ -36,6 +31,17 @@ export interface Student {
   school: School;
   portrait_url: string;
   artwork_url: string;
+}
+
+// Gacha
+
+export interface Preset {
+  id: number;
+  name: string;
+  pickup_rate: number;
+  r3_rate: number;
+  r2_rate: number;
+  r1_rate: number;
 }
 
 export interface Banner {
@@ -59,6 +65,13 @@ export interface Result {
   is_new: boolean;
 }
 
+export interface GachaPull {
+  results: Result[];
+  unlocked_achievements: Achievement[];
+}
+
+// Dashboard (Summary)
+
 export interface FirstR3 {
   student: Student;
   first_obtain_on: Date | string; 
@@ -79,11 +92,6 @@ interface RarityCounter {
 export interface Kpi extends RarityCounter {
   total_pulls: number
   total_pyroxene_spent: number
-}
-
-export interface GachaPull {
-  results: Result[];
-  unlocked_achievements: Achievement[];
 }
 
 export interface BannerDistribution {
@@ -118,4 +126,19 @@ export interface LuckPerformance {
   banner_rate: number;
   luck_variance: number;
   gaps: LuckGaps | null;
+}
+
+// Dashboard (History)
+
+export interface Transaction {
+  id: number;
+  create_on: Date | string; 
+  student: Student;
+  banner: Banner;
+}
+
+export interface History {
+  total_pages: number;
+  current_page: number;
+  items: Transaction[];
 }

@@ -6,8 +6,8 @@ from .BannerResponse import BannerResponse
 from .StudentResponse import StudentResponse
 
 class TransactionSchema(BaseModel):
-    transaction_id: int
-    transaction_create_on: datetime
+    id: int
+    create_on: datetime
     student: StudentResponse
     banner: BannerResponse
 
