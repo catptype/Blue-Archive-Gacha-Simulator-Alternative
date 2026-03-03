@@ -1,11 +1,13 @@
 import logging
-from collections import Counter, defaultdict
-from fastapi import APIRouter, Depends, HTTPException, Request, Query
-from sqlalchemy import func, desc, case
-from sqlalchemy.orm import Session, joinedload, selectinload
-from typing import List, Optional
 import math
 import statistics
+
+from collections import Counter, defaultdict
+from fastapi import APIRouter, Depends, Request, Query
+from sqlalchemy import func, case
+from sqlalchemy.orm import Session, joinedload
+from typing import List, Optional
+
 from ..config import settings
 from ..util.auth import get_required_current_user
 from ..util.models import GachaBanner, GachaTransaction, User, Achievement, UserInventory, Student, GachaPreset, UnlockAchievement
@@ -21,11 +23,6 @@ from ..util.schemas.AchievementResponse import UserAchievementResponse, Achievem
 LOGGER = logging.getLogger(__name__)
 
 router = APIRouter()
-
-# --- Helper functions ---
-
-def _get_summary_tab():
-    pass
 
 # --- API Endpoints ---
 
