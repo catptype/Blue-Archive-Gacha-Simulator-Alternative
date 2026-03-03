@@ -145,12 +145,14 @@ def _perform_pull(
     banner_data = cache.get(cache_key)
 
     if banner_data:
-        LOGGER.debug(f"Banner '{banner_id}' hit cache.")
+        if settings.DEBUG_MODE:
+            LOGGER.debug(f"Banner '{banner_id}' hit cache.")
         # Deserialize JSON back into the Pydantic Schema
         banner = BannerCacheSchema.model_validate(banner_data)
 
     else:
-        LOGGER.debug(f"Banner '{banner_id}' missed cache. Fetching from DB.")
+        if settings.DEBUG_MODE:
+            LOGGER.debug(f"Banner '{banner_id}' missed cache. Fetching from DB.")
         banner_db = db.query(GachaBanner).filter_by(id=banner_id).first()
 
         if not banner_db:
@@ -171,7 +173,8 @@ def _perform_pull(
 
     # Return response pulling result immediately
     if current_user is None:
-        LOGGER.debug("Guest is pulling. Skipping transaction history.")
+        if settings.DEBUG_MODE:
+            LOGGER.debug("Guest is pulling. Skipping transaction history.")
         
         return GachaPullResponse(
             results=result_schema,
@@ -179,7 +182,8 @@ def _perform_pull(
         )
 
     # Perform saving transaction and achievement database before response
-    LOGGER.debug(f"User '{current_user.username}' is pulling. Processing inventory and transactions...")
+    if settings.DEBUG_MODE:
+        LOGGER.debug(f"User '{current_user.username}' is pulling. Processing inventory and transactions...")
     _insert_transaction(result_schema, banner, db, current_user, cache)
     unlocked_achievements = _check_achievement(result_schema, request, db, current_user)
     

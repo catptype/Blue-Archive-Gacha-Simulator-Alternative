@@ -47,10 +47,12 @@ def get_schools(request: Request, db: Session = Depends(get_db), cache: Cache = 
 
     cached_data = cache.get(cache_key)
     if cached_data:
-        LOGGER.debug(f"CACHE HIT ({cache_key})")
+        if settings.DEBUG_MODE:
+            LOGGER.debug(f"CACHE HIT ({cache_key})")
         return [SchoolResponse.model_validate(item) for item in cached_data]
     
-    LOGGER.debug(f"CACHE MISS ({cache_key})")
+    if settings.DEBUG_MODE:
+        LOGGER.debug(f"CACHE MISS ({cache_key})")
     db_schools = db.query(School).all()
     
     response_schools:List[SchoolResponse] = []

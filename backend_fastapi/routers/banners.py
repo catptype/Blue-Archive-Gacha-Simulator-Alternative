@@ -21,11 +21,13 @@ def get_banners(request: Request, db: Session = Depends(get_db), cache: Cache = 
     cached_data = cache.get(cache_key)
     if cached_data:
         # Convert from dict to pydatic schema
-        LOGGER.debug(f"CACHE HIT ({cache_key})")
+        if settings.DEBUG_MODE:
+            LOGGER.debug(f"CACHE HIT ({cache_key})")
         return [BannerResponse.model_validate(item) for item in cached_data]
 
     # Get all banner data from db
-    LOGGER.debug(f"CACHE MISS ({cache_key})")
+    if settings.DEBUG_MODE:
+        LOGGER.debug(f"CACHE MISS ({cache_key})")
     banner_list = db.query(GachaBanner).all()
 
     # Prepare response data following pydatic schema

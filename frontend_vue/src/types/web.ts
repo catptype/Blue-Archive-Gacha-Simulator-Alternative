@@ -7,6 +7,8 @@ export interface Achievement {
   category: string;
   key: string;
   image_url: string;
+  is_unlocked?: boolean;
+  unlocked_on?: Date | string; 
 }
 
 // Student

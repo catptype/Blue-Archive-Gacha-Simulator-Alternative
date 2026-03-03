@@ -1,4 +1,3 @@
-from datetime import timedelta
 from fastapi import FastAPI
 from sqladmin import Admin, ModelView
 from sqladmin.authentication import AuthenticationBackend
@@ -24,8 +23,7 @@ class AdminAuth(AuthenticationBackend):
             user = db.query(User).filter_by(username=username).first()
             if user and verify_password(password, user.hashed_password) and user.role.name == "superuser":
                 # Create a token for the session
-                expires = timedelta(minutes=settings.TOKEN_EXPIRE)
-                token = create_access_token(data={"sub": user.username}, expires_delta=expires)
+                token = create_access_token(data={"sub": user.username})
                 request.session.update({"token": token})
                 return True
         return False

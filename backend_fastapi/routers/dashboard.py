@@ -69,12 +69,14 @@ def get_top_students_by_rarity(
     # 3. Try to get the data from the cache first
     cached_data = cache.get(cache_key)
     if cached_data:
-        LOGGER.debug(f"CACHE HIT for {cache_key}")
+        if settings.DEBUG_MODE:
+            LOGGER.debug(f"CACHE HIT for {cache_key}")
         # The data in the cache is already a JSON-serializable list of dicts.
         # FastAPI will automatically validate it against the response_model.
         return cached_data
     
-    LOGGER.debug(f"CACHE MISS for {cache_key}")
+    if settings.DEBUG_MODE:
+        LOGGER.debug(f"CACHE MISS for {cache_key}")
     
      # --- START OF THE NEW, EFFICIENT QUERY ---
 
@@ -150,11 +152,15 @@ def get_first_r3_pull(
     
     cached_data = cache.get(cache_key)
     if cached_data:
-        LOGGER.debug(f"CACHE HIT for {cache_key}")
+
+        if settings.DEBUG_MODE:
+            LOGGER.debug(f"CACHE HIT for {cache_key}")
         # The special value "NONE" indicates a cached "not found" result
         return None if cached_data == "NONE" else cached_data
 
-    LOGGER.debug(f"CACHE MISS for {cache_key}")
+    if settings.DEBUG_MODE:
+        LOGGER.debug(f"CACHE MISS for {cache_key}")
+
     first_r3_pull_orm = (
         db.query(GachaTransaction)
         .join(Student)
@@ -195,10 +201,12 @@ def get_chart_banner_breakdown(
     cache_key = f"dashboard:chart_banner_breakdown:{current_user.id}"
     cached_data = cache.get(cache_key)
     if cached_data:
-        LOGGER.debug(f"CACHE HIT for {cache_key}")
+        if settings.DEBUG_MODE:
+            LOGGER.debug(f"CACHE HIT for {cache_key}")
         return cached_data
 
-    LOGGER.debug(f"CACHE MISS for {cache_key}")
+    if settings.DEBUG_MODE:
+        LOGGER.debug(f"CACHE MISS for {cache_key}")
     
     # Efficiently fetch all pulls with banner name and student rarity
     pulls = db.query(
@@ -240,11 +248,15 @@ def get_milestone_timeline(
     cache_key = f"dashboard:milestones:{current_user.id}"
     cached_data = cache.get(cache_key)
     if cached_data is not None: # More robust check for any cached data
-        LOGGER.debug(f"CACHE HIT for {cache_key}")
+        
+        if settings.DEBUG_MODE:
+            LOGGER.debug(f"CACHE HIT for {cache_key}")
         # If the cached value is our special string, return an empty list.
         # Otherwise, return the cached data itself.
         return [] if cached_data == "NONE" else cached_data
-    LOGGER.debug(f"CACHE MISS for {cache_key}")
+    
+    if settings.DEBUG_MODE:
+        LOGGER.debug(f"CACHE MISS for {cache_key}")
     
     # --- START OF THE NEW, EFFICIENT QUERY ---
 
@@ -322,10 +334,12 @@ def get_performance_table(
     cache_key = f"dashboard:performance_table:{current_user.id}"
     cached_data = cache.get(cache_key)
     if cached_data:
-        LOGGER.debug(f"CACHE HIT for {cache_key}")
+        if settings.DEBUG_MODE:
+            LOGGER.debug(f"CACHE HIT for {cache_key}")
         return cached_data
 
-    LOGGER.debug(f"CACHE MISS for {cache_key}")
+    if settings.DEBUG_MODE:
+        LOGGER.debug(f"CACHE MISS for {cache_key}")
 
     # 1. Perform an efficient aggregation query to get stats for ALL banners at once.
     banner_stats_query = (
@@ -418,10 +432,13 @@ def get_collection_progression(
     cache_key = f"dashboard:collection_summary:{current_user.id}"
     cached_data = cache.get(cache_key)
     if cached_data:
-        LOGGER.debug(f"CACHE HIT for {cache_key}")
+        
+        if settings.DEBUG_MODE:
+            LOGGER.debug(f"CACHE HIT for {cache_key}")
         return cached_data
 
-    LOGGER.debug(f"CACHE MISS for {cache_key}")
+    if settings.DEBUG_MODE:
+        LOGGER.debug(f"CACHE MISS for {cache_key}")
 
     # 1. Fetch total counts
     total_counts_query = db.query(Student.rarity, func.count(Student.id)).group_by(Student.rarity).all()
@@ -518,10 +535,13 @@ def get_user_collection(
     cache_key = f"dashboard:collection:{current_user.id}"
     cached_data = cache.get(cache_key)
     if cached_data:
-        LOGGER.debug(f"CACHE HIT for {cache_key}")
+        
+        if settings.DEBUG_MODE:
+            LOGGER.debug(f"CACHE HIT for {cache_key}")
         return cached_data
 
-    LOGGER.debug(f"CACHE MISS for {cache_key}")
+    if settings.DEBUG_MODE:
+        LOGGER.debug(f"CACHE MISS for {cache_key}")
 
     # --- START OF THE NEW, EFFICIENT QUERY ---
 
@@ -595,10 +615,12 @@ def get_user_achievements(
     cache_key = f"dashboard:achievements:{current_user.id}"
     cached_data = cache.get(cache_key)
     if cached_data:
-        LOGGER.debug(f"CACHE HIT for {cache_key}")
+        if settings.DEBUG_MODE:
+            LOGGER.debug(f"CACHE HIT for {cache_key}")
         return cached_data
     
-    LOGGER.debug(f"CACHE MISS for {cache_key}")
+    if settings.DEBUG_MODE:
+        LOGGER.debug(f"CACHE MISS for {cache_key}")
 
     # Use a LEFT JOIN to fetch all achievements and augment them with unlock data
     # for the current user in a single, efficient query.

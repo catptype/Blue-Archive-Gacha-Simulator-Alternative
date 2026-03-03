@@ -32,9 +32,11 @@ def serve_image(
         etag = cached_data['etag']
         filename = cached_data['filename']
         # Check Browser Cache
-        LOGGER.debug(f"{request.headers.get("if-none-match")} || {etag}")
+        if settings.DEBUG_MODE:
+            LOGGER.debug(f"{request.headers.get("if-none-match")} || {etag}")
         if request.headers.get("if-none-match") == etag:
-            LOGGER.debug(f"CACHE HIT (Browser - 304) for {cache_key}")
+            if settings.DEBUG_MODE:
+                LOGGER.debug(f"CACHE HIT (Browser - 304) for {cache_key}")
             headers = {
                 "Cache-Control": CACHE_CONTROL_HEADER,
                 "ETag": etag,
@@ -43,7 +45,8 @@ def serve_image(
             return Response(status_code=304, headers=headers)
         
     # Get image data from db
-    LOGGER.debug(f"FETCHING DATA for {cache_key}")
+    if settings.DEBUG_MODE:
+        LOGGER.debug(f"FETCHING DATA for {cache_key}")
     image_bytes, filename = fetch_data_func()
     
     if not image_bytes:

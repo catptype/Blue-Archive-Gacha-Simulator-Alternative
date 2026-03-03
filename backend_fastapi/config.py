@@ -4,7 +4,7 @@ class Settings(BaseSettings):
     # --- Auth Settings ---
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
-    TOKEN_EXPIRE: int = 15 # Minutes
+    TOKEN_EXPIRE: int = 30 # Minutes
     
     CACHE_EXPIRE: int = 180 
     APP_NAME: str = "Blue Archive Gacha Simulator (Backend)"

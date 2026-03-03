@@ -8,7 +8,7 @@ import DashboardView from '@/views/user/Dashboard.vue';
 import SummaryTab from '@/views/user/layout/SummaryTab.vue';
 import HistoryTab from '@/views/user/layout/HistoryTab.vue';
 import CollectionTab from '@/views/user/layout/CollectionTab.vue';
-import AchievementsTab from '@/components/dashboard/AchievementsTab.vue';
+import AchievementsTab from '@/views/user/layout/AchievementsTab.vue';
 
 const routes = [
   {
