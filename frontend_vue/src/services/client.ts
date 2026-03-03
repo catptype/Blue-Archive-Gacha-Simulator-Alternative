@@ -5,9 +5,7 @@ import { API_BASE_URL } from '@/config';
 // Create a new Axios instance with a pre-configured base URL
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  }
+  headers: { 'Content-Type': 'application/json', }
 });
 
 // Use an interceptor to automatically attach the auth token to every request

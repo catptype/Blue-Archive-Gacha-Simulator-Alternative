@@ -9,7 +9,7 @@ from markupsafe import Markup
 # Import your database engine and models
 from .database import engine, SessionLocal
 from .models import User, Role, Student, Version, School, GachaBanner, GachaPreset, GachaTransaction, Achievement, UnlockAchievement, UserInventory
-from .auth import SECRET_KEY, ALGORITHM, create_access_token, verify_password
+from .auth import create_access_token, verify_password
 from .timezone import format_datetime_as_local
 from ..config import settings
 
@@ -40,7 +40,7 @@ class AdminAuth(AuthenticationBackend):
             return False
 
         try:
-            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
             username: str | None = payload.get("sub")
             if not username:
                 return False
