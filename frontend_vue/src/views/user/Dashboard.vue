@@ -8,17 +8,12 @@
     { label: 'Collection',   path: '/dashboard/collection',   icon: 'fa-solid fa-clone' },
     { label: 'Achievements', path: '/dashboard/achievements', icon: 'fa-solid fa-trophy' },
   ];
-
 </script>
 
 <template>
   <div class="max-w-7xl mx-auto pt-30 text-white">
     <div class="relative w-full">
       <!-- Tab Buttons -->
-      <!-- 
-        - On mobile (default): Full-width, centered tabs.
-        - On large screens (lg:): Reverts to the original left-aligned position.
-      -->
       <div 
         class="absolute left-0 right-0 z-20 flex justify-center gap-2">
         <TabButton

@@ -576,7 +576,7 @@ def get_user_collection(
 
     response_data = CollectionResponse(
         obtained_count=obtained_count,
-        total_students=total_students,
+        total_count=total_students,
         completion_percentage=round(completion_percentage, 2),
         students=collection_students
     )

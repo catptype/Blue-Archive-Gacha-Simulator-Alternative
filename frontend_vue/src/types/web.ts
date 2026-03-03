@@ -31,6 +31,7 @@ export interface Student {
   school: School;
   portrait_url: string;
   artwork_url: string;
+  is_obtained?: boolean;
 }
 
 // Gacha
@@ -141,4 +142,13 @@ export interface History {
   total_pages: number;
   current_page: number;
   items: Transaction[];
+}
+
+// Dashboard (Collection)
+
+export interface Collection {
+  obtained_count: number;
+  total_count: number;
+  completion_percentage: number;
+  students: Student[];
 }

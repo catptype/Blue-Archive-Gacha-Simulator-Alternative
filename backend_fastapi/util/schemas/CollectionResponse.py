@@ -9,6 +9,6 @@ class CollectionStudentSchema(StudentResponse):
 # --- Response
 class CollectionResponse(BaseModel):
     obtained_count: int
-    total_students: int
+    total_count: int
     completion_percentage: float
     students: List[CollectionStudentSchema]
