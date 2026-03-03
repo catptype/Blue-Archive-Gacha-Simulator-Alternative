@@ -1,42 +1,39 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
-import { type Achievement } from '@/types/web';
-import LoadSpinner from '@/components/base/LoadSpinner.vue';
-import apiClient from '@/services/client';
-import AchievementCard from '../components/achievement/AchievementCard.vue';
+  import { ref, computed, onMounted } from 'vue';
+  import { type Achievement } from '@/types/web';
+  import LoadSpinner from '@/components/base/LoadSpinner.vue';
+  import apiClient from '@/services/client';
+  import AchievementCard from '../components/achievement/AchievementCard.vue';
 
-const isLoading = ref(true);
-const error = ref('');
-const allAchievements = ref<Achievement[]>([]);
+  const isLoading = ref(true);
+  const error = ref('');
+  const allAchievements = ref<Achievement[]>([]);
 
+  const groupedAchievements = computed((): Record<string, Achievement[]> => {
+    return allAchievements.value.reduce((groups, ach) => {
+      const category = ach.category;
+      // Initialize the array if it doesn't exist
+      if (!groups[category]) {
+        groups[category] = [];
+      }
+      groups[category].push(ach);
+      return groups;
+    }, {} as Record<string, Achievement[]>); // Type assertion on the initial value
+  });
 
-onMounted(async () => {
-  isLoading.value = true;
-  error.value = '';
-  try {
-    const { data } = await apiClient.get('/dashboard/achievements');
-    allAchievements.value = data;
-  } catch (err) {
-    error.value = 'Failed to load achievements.';
-    console.error(err);
-  } finally {
-    isLoading.value = false;
-  }
-});
-
-const groupedAchievements = computed((): Record<string, Achievement[]> => {
-  return allAchievements.value.reduce((groups, ach) => {
-    const category = ach.category;
-    // Initialize the array if it doesn't exist
-    if (!groups[category]) {
-      groups[category] = [];
+  onMounted(async () => {
+    isLoading.value = true;
+    error.value = '';
+    try {
+      const { data } = await apiClient.get('/dashboard/achievements');
+      allAchievements.value = data;
+    } catch (err) {
+      error.value = 'Failed to load achievements.';
+      console.error(err);
+    } finally {
+      isLoading.value = false;
     }
-    groups[category].push(ach);
-    return groups;
-  }, {} as Record<string, Achievement[]>); // Type assertion on the initial value
-});
-
-// --- END OF CORRECTION ---
+  });
 </script>
 
 <template>
