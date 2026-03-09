@@ -11,3 +11,7 @@ __pycache__/
 myenv/
 production/
 mocking/
+frontend_vue/node_modules
+frontend_vue/dist
+.git
+*.env
