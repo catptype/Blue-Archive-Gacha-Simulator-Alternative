@@ -8,11 +8,8 @@ from sqlalchemy.orm.session import Session
 
 # Important: This script assumes it is run from the `backend` directory.
 # It uses relative paths to find the database and data files.
-# from backend.util.database import SessionLocal, engine
 from .util.database import Base, SessionLocal, engine
-from .util.models import (
-    Version, School, ImageAsset, Student, GachaPreset, GachaBanner, User, Role, Achievement
-)
+from .util.models import Version, School, ImageAsset, Student, GachaPreset, GachaBanner, Role, Achievement
 
 # Define the path to your data directory
 DATA_DIR = Path(__file__).parent / "data"
