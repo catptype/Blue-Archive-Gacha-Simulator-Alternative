@@ -24,7 +24,7 @@ RUN npm run build
 
 # --- Stage 2: Serve the Static Files with Nginx (The New Part) ---
 # Use a secure, unprivileged, and lightweight Nginx image.
-FROM nginx:1.25-alpine-slim
+FROM nginx:stable
 
 # Copy the built Vue app files from the 'builder' stage into Nginx's public HTML directory.
 COPY --from=builder /app/dist /usr/share/nginx/html
