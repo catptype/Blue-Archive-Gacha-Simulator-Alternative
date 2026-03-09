@@ -1,13 +1,13 @@
 import fnmatch
 import json
-import os
 import redis
 import logging
+from ..config import settings
 from abc import ABC, abstractmethod
 
-CACHE_TYPE = os.getenv("CACHE_TYPE", "memory").lower() # redis or memory
+CACHE_TYPE = settings.CACHE_TYPE.lower() # redis or memory
 LOGGER = logging.getLogger(__name__)
-REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379")
+REDIS_URL = settings.REDIS_URL
 
 class Cache(ABC):
     @abstractmethod
