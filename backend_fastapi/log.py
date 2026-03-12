@@ -1,9 +1,6 @@
-import os
-# Get the desired log level from an environment variable.
-# Default to "INFO" for production, but you can set it to "DEBUG" for development.
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+from .config import settings
+LOG_LEVEL = settings.LOG_LEVEL.upper()
 
-# This is a standard Python logging configuration dictionary.
 LOGGING_CONFIG = {
     "version": 1,
     "disable_existing_loggers": False, # This is crucial to not silence Uvicorn's logs
@@ -22,11 +19,13 @@ LOGGING_CONFIG = {
         },
     },
     "loggers": {
-        "": { # Root logger
+        # Root logger
+        "": { 
             "handlers": ["default"],
             "level": LOG_LEVEL,
         },
-        "backend": { # Our application's logger
+        # Application logger
+        "backend": { 
             "handlers": ["default"],
             "level": LOG_LEVEL,
             "propagate": False,

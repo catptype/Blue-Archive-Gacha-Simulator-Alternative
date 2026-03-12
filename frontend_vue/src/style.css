@@ -13,3 +13,13 @@ button,
 input {
     font-family: 'RoGSanSrfStd-Bd';
 }
+
+img {
+    image-rendering: smooth !important; 
+}
+
+/* Uncomment for debug layout */
+/* * {
+    border-color: red !important;
+    border-style: dashed !important;
+} */

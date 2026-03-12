@@ -1,43 +1,56 @@
-import axios from 'axios';
+import axios, { type InternalAxiosRequestConfig, type AxiosResponse, type AxiosError } from 'axios';
 import { useAuthStore } from '@/security/auth';
 import { API_BASE_URL } from '@/config';
 
-// Create a new Axios instance with a pre-configured base URL
+// A flag to track if we are already in the process of logging out
+let isLoggingOut = false;
+
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  }
+  headers: { 'Content-Type': 'application/json' }
 });
 
-// Use an interceptor to automatically attach the auth token to every request
-apiClient.interceptors.request.use(config => {
-  // We need to get a fresh instance of the store here,
-  // as this file is evaluated before the main app is set up.
-  const authStore = useAuthStore();
-  
-  if (authStore.token) {
-    config.headers.Authorization = `Bearer ${authStore.token}`;
-  }
-  return config;
-}, error => {
-  return Promise.reject(error);
-});
-
-// --- ADD THIS NEW INTERCEPTOR ---
-apiClient.interceptors.response.use(
-  // If the response is successful, just return it
-  (response) => response,
-  // If there's an error...
-  (error) => {
-    // Check if it's a 401 Unauthorized error
-    if (error.response && error.response.status === 401) {
-      console.log("Token expired or invalid. Logging out.");
-      alert("Token expired or invalid. Logging out.");
-      const authStore = useAuthStore();
-      authStore.logout(); // Call the logout action from your store
+// REQUEST INTERCEPTOR
+apiClient.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    const authStore = useAuthStore();
+    
+    if (authStore.token && config.headers) {
+      // Use bracket notation or ensured headers to satisfy TS
+      config.headers.Authorization = `Bearer ${authStore.token}`;
     }
-    // Return the error so the component that made the call can also handle it
+    return config;
+  },
+  (error: AxiosError) => Promise.reject(error)
+);
+
+// RESPONSE INTERCEPTOR
+apiClient.interceptors.response.use(
+  (response: AxiosResponse) => response,
+  async (error: AxiosError) => {
+    
+    // Check if the error is 401
+    if (error.response?.status === 401) {
+      const authStore = useAuthStore();
+
+      // ONLY run this block if we aren't already logging out
+      if (!isLoggingOut) {
+        isLoggingOut = true; // Set the lock
+
+        console.warn("Session expired. Logging out.");
+        alert("Session expired. Logging out.")
+
+        await authStore.logout(); 
+
+        // After some time or after navigation, reset the lock 
+        setTimeout(() => { isLoggingOut = false; }, 5000);
+      }
+
+      // Important: Stop the spam for the other 7 requests
+      // We return a "silent" rejection or just stop the chain
+      return Promise.reject(new Error("Session expired"));
+    }
+
     return Promise.reject(error);
   }
 );

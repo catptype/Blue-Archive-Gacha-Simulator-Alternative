@@ -93,7 +93,7 @@ services:
     image: vue_image
     container_name: vue
     ports:
-      - "5173:80" # Map host port 5173 to the container's Apache port 80
+      - "5173:8080"
     depends_on:
       - backend
 
