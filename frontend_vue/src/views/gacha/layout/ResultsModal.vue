@@ -28,7 +28,7 @@ const emit = defineEmits<{
 //   2. The intro video has finished playing
 // ============================================================
 
-const videoFinished = ref(true);
+const videoFinished = ref(false);
 
 const showResults = computed(() => !props.isPulling && videoFinished.value);
 
