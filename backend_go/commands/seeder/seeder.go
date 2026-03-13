@@ -54,6 +54,14 @@ type BannerJSON struct {
 	ImageBase64 string `json:"image_base64"`
 }
 
+type AchievementJSON struct {
+	Key         string `json:"key"`
+	Category    string `json:"category"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	ImageBase64 string `json:"image_base64"`
+}
+
 var dataDir = "data"
 
 func main() {
@@ -79,6 +87,7 @@ func main() {
 	seedStudents(db)
 	seedPresets(db)
 	seedBanners(db)
+	seedAchievements(db)
 
 	fmt.Println("\nDatabase seeding complete!")
 }
@@ -199,7 +208,7 @@ func seedStudents(db *gorm.DB) {
 
 			fmt.Printf("  + Added Student: %s (%s)\n", sj.Name, sj.Version)
 		} else {
-			fmt.Printf("  X Already Existing Student: %s (%s)\n", sj.Name, sj.Version)
+			// fmt.Printf("  X Already Existing Student: %s (%s)\n", sj.Name, sj.Version)
 		}
 	}
 }
@@ -257,6 +266,70 @@ func seedBanners(db *gorm.DB) {
 			}
 			db.Create(&banner)
 			fmt.Printf("  - Added Banner: %s\n", bj.Name)
+		}
+	}
+}
+
+func seedAchievements(db *gorm.DB) {
+	fmt.Printf("\nSeeding Achievements...\n")
+
+	// 1. Find all JSON files in the achievements directory
+	files, _ := filepath.Glob(filepath.Join(dataDir, "achievements", "*.json"))
+
+	for _, f := range files {
+		// 2. Read file
+		content, err := os.ReadFile(f)
+		if err != nil {
+			fmt.Printf("  - Error reading file %s: %v\n", f, err)
+			continue
+		}
+
+		// 3. Parse JSON
+		var aj AchievementJSON
+		json.Unmarshal(content, &aj)
+
+		// 4. Validate key (Requirement from your Python script)
+		if aj.Key == "" {
+			fmt.Printf("  - SKIPPING achievement file %s: Missing required 'key'\n", f)
+			continue
+		}
+
+		// 5. Check if achievement exists (Using Find to keep logs clean)
+		var existing models.Achievement
+		result := db.Where("key = ?", aj.Key).Limit(1).Find(&existing)
+
+		if result.RowsAffected == 0 {
+			// 6. Handle Defaults (Same logic as your Python script)
+			category := aj.Category
+			if category == "" {
+				category = "MILESTONE"
+			}
+
+			name := aj.Name
+			if name == "" {
+				name = "Unnamed Achievement"
+			}
+
+			// 7. Decode Image if exists
+			var imgBytes []byte
+			if aj.ImageBase64 != "" {
+				imgBytes, _ = base64.StdEncoding.DecodeString(aj.ImageBase64)
+			}
+
+			// 8. Create the Record
+			newAchievement := models.Achievement{
+				Key:         aj.Key,
+				Category:    category,
+				Name:        name,
+				Description: aj.Description,
+				ImageData:   imgBytes,
+			}
+
+			if err := db.Create(&newAchievement).Error; err != nil {
+				fmt.Printf("  - Error saving achievement %s: %v\n", name, err)
+			} else {
+				fmt.Printf("  + Added Achievement: %s\n", name)
+			}
 		}
 	}
 }
