@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"backend/models" // Replace 'backend' with your go.mod module name
+	"backend_go/models" // Replace 'backend' with your go.mod module name
 
 	"github.com/glebarez/sqlite"
 	"golang.org/x/crypto/bcrypt"

@@ -10,9 +10,10 @@ import (
 	"path/filepath"
 	"sort"
 
-	"backend/models" // Adjust this to your actual module name/folder
+	"backend_go/models" // Adjust this to your actual module name/folder
 
-	"github.com/glebarez/sqlite"
+	// "github.com/glebarez/sqlite"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -208,7 +209,7 @@ func seedStudents(db *gorm.DB) {
 
 			fmt.Printf("  + Added Student: %s (%s)\n", sj.Name, sj.Version)
 		} else {
-			// fmt.Printf("  X Already Existing Student: %s (%s)\n", sj.Name, sj.Version)
+			fmt.Printf("  X Already Existing Student: %s (%s)\n", sj.Name, sj.Version)
 		}
 	}
 }
