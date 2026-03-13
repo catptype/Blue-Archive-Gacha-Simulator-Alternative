@@ -140,46 +140,66 @@ func seedSchools(db *gorm.DB) {
 
 func seedStudents(db *gorm.DB) {
 	fmt.Printf("\nSeeding Students...\n")
+
+	// 1. Get all JSON files in the students folder
 	files, _ := filepath.Glob(filepath.Join(dataDir, "students", "*.json"))
 
 	for _, f := range files {
+		// 2. Read and Parse JSON
 		var sj StudentJSON
-		content, _ := os.ReadFile(f)
+		content, err := os.ReadFile(f)
+		if err != nil {
+			fmt.Printf("Error reading file %s: %v\n", f, err)
+			continue
+		}
 		json.Unmarshal(content, &sj)
 
+		// 3. Find the related Version and School ID
 		var version models.Version
 		var school models.School
 		db.Where("name = ?", sj.Version).First(&version)
 		db.Where("name = ?", sj.School).First(&school)
 
+		// 4. CHECK IF STUDENT EXISTS (Using Find to avoid noisy logs)
 		var existing models.Student
-		err := db.Where("name = ? AND version_id = ?", sj.Name, version.ID).First(&existing).Error
-		if err != nil { // Student doesn't exist
+		result := db.Where("name = ? AND version_id = ?", sj.Name, version.ID).Limit(1).Find(&existing)
+
+		// result.RowsAffected == 0 means the student is NOT in the database yet
+		if result.RowsAffected == 0 {
+			// 5. Decode Base64 images
 			pBytes, _ := base64.StdEncoding.DecodeString(sj.Base64.Portrait)
 			aBytes, _ := base64.StdEncoding.DecodeString(sj.Base64.Artwork)
 
-			// Hashing logic
+			// 6. Generate Hashes (Same as your Python logic)
 			pHash := fmt.Sprintf("%x", sha256.Sum256(pBytes))
 			aHash := fmt.Sprintf("%x", sha256.Sum256(aBytes))
 			combinedHash := fmt.Sprintf("%x", sha256.Sum256([]byte(pHash+"-"+aHash)))
 
+			// 7. Create the ImageAsset first
 			asset := models.ImageAsset{
 				PortraitData: pBytes,
 				ArtworkData:  aBytes,
 				PairHash:     combinedHash,
 			}
+
+			// We use db.Create to save to database.
+			// asset.ID will be automatically updated after this call.
 			db.Create(&asset)
 
+			// 8. Create the Student linked to the asset
 			student := models.Student{
 				Name:      sj.Name,
 				Rarity:    sj.Rarity,
 				IsLimited: sj.IsLimited,
 				VersionID: version.ID,
 				SchoolID:  school.ID,
-				AssetID:   &asset.ID,
+				AssetID:   &asset.ID, // Link to the asset we just created
 			}
 			db.Create(&student)
-			fmt.Printf("  - Added Student: %s (%s)\n", sj.Name, sj.Version)
+
+			fmt.Printf("  + Added Student: %s (%s)\n", sj.Name, sj.Version)
+		} else {
+			fmt.Printf("  X Already Existing Student: %s (%s)\n", sj.Name, sj.Version)
 		}
 	}
 }
