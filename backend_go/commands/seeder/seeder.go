@@ -12,8 +12,9 @@ import (
 
 	"backend_go/models" // Adjust this to your actual module name/folder
 
-	// "github.com/glebarez/sqlite"
-	"gorm.io/driver/sqlite"
+	"github.com/glebarez/sqlite" // Pure Go SQLite
+	"gorm.io/driver/mysql"       // MySQL & MariaDB
+	"gorm.io/driver/postgres"    // PostgreSQL
 	"gorm.io/gorm"
 )
 
@@ -65,15 +66,39 @@ type AchievementJSON struct {
 
 var dataDir = "data"
 
-func main() {
-	// 1. Connect to Database
-	db, err := gorm.Open(sqlite.Open("gacha.db"), &gorm.Config{})
-	if err != nil {
-		// log.Fatal("failed to connect database")
-		log.Fatal(err)
-	}
+// func main() {
+// 	// 1. Connect to Database
+// 	db, err := gorm.Open(sqlite.Open("gacha.db"), &gorm.Config{})
+// 	if err != nil {
+// 		// log.Fatal("failed to connect database")
+// 		log.Fatal(err)
+// 	}
 
-	// 2. Auto Migrate (Ensures tables exist)
+// 	// 2. Auto Migrate (Ensures tables exist)
+// 	fmt.Println("Initializing database tables...")
+// 	db.AutoMigrate(
+// 		&models.Role{}, &models.User{}, &models.Version{},
+// 		&models.School{}, &models.ImageAsset{}, &models.Student{},
+// 		&models.GachaPreset{}, &models.GachaBanner{}, &models.Achievement{},
+// 	)
+
+// 	// 3. Run Seeders
+// 	seedRoles(db)
+// 	seedVersions(db)
+// 	seedSchools(db)
+// 	seedStudents(db)
+// 	seedPresets(db)
+// 	seedBanners(db)
+// 	seedAchievements(db)
+
+// 	fmt.Println("\nDatabase seeding complete!")
+// }
+
+func main() {
+	// 1. Get Database Connection based on Environment Variables
+	db := initDB()
+
+	// 2. Auto Migrate (Works across all 4 DB types)
 	fmt.Println("Initializing database tables...")
 	db.AutoMigrate(
 		&models.Role{}, &models.User{}, &models.Version{},
@@ -81,7 +106,7 @@ func main() {
 		&models.GachaPreset{}, &models.GachaBanner{}, &models.Achievement{},
 	)
 
-	// 3. Run Seeders
+	// 3. Run Seeders (The logic below is DB-agnostic)
 	seedRoles(db)
 	seedVersions(db)
 	seedSchools(db)
@@ -91,6 +116,35 @@ func main() {
 	seedAchievements(db)
 
 	fmt.Println("\nDatabase seeding complete!")
+}
+
+func initDB() *gorm.DB {
+	dbType := os.Getenv("DB_TYPE") // sqlite, mysql, postgres
+	dsn := os.Getenv("DB_DSN")     // Connection string
+
+	var dialector gorm.Dialector
+
+	switch dbType {
+	case "mysql", "mariadb":
+		// Example DSN: user:pass@tcp(127.0.0.1:3306)/dbname?charset=utf8mb4&parseTime=True&loc=Local
+		dialector = mysql.Open(dsn)
+	case "postgres":
+		// Example DSN: host=localhost user=gorm password=gorm dbname=gorm port=5432 sslmode=disable
+		dialector = postgres.Open(dsn)
+	default:
+		// Default to SQLite if nothing is provided
+		if dsn == "" {
+			dsn = "gacha.db"
+		}
+		dialector = sqlite.Open(dsn)
+	}
+
+	db, err := gorm.Open(dialector, &gorm.Config{})
+	if err != nil {
+		log.Fatalf("Failed to connect to %s: %v", dbType, err)
+	}
+
+	return db
 }
 
 func seedRoles(db *gorm.DB) {
