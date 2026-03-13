@@ -1,2 +1,2 @@
-go run commands/seeder.go
+go run commands/seeder/seeder.go
 pause
